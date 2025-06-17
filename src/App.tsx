@@ -2,7 +2,9 @@ import { useCallback } from "react";
 import {
   addEdge,
   Background,
+  BackgroundVariant,
   Controls,
+  MiniMap,
   ReactFlow,
   SelectionMode,
   useEdgesState,
@@ -11,32 +13,39 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./App.css";
 
-const initialNodes = [
+const defaultNodes = [
   {
     id: "1",
-    data: { label: "Node 1" },
-    position: { x: 150, y: 0 },
+    type: "input",
+    data: { label: "Input Node" },
+    position: { x: 250, y: 25 },
+    style: { backgroundColor: "#6ede87", color: "white" },
   },
+
   {
     id: "2",
-    data: { label: "Node 2" },
-    position: { x: 0, y: 150 },
+    // you can also pass a React component as a label
+    data: { label: <div>Default Node</div> },
+    position: { x: 100, y: 125 },
+    style: { backgroundColor: "#ff0072", color: "white" },
   },
   {
     id: "3",
-    data: { label: "Node 3" },
-    position: { x: 300, y: 150 },
+    type: "output",
+    data: { label: "Output Node" },
+    position: { x: 250, y: 250 },
+    style: { backgroundColor: "#6865A5", color: "white" },
   },
 ];
 
-const initialEdges = [
+const defaultEdges = [
   { id: "e1-2", source: "1", target: "2" },
-  { id: "e1-3", source: "1", target: "3" },
+  { id: "e2-3", source: "2", target: "3", animated: true },
 ];
 
 function App() {
-  const [nodes, setNodes, onNodeChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodeChange] = useNodesState(defaultNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(defaultEdges);
 
   const onConnect = useCallback(
     (connection) => setEdges((eds) => addEdge(connection, eds)),
@@ -44,6 +53,21 @@ function App() {
   );
 
   const panOnDrag = [1, 2];
+
+  interface NodeColorProps {
+    type?: string;
+  }
+
+  const nodeColor = (node: NodeColorProps): string => {
+    switch (node.type) {
+      case "input":
+        return "#6ede87";
+      case "output":
+        return "#6865A5";
+      default:
+        return "#ff0072";
+    }
+  };
 
   return (
     <div style={{ height: "100%" }}>
@@ -59,7 +83,8 @@ function App() {
         selectionMode={SelectionMode.Partial}
       >
         <Background />
-        <Controls />
+        {/* <Controls /> */}
+        <MiniMap nodeColor={nodeColor} nodeStrokeWidth={3} zoomable pannable />
       </ReactFlow>
     </div>
   );
