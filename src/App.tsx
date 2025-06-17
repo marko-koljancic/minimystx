@@ -2,8 +2,6 @@ import { useCallback } from "react";
 import {
   addEdge,
   Background,
-  BackgroundVariant,
-  Controls,
   MiniMap,
   ReactFlow,
   SelectionMode,
