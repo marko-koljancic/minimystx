@@ -80,7 +80,7 @@ function App() {
         panOnDrag={panOnDrag}
         selectionMode={SelectionMode.Partial}
       >
-        <Background />
+        <Background bgColor="#040e10" color="#171b1b" />
         {/* <Controls /> */}
         <MiniMap nodeColor={nodeColor} nodeStrokeWidth={3} zoomable pannable />
       </ReactFlow>
