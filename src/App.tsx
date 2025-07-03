@@ -4,6 +4,7 @@ import MainLayout from "./layouts/MainLayout";
 import Home from "./components/home";
 import NotFound from "./components/not-found";
 import Header from "./components/header";
+import Design from "./components/design";
 
 const App = () => {
   return (
@@ -12,7 +13,7 @@ const App = () => {
       <MainLayout>
         <Routes>
           <Route path="/" element={<Home />} />
-          {/* <Route path="/design" element={<About />} /> */}
+          <Route path="/design" element={<Design />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </MainLayout>
