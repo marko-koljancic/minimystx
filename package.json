@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "wasm": "wasm-pack build src/core/wasm-engine --target web --out-dir ../../pkg/minimystx-core --release",
+    "core-build": "wasm-pack build src/core/wasm-engine --target web --out-dir ../../pkg-build/minimystx-core --release",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -15,9 +15,7 @@
     "@xyflow/react": "^12.7.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-redux": "^9.2.0",
     "react-router": "^7.6.3",
-    "redux": "^5.0.1",
     "three": "^0.178.0"
   },
   "devDependencies": {

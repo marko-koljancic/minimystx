@@ -1,0 +1,79 @@
+---
+description: Minimystx PoC specs 
+globs:
+alwaysApply: false
+---
+
+Picture Minimystx as a focused, browser-only workshop for procedural 3-D design—something halfway between a node-based VFX tool and a lightweight CAD playground—but stripped to the essentials so it loads in seconds and feels instant on a laptop GPU.
+First encounter
+You arrive at a minimalist landing page: dark background, a looping hero GIF of a parametric sculpture morphing in real time, a headline (“Design by connecting ideas, not writing code”), and one primary button.  A single click navigates you—no page reload—into Design Mode.
+The workspace layout
+Design Mode halves the viewport horizontally:
+Left pane (Three.js “stage”)
+Starts as an empty black void with a subtle grid and axis tripod for orientation.
+Orbit, pan and zoom controls are active immediately.
+A lightweight FPS counter hovers bottom-left so you always know performance.
+Right pane (Node editor)
+Built with React Flow in “vertical” mode so nodes pile downward like a storyboard.
+The very top hosts a fixed Scene node—its sole purpose is to gather geometry, lights and materials for rendering. You can’t delete it.
+A collapsible drawer above the canvas holds the Node Palette: primitive geometry, math utilities, material generators, lights, and modifiers. These appear as small pill-buttons you can drag onto the editor or click to spawn under the cursor.
+A floating search (⌘/Ctrl + K) lets power users type “Sphere” or “Point Light” to spawn nodes instantly.
+Nodes in detail
+Visual language – each port (we call them jacks) carries a color representing its data type:
+Numbers → amber
+Integers → violet
+Vectors → cyan
+Geometry → green
+Material → magenta
+Light → yellow
+ Colors are defined as CSS variables so a future theme switch is one edit.
+Form factor – nodes collapse to a 140 × 36 px header when idle, showing only title, icon, and jacks. Hover enlarges slightly; double-click expands a “drawer” exposing inline controls for quick edits (e.g., a radius slider).
+Inspector drawer – for more space, I selects a node and toggles a right-side slide-over panel providing full property forms, numeric steppers, and color pickers. The slide-over is context-sensitive; switching selection live-swaps the form.
+Building a scene, step by step
+Add dimensions—drop a Number node; its single amber output represents a floating-point value.
+Create geometry—drag in a Sphere node. It exposes inputs Radius (amber), Position (cyan), and Material (magenta). Connect Number → Radius and set Position to (0, 0, 0) via the inline Vector3 field.
+See results—as soon as Radius receives a value, the Sphere node outputs a mesh which is immediately piped into the Scene node (auto-connected if nothing else is hooked up). A white sphere appears centre-stage.
+Refine—spin the mouse wheel to zoom, orbit the camera, update the number value to watch the sphere inflate in real time at 60 fps.
+Layer complexity—duplicate the sphere, offset its Position vector, feed both meshes to Scene; assign a Lambert Material to one by dragging its magenta output onto the Sphere’s Material input.
+Light it—drag a Point Light into the graph, set its power, wire its yellow output to Scene; the viewport brightens, shadows shift, FPS remains steady.
+All edits queue through an internal event bus; the Three.js scene is only touched from a single place, so objects are added, updated or disposed cleanly—no ghost meshes or memory leaks.
+Usability polish
+Connections that would break type safety simply refuse to form; the jack wiggles and a tooltip explains “expected Vector3”.
+Hovering any jack shows a tiny badge with the data type and a quick definition (“Vector3 – x, y, z in metres”).
+Edges highlight when you drag over a compatible target, providing “magnetic” feedback.
+A contextual mini-map appears bottom-right after you pan far from the Scene node, helping you stay oriented in large graphs.
+Autosave fires on every committed change (500 ms debounce). Your last session reloads silently on next visit.
+Undo/Redo spans everything: property tweaks, node moves, cable links.
+Performance guard-rails (if applicable)
+Procedural evaluation is depth-first but cached, so a chain of ten math nodes feeding one radius slider recomputes only once per frame.
+For meshes over 100 k vertices, the engine throttles redraw to 30 fps while dragging sliders, snapping back to 60 fps when idle.
+A lazy-dispose sweeper runs every 10 seconds, freeing GPU buffers from deleted geometry.
+Extensibility seams
+Node registry – every node is just a JSON + JS module exported under /nodes. At runtime they self-register, so dropping a new file instantly surfaces a new node type—no touching the core graph code.
+Persistence strategy – currently localStorage, but the save/load methods live behind a PersistenceProvider; plugging in a REST, WebSocket or IndexedDB adapter is copy-paste work.
+Headless evaluation – because nodes never talk to the DOM, the entire graph can be replayed in a Web Worker for heavy computations, or on a Node.js server later for batch rendering.
+Container and deploy
+docker build . assembles a tiny nginx image (≈ 30 MB) that serves static assets on port 80. A single environment variable, PUBLIC_URL, controls whether the app runs at a root domain or sub-path, so it can be deployed behind any reverse proxy, on Netlify, Vercel, or your own VPS without rewriting routes.
+What the PoC proves
+Real-time parametric editing in a browser is smooth at notebook-scale complexity.
+The split interface lets even non-technical users connect data flows visually without intimidation.
+The codebase stays small (≈ 6 k LOC) yet modular, ready for version-controlled nodes, multi-user sessions, or BIM/IFC import once the project graduates from proof-of-concept to roadmap milestone.
+This is the specific, experience-level picture of Minimystx: an immediate, fluid, node-driven modeling lab that fits in one tab but is architected for much bigger things.
+
+Design UI/UX Guidelines
+Design Language & Interaction Style (Houdini-/Grasshopper-inspired)
+Adopt the calm, dark-studio aesthetic and fluent ergonomics that make SideFX Houdini and Grasshopper feel “for pros but never in the way,” then translate them to the browser:
+Vertical, top-down flow. All nodes stack downward like Houdini’s network view, encouraging a left-to-right glance for data type (via colored ports) and a down-the-page scan for execution order. Avoid horizontal spaghetti: keep default cable Béziers tight and minimally curved.
+Shadow-less, card-thin nodes. Give each header a 1 px inner stroke and a subtle hover glow; rely on color-coded jacks, not bulky shapes, to signal type. Icons live at the left edge, titles center, state badges (muted/solo/bypassed) right—mirroring Houdini’s flag placement.
+Context at cursor. Right-click anywhere on the canvas for a radial “quick add” menu (à la Houdini Tab menu) that filters by recent and compatible types; ⌘/Ctrl + Enter on an empty port auto-creates the nearest compatible node and wires it.
+Parameter popovers, not cluttered nodes. Single-click selects, double-click opens a side inspector identical to Houdini’s Parameter pane. Keep inline controls minimal—just enough to reassure that a node is live—everything else belongs in the drawer.
+Cable grammar. Use muted neutral strokes by default; on hover adopt the jack’s hue and thicken slightly, mirroring Grasshopper’s “brighten on touch” feedback. Invalid drag attempts flash the cable red then fade to grey.
+Spatial orientation aids. Mini-map fades in after the user pans > 300 px—white on black, viewport rectangle outlined in node-theme accent. Grid dots should be almost imperceptible, just enough to hint scale without visual noise.
+Keyboard-first fluency. Borrow Houdini’s muscle-memory:
+Space + drag to pan canvas.
+F to frame selected node(s).
+A toggles an auto-layout pass that straightens vertical columns and equalizes spacing.
+Y clicks on a cable to cut it (scissor cursor), instantly detaching downstream graph.
+This guideline keeps the interface austere, performance-minded, and deeply keyboard-accessible—capturing the “serious tool” vibe of Houdini and Grasshopper while honouring web constraints.
+
+This is not typical web application (except landing page), design/engineering pareametric flow and graphics visualization is key here.

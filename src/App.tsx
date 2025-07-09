@@ -4,7 +4,7 @@ import MainLayout from "./layouts/MainLayout";
 import Home from "./components/home";
 import NotFound from "./components/not-found";
 import Header from "./components/header";
-import Design from "./components/design";
+import Design from "./components/design/Design";
 
 const App = () => {
   return (
