@@ -1,10 +1,10 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 
 import MainLayout from "./layouts/MainLayout";
-import Home from "./components/home";
-import NotFound from "./components/not-found";
-import Header from "./components/header";
-import Design from "./components/design/Design";
+import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
+import Header from "./components/Header";
+import Design from "./pages/Design";
 
 const App = () => {
   return (
