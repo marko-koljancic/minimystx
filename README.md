@@ -14,23 +14,66 @@ Minimystx is a browser-only parametric design studio that combines the power of 
 - Split workspace with Three.js 3D viewport and React Flow node editor
 - Node-based parametric design with real-time 3D feedback
 - Intuitive port grammar with color-coded type system
-- Global undo/redo and persistent autosave
 
 ### Technical Implementation
 
-- React + TypeScript frontend with React Router
+- React 19 + TypeScript frontend with React Router
 - Rust WebAssembly backend for performance-critical operations
-- React Three Fiber integration for hardware-accelerated 3D graphics
-- React Flow for interactive node-based workflows
+- Three.js with @react-three/fiber and @react-three/drei for hardware-accelerated 3D graphics
+- @xyflow/react (formerly React Flow) for interactive node-based workflows
+- Zustand for state management
+- Vite for fast development and optimized builds
 - Performance optimizations for smooth 60 FPS experience
 
 ### Design System
 
 - Color-coded port types (Float, Integer, Vector3, Geometry, Material, Light)
 - Streamlined node workflow with hover enlargement and inline controls
-- Collapsible node palette and command palette (⌘/Ctrl + K)
+- Collapsible node palette
 - Advanced interaction patterns (space+drag to pan, F to frame, A for auto-layout)
 - Responsive visual feedback with magnetized connections and hover highlights
+
+### Supported Nodes
+
+#### Primitive Geometry
+
+- Box - Create parametric box/cube geometry
+- Sphere - Create parametric sphere geometry
+- Cylinder - Create parametric cylinder geometry
+- Cone - Create parametric cone geometry
+- Plane - Create parametric plane geometry
+- Torus - Create parametric torus (donut) geometry
+- TorusKnot - Create parametric torus knot geometry
+
+#### Import Geometry
+
+- ImportObj - Import OBJ file format geometry
+
+#### Transformations
+
+- Transform - Apply translation, rotation, and scale to geometry
+
+### Keyboard Shortcuts
+
+#### Flow Canvas
+
+- `G` - Toggle grid visibility in flow canvas
+- `M` - Toggle minimap visibility
+- `C` - Toggle flow controls visibility
+- `S` - Cycle through connection line styles
+- `F` - Fit nodes to view
+
+#### 3D Viewport
+
+- `G` - Toggle grid visibility in 3D viewport
+- `W` - Toggle wireframe mode
+- `X` - Toggle x-ray mode
+- `F` - Fit view to geometry
+
+#### Global
+
+- Space+drag - Pan the canvas
+- Mouse wheel - Zoom in/out
 
 ## Getting Started
 
@@ -59,7 +102,7 @@ Minimystx is a browser-only parametric design studio that combines the power of 
 3. Build the WebAssembly core:
 
    ```bash
-   npm run core-build
+   npm run build-core
    ```
 
 4. Start the development server:
@@ -70,38 +113,56 @@ Minimystx is a browser-only parametric design studio that combines the power of 
 
 ## Build
 
-To build the project for production:
+To build the complete project for production:
 
 ```bash
-npm run build
+npm run build-all
 ```
 
 This will:
 
-1. Compile TypeScript files
-2. Build the WebAssembly components
-3. Bundle the application with Vite
+1. Build the WebAssembly components with `build-core`
+2. Compile TypeScript files and bundle the application with Vite using `build`
+
+You can also run these steps separately:
+
+```bash
+npm run build-core  # Build WebAssembly components only
+npm run build       # Build TypeScript and bundle with Vite only
+```
 
 ## Project Structure
 
 ```plaintext
 minimystx/
 ├── src/
+│   ├── App.tsx         # Main application component
+│   ├── main.tsx        # Application entry point
+│   ├── assets/         # Asset files (models, IFC samples)
+│   ├── common/         # Common UI components
 │   ├── components/     # Reusable React components
-│   │   ├── design/     # Design mode components
-│   │   │   ├── flow/   # React Flow node editor
-│   │   │   │   └── nodes/  # Node type definitions
-│   │   │   └── graphic/    # Three.js 3D viewport
+│   ├── constants/      # Application constants
+│   ├── engine/         # Core application engine
+│   │   ├── computeEngine.ts      # Computation engine
+│   │   ├── connectionValidation.ts # Connection validation logic
+│   │   ├── graphStore.ts         # Graph state management
+│   │   └── nodeRegistry.ts       # Node type registry
+│   ├── flow/           # Flow editor components
+│   │   ├── edges/      # Edge components for connections
+│   │   └── nodes/      # Node definitions and components
+│   ├── hooks/          # Custom React hooks
 │   ├── pages/          # Page components
-│   │   ├── Home.tsx    # Landing page
-│   │   ├── Design.tsx  # Design studio page
-│   │   └── NotFound.tsx # 404 page
-│   ├── core/           # Rust WebAssembly code
-│   │   └── wasm-engine/    # WASM performance-critical operations
-│   ├── layouts/        # Layout components
-│   ├── pkg-build/      # WebAssembly compiled output
+│   ├── panels/         # Panel UI components
+│   ├── rendering/      # 3D rendering components
+│   │   ├── RenderingCanvas.tsx   # Canvas component
+│   │   └── SceneManager.ts       # Three.js scene management
 │   ├── store/          # State management
-│   └── styles/         # CSS styles
+│   ├── styles/         # CSS styles
+│   ├── types/          # TypeScript type definitions
+│   ├── utils/          # Utility functions
+│   └── wasm/           # Rust WebAssembly code
+│       ├── src/        # Rust source code
+│       └── pkg/        # WebAssembly compiled output
 ├── public/             # Static assets
 └── docs/               # Documentation
 ```
@@ -109,7 +170,9 @@ minimystx/
 ## Development
 
 - `npm run dev` - Start development server
-- `npm run core-build` - Build WebAssembly components
+- `npm run build` - Build TypeScript and bundle with Vite
+- `npm run build-core` - Build WebAssembly components
+- `npm run build-all` - Build both WebAssembly components and TypeScript bundle
 - `npm run lint` - Run ESLint
 - `npm run preview` - Preview production build
 
@@ -127,4 +190,4 @@ minimystx/
 
 ## Contact
 
-Project Link: [https://github.com/marko-koljancic/minimystx](https://github.com/marko-koljancic/minimystx)
+[Marko Koljancic](https://koljam.com/)

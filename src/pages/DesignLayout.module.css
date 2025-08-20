@@ -1,0 +1,62 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.contentContainer {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.leftPane {
+  overflow: hidden;
+  background-color: var(--background-secondary);
+  border: 0.1rem solid var(--border-primary);
+  position: relative;
+}
+
+.verticalResizer {
+  width: 0.4rem;
+  background-color: var(--background-secondary);
+  cursor: col-resize;
+  position: relative;
+  z-index: 10;
+  border-left: 0.1rem solid var(--border-secondary);
+  border-right: 0.1rem solid var(--border-secondary);
+}
+
+.resizerHandle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.verticalResizerHandle {
+  width: 0.2rem;
+  height: 2rem;
+  background-color: var(--divider-primary);
+  border-radius: 0.1rem;
+}
+
+.rightPane {
+  overflow: hidden;
+  background-color: var(--background-tertiary);
+  border: 0.1rem solid var(--border-primary);
+}
+
+.rightPaneContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.flowArea {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}

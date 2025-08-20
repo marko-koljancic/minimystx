@@ -1,0 +1,26 @@
+.nodeContainer {
+  position: relative;
+  background-color: var(--node-background);
+  border-radius: 0.8rem;
+  box-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.2), 0 0.1rem 0.2rem rgba(0, 0, 0, 0.1);
+  display: flex;
+}
+
+.nodeLabel {
+  color: var(--text-primary);
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-weight: 400;
+  font-size: 1.2rem;
+  white-space: nowrap;
+  overflow: visible;
+  padding-left: 0.2rem;
+}
+
+.nodeSelected {
+  box-shadow: 0 0 0 0.2rem var(--accent-primary);
+}

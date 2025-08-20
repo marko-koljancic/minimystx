@@ -1,0 +1,55 @@
+.item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 1px 0;
+  border-radius: 4px;
+  cursor: grab;
+  transition: all 0.12s ease;
+  background: transparent;
+  border: 1px solid transparent;
+  user-select: none;
+  font-size: 13px;
+}
+
+.item:hover {
+  background: var(--surface-color-hover, rgba(255, 255, 255, 0.08));
+  border-color: var(--border-color-hover, #555);
+}
+
+.item:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.item.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+  transform: rotate(2deg) scale(0.95);
+}
+
+.name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary, #ffffff);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.item[data-dragging="true"] {
+  background: var(--accent-color-alpha, rgba(59, 130, 246, 0.15));
+  border-color: var(--accent-color, #3b82f6);
+}
+
+.item.selected {
+  background: var(--accent-color-alpha, rgba(59, 130, 246, 0.2));
+  border-color: var(--accent-color, #3b82f6);
+}
+
+.item.selected .name {
+  color: var(--accent-color, #3b82f6);
+  font-weight: 600;
+}

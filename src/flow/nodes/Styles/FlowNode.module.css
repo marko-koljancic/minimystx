@@ -1,0 +1,26 @@
+.nodeContainer {
+  position: relative;
+}
+
+.sourceHandle {
+  position: absolute;
+}
+
+.targetHandle {
+  position: absolute;
+}
+
+.handleBlue {
+  background-color: var(--accent-blue);
+  border: 0.1rem solid var(--accent-blue);
+}
+
+.handleGreen {
+  background-color: var(--accent-green);
+  border: 0.1rem solid var(--accent-green);
+}
+
+.handleYellow {
+  background-color: var(--accent-yellow);
+  border: 0.1rem solid var(--accent-yellow);
+}

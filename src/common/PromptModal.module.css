@@ -1,0 +1,91 @@
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--background-tertiary);
+  border: 0.1rem solid var(--border-primary);
+  border-radius: 0.4rem;
+  padding: 2.4rem;
+  min-width: 32rem;
+  max-width: 48rem;
+  box-shadow: 0 0.8rem 2.4rem rgba(0, 0, 0, 0.3);
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  margin: 0 0 1.6rem 0;
+  font-weight: 500;
+}
+
+.input {
+  width: 100%;
+  background-color: var(--background-quaternary);
+  color: var(--text-primary);
+  border: 0.1rem solid var(--border-secondary);
+  padding: 0.8rem 1.2rem;
+  border-radius: 0.2rem;
+  font-size: 1.4rem;
+  margin-bottom: 2.4rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--accent-primary);
+}
+
+.input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.2rem;
+}
+
+.cancelButton,
+.saveButton {
+  padding: 0.8rem 1.6rem;
+  border-radius: 0.2rem;
+  font-size: 1.3rem;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.cancelButton {
+  background-color: var(--background-quaternary);
+  color: var(--text-secondary);
+  border: 0.1rem solid var(--border-secondary);
+}
+
+.cancelButton:hover {
+  background-color: var(--background-secondary);
+}
+
+.saveButton {
+  background-color: var(--accent-primary);
+  color: var(--text-on-accent);
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: var(--accent-secondary);
+}
+
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

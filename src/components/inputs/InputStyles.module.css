@@ -1,0 +1,326 @@
+/* Unified input component styles */
+
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.inputField {
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  color: var(--input-text);
+  font-size: 1.1rem;
+  transition: var(--theme-transition);
+  outline: none;
+  font-family: inherit;
+}
+
+.inputField:hover {
+  border-color: var(--input-border-hover);
+}
+
+.inputField:focus {
+  border-color: var(--accent-primary);
+  background-color: var(--background-secondary);
+  outline: 1px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.inputField::placeholder {
+  color: var(--input-placeholder);
+}
+
+/* Error states */
+.inputField.error {
+  border-color: var(--error-border);
+  background-color: var(--error-background);
+}
+
+.inputField.error:focus {
+  border-color: var(--error-border);
+  background-color: var(--error-background);
+}
+
+/* Number input specific */
+.numberInput {
+  width: 80px;
+  text-align: right;
+}
+
+.numberInputWide {
+  width: 120px;
+}
+
+.numberInputSmall {
+  width: 64px;
+  text-align: right;
+}
+
+/* Text input specific */
+.textInput {
+  width: 150px;
+}
+
+.nameInput {
+  width: calc(100% - 4px);
+  max-width: none;
+}
+
+/* Number + Slider row layout */
+.numberSliderRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* Checkbox specific */
+.checkboxInput {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+/* Vector input cluster */
+.vectorContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.vectorComponent {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.vectorLabel {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+  min-width: 12px;
+  text-align: center;
+}
+
+.vectorInput {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+/* Slider styles */
+.sliderContainer {
+  margin-top: var(--spacing-xs);
+}
+
+.slider {
+  flex: 1;
+  height: 8px;
+  min-height: 8px;
+  border-radius: 4px;
+  background: var(--background-tertiary);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  cursor: pointer;
+  border: none;
+}
+
+.slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  cursor: pointer;
+  border: none;
+}
+
+/* Dropdown/Select styles */
+.selectInput {
+  width: 120px;
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  color: var(--input-text);
+  font-size: 1.1rem;
+  transition: var(--theme-transition);
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.selectInput:hover {
+  border-color: var(--input-border-hover);
+}
+
+.selectInput:focus {
+  border-color: var(--accent-primary);
+  background-color: var(--background-secondary);
+  outline: 1px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.selectInput.error {
+  border-color: var(--error-border);
+  background-color: var(--error-background);
+}
+
+/* Color input styles */
+.colorContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.colorSwatch {
+  width: 32px;
+  height: 24px;
+  border-radius: 3px;
+  border: 1px solid var(--input-border);
+  cursor: pointer;
+  transition: var(--theme-transition);
+}
+
+.colorSwatch:hover {
+  border-color: var(--input-border-hover);
+}
+
+.colorInput {
+  width: 80px;
+}
+
+/* Hidden color picker input */
+.colorPicker {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* File input styles */
+.fileInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.fileSelectButton {
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  color: var(--input-text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: var(--theme-transition);
+  outline: none;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.fileSelectButton:hover {
+  border-color: var(--input-border-hover);
+  background-color: var(--background-secondary);
+}
+
+.fileSelectButton:focus {
+  border-color: var(--accent-primary);
+  background-color: var(--background-secondary);
+  outline: 1px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.fileSelectButton.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fileName {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileClearButton {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: var(--theme-transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+}
+
+.fileClearButton:hover {
+  color: var(--error-text);
+  background-color: var(--error-background);
+}
+
+/* Error message */
+.errorMessage {
+  color: var(--error-text);
+  font-size: 0.9rem;
+  margin-top: var(--spacing-xxs);
+}
+
+/* Precision drag styles */
+.numericDrag {
+  font-variant-numeric: tabular-nums;
+}
+
+.precisionDragActive {
+  cursor: ew-resize !important;
+  background-color: var(--input-background);
+  box-shadow: 0 0 0 1px var(--accent-primary);
+  user-select: none;
+  caret-color: transparent;
+}
+
+.precisionDragActive:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+/* Global precision drag lock to prevent text selection and show cursor */
+:global(.precision-drag-active) {
+  user-select: none !important;
+  cursor: ew-resize !important;
+}
+
+:global(.precision-drag-active) * {
+  user-select: none !important;
+}
+
+/* Ensure precision drag inputs maintain proper cursor */
+.precisionDragActive,
+:global(.precision-drag-active) input[type="number"] {
+  cursor: ew-resize !important;
+}

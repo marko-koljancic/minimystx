@@ -1,22 +1,30 @@
 {
   "name": "minimystx",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "description": "A web-based 3D parametric modeling tool.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "core-build": "wasm-pack build src/core/wasm-engine --target web --out-dir ../../pkg-build/minimystx-core --release",
+    "build-all": "npm run build-core && npm run build",
+    "build-core": "wasm-pack build src/wasm --target web --out-dir ./pkg/minimystx-core-wasm --release",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^1.1.4",
+    "@react-three/drei": "^10.5.0",
     "@react-three/fiber": "^9.1.4",
     "@xyflow/react": "^12.7.0",
+    "elkjs": "^0.9.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.6.3",
-    "three": "^0.178.0"
+    "three": "^0.178.0",
+    "uuid": "^11.1.0",
+    "web-ifc": "^0.0.69",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

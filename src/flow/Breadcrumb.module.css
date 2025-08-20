@@ -1,0 +1,33 @@
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+}
+
+.breadcrumbButton {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+  font-size: inherit;
+  font-weight: 500;
+}
+
+.breadcrumbButton:hover {
+  background-color: var(--button-hover-background);
+}
+
+.separator {
+  margin: 0 4px;
+  color: var(--text-tertiary);
+}
+
+.currentContext {
+  color: var(--text-primary);
+  font-weight: 500;
+}

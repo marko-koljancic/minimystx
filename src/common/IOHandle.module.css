@@ -1,0 +1,31 @@
+.handle {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.tooltipContainer {
+  position: absolute;
+  pointer-events: none;
+}
+
+.tooltipText {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tooltipLabel {
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.tooltipDescription {
+  font-weight: 400;
+  color: var(--text-tertiary);
+  font-size: 0.6rem;
+  line-height: 1.2;
+  margin-top: 1px;
+}

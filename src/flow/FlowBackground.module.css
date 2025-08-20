@@ -1,0 +1,14 @@
+.background {
+  width: 100%;
+  height: 100%;
+}
+
+:global(.dark-theme) .background {
+  --grid-line-color-small: #1f1f1f;
+  --grid-line-color-large: #181818;
+}
+
+:global(.light-theme) .background {
+  --grid-line-color-small: #e5e5e5;
+  --grid-line-color-large: #dddddd;
+}

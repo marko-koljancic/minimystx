@@ -1,0 +1,205 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-tertiary);
+  font-size: 1.3rem;
+  font-style: italic;
+  text-align: center;
+  padding: var(--spacing-md);
+}
+
+.tabNav {
+  display: flex;
+  border-bottom: 1px solid var(--border-secondary);
+  background-color: var(--background-tertiary);
+  flex-shrink: 0;
+  height: 32px;
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  padding: 6px 12px; /* Reduced padding */
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1.1rem; /* Slightly smaller font */
+  transition: var(--theme-transition);
+  border-bottom: 2px solid transparent;
+  min-width: 60px; /* Reduced min-width */
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabButton:hover {
+  background-color: var(--background-quaternary);
+  color: var(--text-primary);
+}
+
+.tabButton.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+  background-color: var(--background-secondary);
+}
+
+/* Tab Content */
+.tabContent {
+  flex: 1;
+  padding: var(--spacing-md);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.paramRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0; /* Simplified padding */
+  border-bottom: 1px solid var(--border-tertiary);
+  min-height: 28px; /* Reduced height */
+}
+
+.paramRow:last-child {
+  border-bottom: none;
+}
+
+.paramLabel {
+  color: var(--text-primary);
+  font-size: 1.1rem; /* Slightly smaller font */
+  font-weight: 400; /* Lighter weight */
+  flex: 1;
+  margin-right: var(--spacing-md);
+}
+
+/* Input Styles */
+.numberInput,
+.textInput {
+  background-color: var(--background-quaternary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 3px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  width: 80px;
+  transition: var(--theme-transition);
+}
+
+.textInput {
+  width: 120px;
+}
+
+.numberInput:focus,
+.textInput:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  background-color: var(--background-secondary);
+}
+
+.checkboxInput {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+/* Object Input (for position, rotation, scale) */
+.objectInput {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.subParam {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.subLabel {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  min-width: 12px;
+  text-align: center;
+}
+
+.subParam .numberInput {
+  width: 60px;
+}
+
+.unsupported {
+  color: var(--text-quaternary);
+  font-style: italic;
+  font-size: 1rem;
+}
+
+/* File Input Styles - Minimalistic */
+.fileInput {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* Reduced gap */
+  min-width: 180px; /* Smaller min-width */
+}
+
+.fileInputRow {
+  display: flex;
+  gap: 6px; /* Reduced gap */
+  align-items: center;
+}
+
+.fileButton {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: 3px; /* Smaller radius */
+  padding: 4px 8px; /* Reduced padding */
+  font-size: 1rem; /* Smaller font */
+  cursor: pointer;
+  transition: var(--theme-transition);
+  font-weight: 400; /* Normal weight */
+}
+
+.fileButton:hover {
+  background-color: var(--accent-secondary);
+}
+
+.fileClearButton {
+  background-color: var(--background-quaternary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 3px; /* Smaller radius */
+  padding: 4px 8px; /* Reduced padding */
+  font-size: 0.9rem; /* Smaller font */
+  cursor: pointer;
+  transition: var(--theme-transition);
+}
+
+.fileClearButton:hover {
+  background-color: var(--background-tertiary);
+  color: var(--text-primary);
+}
+
+.fileName {
+  color: var(--text-primary);
+  font-size: 0.9rem; /* Smaller font */
+  padding: 4px 6px; /* Reduced padding */
+  background-color: var(--background-quaternary);
+  border-radius: 2px; /* Smaller radius */
+  border: 1px solid var(--border-secondary);
+  font-family: monospace; /* Monospace for filename */
+}
+
+.noFileSelected {
+  color: var(--text-tertiary);
+  font-size: 0.9rem; /* Smaller font */
+  font-style: italic;
+  padding: 4px 6px; /* Reduced padding */
+}

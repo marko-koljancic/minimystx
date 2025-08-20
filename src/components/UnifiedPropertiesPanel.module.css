@@ -1,0 +1,144 @@
+/* Unified Properties Panel - Two-column layout */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-tertiary);
+  font-size: 1.3rem;
+  font-style: italic;
+  text-align: center;
+  padding: var(--spacing-md);
+}
+
+/* Tab Navigation */
+.tabNav {
+  display: flex;
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  background-color: var(--background-secondary);
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  transition: var(--theme-transition);
+  border-bottom: 2px solid transparent;
+  min-width: auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+.tabButton:hover {
+  color: var(--text-primary);
+}
+
+.tabButton.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+/* Tab Content */
+.tabContent {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Parameter Rows - Two-column layout */
+.parameterGrid {
+  display: grid;
+  gap: 0;
+}
+
+.parameterRow {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 6px 12px;
+  min-height: 40px;
+}
+
+/* Left column - Labels */
+.labelColumn {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  text-align: right;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.parameterLabel {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 400;
+  line-height: 1.4;
+  word-wrap: break-word;
+  hyphens: auto;
+  margin: 0;
+  padding: 0;
+}
+
+/* Right column - Controls */
+.controlColumn {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Special handling for vector inputs to allow wrapping */
+.controlColumn .vectorContainer {
+  flex-wrap: wrap;
+}
+
+/* Responsive adjustments for narrow panels */
+@media (max-width: 400px) {
+  .parameterRow {
+    grid-template-columns: 100px 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .labelColumn {
+    width: 100px;
+  }
+}
+
+/* Category sections */
+.categorySection {
+  margin-bottom: 12px;
+}
+
+.categorySection:last-child {
+  margin-bottom: 0;
+}
+
+.categoryTitle {
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-secondary);
+}

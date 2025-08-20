@@ -1,0 +1,88 @@
+.renderBadge {
+  position: absolute;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  z-index: 10;
+  border: 0.2rem solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.renderInactive {
+  background-color: #4c1d95;
+  box-shadow: 0 0 0 0.1rem rgba(76, 29, 149, 0.5);
+}
+
+.renderInactive:hover {
+  background-color: #5b21b6;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 0.2rem rgba(76, 29, 149, 0.7);
+}
+
+.renderActive {
+  background-color: #fbbf24;
+  box-shadow: 0 0 0 0.1rem rgba(251, 191, 36, 0.5);
+}
+
+.renderActive:hover {
+  background-color: #f59e0b;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 0.2rem rgba(251, 191, 36, 0.7);
+}
+
+.renderSubFlowActive {
+  background-color: #22c55e;
+  box-shadow: 0 0 0 0.1rem rgba(34, 197, 94, 0.5);
+}
+
+.renderSubFlowActive:hover {
+  background-color: #16a34a;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.7);
+}
+
+.renderHalo {
+  position: absolute;
+  border-radius: 1.4rem;
+  background-color: rgba(147, 51, 234, 0.5);
+  z-index: -1;
+  pointer-events: none;
+  animation: pulseHalo 2s ease-in-out infinite;
+}
+
+@keyframes pulseHalo {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+}
+
+.renderBadge:focus {
+  outline: 0.2rem solid var(--accent-blue, #3b82f6);
+  outline-offset: 0.2rem;
+}
+
+.renderBadge:active {
+  transform: scale(0.95);
+}
+
+.outText {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.02rem;
+  line-height: 1;
+}

@@ -1,0 +1,67 @@
+@import "./styles/variables.css";
+
+html {
+  font-size: 62.5%;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.5;
+  font-size: 1.4rem;
+  color: var(--text-primary);
+  background-color: var(--background-primary);
+  transition: var(--theme-transition);
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+.header {
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #444;
+  padding: 0;
+}
+
+.menu-bar {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+}
+
+.menu-item {
+  color: #cccccc;
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+/* Remove browser default steppers from number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.menu-item:hover {
+  background-color: #404040;
+  color: #ffffff;
+}

@@ -1,0 +1,70 @@
+.menuItem {
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.2rem;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.menuItem:hover {
+  background-color: var(--background-quaternary);
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 0.4rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  padding: 0.4rem 0;
+}
+
+.dropdownItem {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.dropdownItem:hover {
+  background-color: var(--background-quaternary);
+}
+
+.submenu {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 0.4rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  z-index: 1001;
+  padding: 0.4rem 0;
+}
+
+.submenuItem {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+
+.submenuItem:hover {
+  background-color: var(--background-quaternary);
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--border-primary);
+  margin: 0.4rem 0;
+}

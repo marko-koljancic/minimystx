@@ -1,0 +1,120 @@
+import { useCallback } from "react";
+import { Connection, Edge, Node } from "@xyflow/react";
+import { v4 as uuid } from "uuid";
+import { isValidConnection } from "../engine/connectionValidation";
+import { useGraphStore } from "../engine/graphStore";
+import { useCurrentContext } from "../store/uiStore";
+// import { toast } from "../utils/toast";
+
+export function useEdgeManagement(
+  setEdges: React.Dispatch<React.SetStateAction<Edge[]>>,
+  nodes: Node[],
+  edges: Edge[]
+) {
+  const { addEdge, removeEdge } = useGraphStore();
+  const currentContext = useCurrentContext();
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      const edge = {
+        ...connection,
+        type: "wire",
+        id: uuid(),
+      };
+
+      setEdges((eds) => eds.concat(edge));
+
+      if (connection.source && connection.target) {
+        const result = addEdge(
+          connection.source,
+          connection.target,
+          currentContext,
+          connection.sourceHandle || undefined,
+          connection.targetHandle || undefined
+        );
+
+        if (!result.ok) {
+          console.error("[EDGE SYNC] Failed to add edge to graph store:", result.error);
+        }
+      }
+    },
+    [setEdges, addEdge, currentContext]
+  );
+
+  const onReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      // Validate the new connection before proceeding
+      if (!isValidConnection(newConnection, nodes, edges, currentContext)) {
+        return;
+      }
+
+      // Remove the old edge from graph store
+      const oldRemoveResult = removeEdge(
+        oldEdge.source,
+        oldEdge.target,
+        currentContext,
+        oldEdge.sourceHandle || undefined,
+        oldEdge.targetHandle || undefined
+      );
+
+      if (!oldRemoveResult.ok) {
+        console.error("[EDGE RECONNECT] Failed to remove old edge:", oldRemoveResult.error);
+        return;
+      }
+
+      // Add the new edge to graph store
+      if (newConnection.source && newConnection.target) {
+        const addResult = addEdge(
+          newConnection.source,
+          newConnection.target,
+          currentContext,
+          newConnection.sourceHandle || undefined,
+          newConnection.targetHandle || undefined
+        );
+
+        if (!addResult.ok) {
+          console.error("[EDGE RECONNECT] Failed to add new edge:", addResult.error);
+          // Try to restore the old edge if adding new one failed
+          addEdge(
+            oldEdge.source,
+            oldEdge.target,
+            currentContext,
+            oldEdge.sourceHandle || undefined,
+            oldEdge.targetHandle || undefined
+          );
+          return;
+        }
+      }
+
+      // Update the React Flow edges state
+      setEdges((eds) => {
+        return eds.map((e) => {
+          if (e.id === oldEdge.id) {
+            return {
+              ...e,
+              source: newConnection.source || e.source,
+              target: newConnection.target || e.target,
+              sourceHandle: newConnection.sourceHandle || e.sourceHandle,
+              targetHandle: newConnection.targetHandle || e.targetHandle,
+            };
+          }
+          return e;
+        });
+      });
+    },
+    [setEdges, nodes, edges, removeEdge, addEdge, currentContext]
+  );
+
+  const handleIsValidConnection = useCallback(
+    (connection: Edge | Connection) => {
+      return isValidConnection(connection, nodes, edges, currentContext);
+    },
+    [nodes, edges, currentContext]
+  );
+
+  return {
+    onConnect,
+    onReconnect,
+    handleIsValidConnection,
+  };
+}
