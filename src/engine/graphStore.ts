@@ -103,6 +103,7 @@ export type GraphState = {
   rootReverseDeps: Record<string, string[]>;
   subFlows: Record<string, SubFlowGraph>;
   evaluationMode: "eager" | "lazy";
+  isImporting: boolean;
 
   addNode: (node: NodeInitData, context: GraphContext) => void;
   removeNode: (nodeId: string, context: GraphContext) => void;
@@ -128,10 +129,19 @@ export type GraphState = {
   markDirty: (nodeId: string, context: GraphContext) => void;
 
   clear: () => void;
-  importGraph: (serialized: SerializedGraph) => void;
+  importGraph: (serialized: SerializedGraph) => Promise<void>;
   exportGraph: (
     nodePositions?: Record<string, { x: number; y: number }>
   ) => Promise<SerializedGraph>;
+  setSubFlowActiveOutput: (geoNodeId: string, nodeId: string) => void;
+  
+  preloadImportObjAssets: () => Promise<void>;
+  preloadAssetForNode: (nodeId: string, runtime: NodeRuntime, context: GraphContext) => Promise<void>;
+  markAllNodesAsDirty: () => void;
+  validatePostImportComputation: () => Promise<void>;
+  clearRecomputationTracking: () => void;
+  forceResetImportedNodeTracking: (nodeIds: string[], contexts: GraphContext[]) => void;
+  recomputeFromSync: (nodeId: string, context: GraphContext) => Promise<void>;
 };
 
 export type SerializedSubFlow = {
@@ -140,6 +150,8 @@ export type SerializedSubFlow = {
   nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">>;
   positions: Record<string, { x: number; y: number }>;
   activeOutputNodeId: string | null;
+  dependencyMap: Record<string, string[]>;
+  reverseDeps: Record<string, string[]>;
 };
 
 export type SerializedGraph = {
@@ -152,6 +164,139 @@ export type SerializedGraph = {
 
 export { nodeRegistry } from "./nodeRegistry";
 
+// Recomputation guard to prevent infinite loops
+const recomputationGuard = new Map<string, Set<string>>();
+
+// Enhanced cycle detection to prevent recomputation cycles across contexts
+const recomputationCycleTracker = new Map<string, Array<{ nodeId: string, timestamp: number, context: string }>>();
+const globalRecomputationTracker = new Map<string, { count: number, lastSeen: number, contexts: Set<string> }>();
+const CYCLE_DETECTION_WINDOW_MS = 1000; // Track recomputations within 1 second
+const MAX_RECOMPUTATIONS_PER_WINDOW = 5; // Max recomputations for same node within window
+const GLOBAL_RECOMPUTATION_LIMIT = 10; // Global limit per node across all contexts
+
+// Debouncing mechanism to prevent cascading recomputations
+const recomputationTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const RECOMPUTATION_DEBOUNCE_MS = 50; // 50ms debounce delay
+
+function getRecomputationKey(nodeId: string, contextType: string, geoNodeId?: string): string {
+  return contextType === "root" ? `root:${nodeId}` : `subflow:${geoNodeId}:${nodeId}`;
+}
+
+function detectRecomputationCycle(nodeId: string, context: GraphContext): boolean {
+  const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
+  const contextKey = `${context.type}:${context.geoNodeId || 'root'}`;
+  const now = Date.now();
+  
+  // Local cycle detection (per context)
+  if (!recomputationCycleTracker.has(key)) {
+    recomputationCycleTracker.set(key, []);
+  }
+  
+  const history = recomputationCycleTracker.get(key)!;
+  
+  // Remove old entries outside the window
+  const validEntries = history.filter(entry => now - entry.timestamp < CYCLE_DETECTION_WINDOW_MS);
+  
+  // Add current recomputation
+  validEntries.push({ nodeId, timestamp: now, context: contextKey });
+  
+  // Update the tracker
+  recomputationCycleTracker.set(key, validEntries);
+  
+  // Global cycle detection (across all contexts for the same node)
+  if (!globalRecomputationTracker.has(nodeId)) {
+    globalRecomputationTracker.set(nodeId, { count: 0, lastSeen: now, contexts: new Set() });
+  }
+  
+  const globalTracker = globalRecomputationTracker.get(nodeId)!;
+  
+  // Reset global counter if enough time has passed
+  if (now - globalTracker.lastSeen > CYCLE_DETECTION_WINDOW_MS) {
+    globalTracker.count = 0;
+    globalTracker.contexts.clear();
+  }
+  
+  globalTracker.count++;
+  globalTracker.lastSeen = now;
+  globalTracker.contexts.add(contextKey);
+  
+  // Check for local cycles
+  if (validEntries.length > MAX_RECOMPUTATIONS_PER_WINDOW) {
+    console.warn(`[detectRecomputationCycle] Local cycle detected for ${key}: ${validEntries.length} recomputations in ${CYCLE_DETECTION_WINDOW_MS}ms`);
+    // Clear the history to allow eventual recovery
+    recomputationCycleTracker.delete(key);
+    return true;
+  }
+  
+  // Check for global cross-context cycles
+  if (globalTracker.count > GLOBAL_RECOMPUTATION_LIMIT) {
+    console.warn(`[detectRecomputationCycle] Global cycle detected for node ${nodeId}: ${globalTracker.count} recomputations across ${globalTracker.contexts.size} contexts in ${CYCLE_DETECTION_WINDOW_MS}ms`);
+    console.warn(`[detectRecomputationCycle] Contexts involved:`, Array.from(globalTracker.contexts));
+    // Clear trackers to allow eventual recovery
+    globalRecomputationTracker.delete(nodeId);
+    return true;
+  }
+  
+  return false;
+}
+
+// Helper function for checking if recomputation is in progress (available for future use)
+// function isRecomputationInProgress(nodeId: string, context: GraphContext): boolean {
+//   const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
+//   const stack = recomputationGuard.get(key) || new Set();
+//   return stack.has(nodeId);
+// }
+
+function startRecomputation(nodeId: string, context: GraphContext): boolean {
+  const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
+  const stack = recomputationGuard.get(key) || new Set();
+  
+  // First check for direct recursion
+  if (stack.has(nodeId)) {
+    console.warn(`[recomputeFrom] Preventing infinite loop: ${nodeId} in ${context.type} context`);
+    return false; // Already recomputing this node
+  }
+  
+  // Then check for longer cycles
+  if (detectRecomputationCycle(nodeId, context)) {
+    console.warn(`[recomputeFrom] Preventing recomputation cycle: ${nodeId} in ${context.type} context`);
+    return false; // Cycle detected
+  }
+  
+  stack.add(nodeId);
+  recomputationGuard.set(key, stack);
+  return true;
+}
+
+function endRecomputation(nodeId: string, context: GraphContext): void {
+  const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
+  const stack = recomputationGuard.get(key);
+  if (stack) {
+    stack.delete(nodeId);
+    if (stack.size === 0) {
+      recomputationGuard.delete(key);
+    }
+  }
+}
+
+function debouncedRecomputeFrom(nodeId: string, context: GraphContext, recomputeFn: () => void): void {
+  const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
+  
+  // Clear existing timer for this node
+  const existingTimer = recomputationTimers.get(key);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+  
+  // Set new debounced timer
+  const timer = setTimeout(() => {
+    recomputationTimers.delete(key);
+    recomputeFn();
+  }, RECOMPUTATION_DEBOUNCE_MS);
+  
+  recomputationTimers.set(key, timer);
+}
+
 export const useGraphStore = create<GraphState>()(
   immer((set, get) => ({
     rootNodeRuntime: {},
@@ -159,6 +304,7 @@ export const useGraphStore = create<GraphState>()(
     rootReverseDeps: {},
     subFlows: {},
     evaluationMode: "eager",
+    isImporting: false,
 
     addNode: (node: NodeInitData, context: GraphContext) => {
       const { id, type, params: overrideParams } = node;
@@ -361,7 +507,7 @@ export const useGraphStore = create<GraphState>()(
         const wasVisible = targetRuntime[nodeId].params.rendering?.visible;
         const willBeVisible = params.rendering?.visible;
         
-        if (context.type === "subflow" && willBeVisible === true && wasVisible !== true) {
+        if (context.type === "subflow" && willBeVisible === true && wasVisible !== true && !state.isImporting) {
           const subFlow = state.subFlows[context.geoNodeId!];
           // Turn OFF all other nodes in same sub-flow
           Object.keys(subFlow.nodeRuntime).forEach((id) => {
@@ -672,8 +818,26 @@ export const useGraphStore = create<GraphState>()(
     },
 
     recomputeFrom: (nodeId: string, context: GraphContext) => {
-      // BATCHED RECOMPUTATION: Process all dirty nodes in correct topological order
-      const batchRecompute = (startNodeId: string) => {
+      const state = get();
+      
+      // Skip recomputation during import to prevent cascading updates
+      if (state.isImporting) {
+        console.debug(`[recomputeFrom] Skipping recomputation for ${nodeId} during import`);
+        return;
+      }
+      
+      // Use debounced recomputation to prevent cascading calls
+      debouncedRecomputeFrom(nodeId, context, () => {
+        // Prevent infinite loops with recomputation guard
+        if (!startRecomputation(nodeId, context)) {
+          return; // Skip if already recomputing this node
+        }
+        
+        console.log(`[recomputeFrom] Starting recomputation for ${nodeId} in ${context.type} context`);
+      
+      try {
+        // BATCHED RECOMPUTATION: Process all dirty nodes in correct topological order
+        const batchRecompute = (startNodeId: string) => {
         const state = get();
         const dependencyMap = context.type === "root"
           ? state.rootDependencyMap
@@ -734,8 +898,12 @@ export const useGraphStore = create<GraphState>()(
             continue;
           }
 
-          const inputSources = reverseDeps[id] || [];
+          // FIXED: Use dependencyMap to get nodes this node depends on (input sources)
+          // reverseDeps contains nodes that depend on this node (output targets)
+          const inputSources = dependencyMap[id] || [];
           const inputs: Record<string, any> = {};
+          
+          console.log(`[recomputeFrom] Node ${id} input sources from dependencyMap:`, inputSources);
 
           // Get fresh node runtime for input gathering
           const currentState = get();
@@ -745,10 +913,14 @@ export const useGraphStore = create<GraphState>()(
 
           for (const sourceId of inputSources) {
             const sourceNode = currentNodeRuntime?.[sourceId];
+            console.log(`[recomputeFrom] Processing input source ${sourceId}:`, sourceNode?.output);
             if (sourceNode && sourceNode.output !== undefined) {
               inputs[sourceId] = sourceNode.output;
+              console.log(`[recomputeFrom] Added input ${sourceId} to node ${id}`);
             }
           }
+          
+          console.log(`[recomputeFrom] Final inputs for node ${id}:`, inputs);
 
           try {
             const result = computeEngine.evaluateNode(id, node.params, inputs, nodeDef.compute);
@@ -767,7 +939,7 @@ export const useGraphStore = create<GraphState>()(
           }
         }
 
-        // Apply all computation results atomically
+        // Apply all computation results atomically (including active output updates)
         set((state) => {
           const targetNodeRuntime = context.type === "root"
             ? state.rootNodeRuntime
@@ -775,6 +947,7 @@ export const useGraphStore = create<GraphState>()(
 
           if (!targetNodeRuntime) return;
 
+          // First, apply all computation results
           for (const result of computationResults) {
             if (targetNodeRuntime[result.nodeId]) {
               if (result.success) {
@@ -787,11 +960,33 @@ export const useGraphStore = create<GraphState>()(
               }
             }
           }
+
+          // Then, handle any nodes that should be set as active output (in the same state update)
+          // BUT ONLY if we're not currently importing (to avoid overriding restored active output)
+          if (context.type === "subflow" && context.geoNodeId && !state.isImporting) {
+            for (const result of computationResults) {
+              if (result.success && result.output?.shouldSetAsActiveOutput) {
+                const subFlow = state.subFlows[context.geoNodeId];
+                if (subFlow) {
+                  console.log(`[batchRecompute] Setting node ${result.nodeId} as active output for geoNode ${context.geoNodeId}`);
+                  subFlow.activeOutputNodeId = result.nodeId;
+                }
+              }
+            }
+          } else if (state.isImporting && context.type === "subflow") {
+            console.log(`[batchRecompute] Skipping auto-active-output during import for subflow ${context.geoNodeId} (working correctly!)`);
+          }
         });
       };
 
       // Execute batched recomputation
       batchRecompute(nodeId);
+      
+      } finally {
+        // Always release the recomputation guard
+        endRecomputation(nodeId, context);
+      }
+      }); // End debounced wrapper
     },
 
     clear: () => {
@@ -803,8 +998,13 @@ export const useGraphStore = create<GraphState>()(
       });
     },
 
-    importGraph: (serialized: SerializedGraph) => {
+    importGraph: async (serialized: SerializedGraph) => {
       const { nodes, edges, nodeRuntime, positions, subFlows } = serialized;
+      
+      // Set importing flag to prevent auto-active-output behavior
+      set((state) => {
+        state.isImporting = true;
+      });
       
       // Clear existing graph state
       get().clear();
@@ -825,6 +1025,8 @@ export const useGraphStore = create<GraphState>()(
         Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
           const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
           
+          console.log(`[importGraph] Processing subflow ${geoNodeId} with edges:`, subFlow.edges);
+          
           // Add subflow nodes
           subFlow.nodes.forEach(node => {
             get().addNode(node, subFlowContext);
@@ -832,7 +1034,14 @@ export const useGraphStore = create<GraphState>()(
           
           // Add subflow edges
           subFlow.edges.forEach(edge => {
-            get().addEdge(edge.source, edge.target, subFlowContext, edge.sourceHandle, edge.targetHandle);
+            console.log(`[importGraph] Adding edge:`, edge);
+            
+            const result = get().addEdge(edge.source, edge.target, subFlowContext, edge.sourceHandle, edge.targetHandle);
+            if (!result.ok) {
+              console.error(`[importGraph] Failed to add subflow edge ${edge.source} -> ${edge.target}:`, result.error);
+            } else {
+              console.log(`[importGraph] Successfully added subflow edge ${edge.source} -> ${edge.target}`);
+            }
           });
           
           // Update subflow runtime data and active output
@@ -846,8 +1055,13 @@ export const useGraphStore = create<GraphState>()(
                 }
               });
               
-              // Restore active output node
+              // Restore active output node from serialized data
               targetSubFlow.activeOutputNodeId = subFlow.activeOutputNodeId;
+              console.log(`[importGraph] Restored active output node for subflow ${geoNodeId}:`, subFlow.activeOutputNodeId);
+              
+              // Dependency maps are automatically rebuilt by addEdge() calls above
+              console.log(`[importGraph] Subflow ${geoNodeId} dependency map after edge restoration:`, targetSubFlow.dependencyMap);
+              console.log(`[importGraph] Subflow ${geoNodeId} reverse deps after edge restoration:`, targetSubFlow.reverseDeps);
             }
           });
         });
@@ -863,42 +1077,400 @@ export const useGraphStore = create<GraphState>()(
         });
       });
       
-      // Store positions for React Flow (will be used when UI components query positions)
-      // The positions are handled by the UI layer through custom events
-      const allPositions = { ...positions };
-      
-      // Include subflow positions
-      if (subFlows) {
-        Object.entries(subFlows).forEach(([_, subFlow]) => {
-          Object.assign(allPositions, subFlow.positions);
-        });
-      }
-      
-      if (allPositions && Object.keys(allPositions).length > 0) {
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('minimystx:setNodePositions', { 
-            detail: allPositions 
-          }));
-        }, 100);
-      }
-      
-      // Trigger recomputation of the entire graph
-      if (get().evaluationMode === "eager") {
-        // Recompute root nodes
-        nodes.forEach(node => {
-          get().recomputeFrom(node.id, rootContext);
-        });
-        
-        // Recompute subflow nodes
-        if (subFlows) {
-          Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
-            const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
-            subFlow.nodes.forEach(node => {
-              get().recomputeFrom(node.id, subFlowContext);
+      // Store positions for React Flow by context - do this synchronously to avoid timing issues
+      (async () => {
+        try {
+          const { useUIStore } = await import("../store/uiStore");
+          const { saveNodePositions } = useUIStore.getState();
+          
+          // Save root positions
+          if (positions && Object.keys(positions).length > 0) {
+            saveNodePositions("root", positions);
+            console.log("[importGraph] Restored root positions:", positions);
+          }
+          
+          // Save subflow positions
+          if (subFlows) {
+            Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
+              if (subFlow.positions && Object.keys(subFlow.positions).length > 0) {
+                const contextKey = `subflow-${geoNodeId}`;
+                saveNodePositions(contextKey, subFlow.positions);
+                console.log(`[importGraph] Restored subflow positions for ${geoNodeId}:`, subFlow.positions);
+              }
             });
-          });
+          }
+        } catch (error) {
+          console.warn("[importGraph] Failed to save positions to UI store:", error);
+        }
+      })();
+      
+      // Validate that edges are properly restored before recomputation
+      console.log('[importGraph] Validating edge restoration...');
+      if (subFlows) {
+        Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
+          const restoredSubFlow = get().subFlows[geoNodeId];
+          if (restoredSubFlow) {
+            const edgeCount = Object.values(restoredSubFlow.dependencyMap).reduce((sum, deps) => sum + deps.length, 0);
+            console.log(`[importGraph] Subflow ${geoNodeId} has ${edgeCount} edges in dependency map`);
+            
+            if (edgeCount !== subFlow.edges.length) {
+              console.warn(`[importGraph] Edge count mismatch for subflow ${geoNodeId}: expected ${subFlow.edges.length}, got ${edgeCount}`);
+            }
+          }
+        });
+      }
+
+      // Clear importing flag BEFORE triggering recomputation
+      set((state) => {
+        state.isImporting = false;
+      });
+      
+      // Trigger post-import computation of the entire graph
+      if (get().evaluationMode === "eager") {
+        console.log('[importGraph] Starting post-import computation');
+        
+        // Pre-load assets for ImportObj nodes before computation
+        await get().preloadImportObjAssets();
+        
+        // Ensure all nodes are marked as dirty after import
+        get().markAllNodesAsDirty();
+        
+        // Temporarily disable cycle detection during import computation
+        get().clearRecomputationTracking();
+        
+        // First, recompute subflow nodes to generate their outputs
+        if (subFlows) {
+          console.log('[importGraph] Recomputing subflow nodes...');
+          
+          for (const [geoNodeId, subFlow] of Object.entries(subFlows)) {
+            console.log(`[importGraph] Recomputing subflow for geoNode ${geoNodeId}, nodes:`, subFlow.nodes.map(n => n.id));
+            const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
+            
+            // Recompute nodes synchronously in dependency order
+            for (const node of subFlow.nodes) {
+              console.log(`[importGraph] Recomputing subflow node ${node.id}`);
+              await get().recomputeFromSync(node.id, subFlowContext);
+            }
+          }
+        }
+        
+        // Then, recompute root nodes so geoNodes can collect subflow outputs
+        console.log('[importGraph] Recomputing root nodes...');
+        for (const node of nodes) {
+          console.log(`[importGraph] Recomputing root node ${node.id} (${node.type})`);
+          await get().recomputeFromSync(node.id, rootContext);
+        }
+        
+        // Wait for any pending async operations
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Validate that critical nodes have outputs after computation
+        await get().validatePostImportComputation();
+        
+        console.log('[importGraph] Post-import computation complete');
+      }
+      
+      // Force reset recomputation tracking for all imported nodes
+      const allNodeIds = [
+        ...nodes.map(n => n.id),
+        ...Object.values(subFlows || {}).flatMap(sf => sf.nodes.map(n => n.id))
+      ];
+      const allContexts = [
+        { type: "root" as const },
+        ...Object.keys(subFlows || {}).map(geoNodeId => ({ type: "subflow" as const, geoNodeId }))
+      ];
+      get().forceResetImportedNodeTracking(allNodeIds, allContexts);
+      
+      console.log('[importGraph] Import completed');
+    },
+
+    preloadImportObjAssets: async () => {
+      const state = get();
+      
+      console.log('[preloadImportObjAssets] Pre-loading ImportObj assets...');
+      
+      // Check all root nodes
+      for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
+        if (runtime.type === 'importObjNode') {
+          await get().preloadAssetForNode(nodeId, runtime, { type: 'root' });
         }
       }
+      
+      // Check all subflow nodes
+      for (const [geoNodeId, subFlow] of Object.entries(state.subFlows)) {
+        for (const [nodeId, runtime] of Object.entries(subFlow.nodeRuntime)) {
+          if (runtime.type === 'importObjNode') {
+            await get().preloadAssetForNode(nodeId, runtime, { type: 'subflow', geoNodeId });
+          }
+        }
+      }
+      
+      console.log('[preloadImportObjAssets] Asset pre-loading completed');
+    },
+
+    preloadAssetForNode: async (nodeId: string, runtime: NodeRuntime, context: GraphContext) => {
+      if (runtime.type !== 'importObjNode' || !runtime.params?.object) return;
+      
+      const objectParams = runtime.params.object as any;
+      if (!objectParams?.assetHash || objectParams?.file) return; // Already has file or no hash
+      
+      try {
+        console.log(`[preloadAssetForNode] Loading asset for node ${nodeId}, hash: ${objectParams.assetHash}`);
+        
+        // Use OPFS cache to get asset data  
+        const { getAssetCache } = await import('../io/mxscene/opfs-cache');
+        const assetCache = getAssetCache();
+        const assetData = await assetCache.get(objectParams.assetHash);
+        
+        if (!assetData) {
+          console.warn(`[preloadAssetForNode] Asset not found in cache: ${objectParams.assetHash}`);
+          return;
+        }
+        
+        // Convert to SerializableObjFile format
+        const decoder = new TextDecoder();
+        const content = decoder.decode(assetData);
+        const encodedContent = btoa(content);
+        
+        const serializableFile = {
+          name: `restored-${objectParams.assetHash.slice(0, 8)}.obj`,
+          size: assetData.byteLength,
+          lastModified: Date.now(),
+          content: encodedContent,
+        };
+        
+        // Update the node parameters with the loaded asset
+        set((state) => {
+          const targetRuntime = context.type === 'root' 
+            ? state.rootNodeRuntime[nodeId]
+            : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+            
+          if (targetRuntime && targetRuntime.params?.object) {
+            const objParams = targetRuntime.params.object as any;
+            objParams.file = serializableFile;
+            // Mark as dirty to trigger recomputation
+            targetRuntime.isDirty = true;
+            
+            console.log(`[preloadAssetForNode] Asset pre-loaded for node ${nodeId}: ${serializableFile.name}`);
+          }
+        });
+      } catch (error) {
+        console.warn(`[preloadAssetForNode] Failed to pre-load asset for node ${nodeId}:`, error);
+      }
+    },
+
+    markAllNodesAsDirty: () => {
+      console.log('[markAllNodesAsDirty] Marking all imported nodes as dirty');
+      
+      set((state) => {
+        // Mark all root nodes as dirty
+        for (const runtime of Object.values(state.rootNodeRuntime)) {
+          runtime.isDirty = true;
+          runtime.output = null; // Clear cached output
+        }
+        
+        // Mark all subflow nodes as dirty
+        for (const subFlow of Object.values(state.subFlows)) {
+          for (const runtime of Object.values(subFlow.nodeRuntime)) {
+            runtime.isDirty = true;
+            runtime.output = null; // Clear cached output
+          }
+        }
+      });
+    },
+
+    validatePostImportComputation: async () => {
+      const state = get();
+      console.log('[validatePostImportComputation] Validating node outputs...');
+      
+      let hasIssues = false;
+      
+      // Check root nodes
+      for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
+        if (runtime.isDirty) {
+          console.warn(`[validatePostImportComputation] Root node ${nodeId} (${runtime.type}) is still dirty after computation`);
+          hasIssues = true;
+        } else if (!runtime.output && runtime.type !== 'noteNode') {
+          console.warn(`[validatePostImportComputation] Root node ${nodeId} (${runtime.type}) has no output after computation`);
+          hasIssues = true;
+        } else if (runtime.error) {
+          console.warn(`[validatePostImportComputation] Root node ${nodeId} (${runtime.type}) has error:`, runtime.error);
+          hasIssues = true;
+        } else {
+          console.debug(`[validatePostImportComputation] Root node ${nodeId} (${runtime.type}) OK`);
+        }
+      }
+      
+      // Check subflow nodes
+      for (const [geoNodeId, subFlow] of Object.entries(state.subFlows)) {
+        for (const [nodeId, runtime] of Object.entries(subFlow.nodeRuntime)) {
+          if (runtime.isDirty) {
+            console.warn(`[validatePostImportComputation] Subflow node ${nodeId} (${runtime.type}) in ${geoNodeId} is still dirty`);
+            hasIssues = true;
+          } else if (!runtime.output && runtime.type !== 'noteNode') {
+            console.warn(`[validatePostImportComputation] Subflow node ${nodeId} (${runtime.type}) in ${geoNodeId} has no output`);
+            hasIssues = true;
+          } else if (runtime.error) {
+            console.warn(`[validatePostImportComputation] Subflow node ${nodeId} (${runtime.type}) in ${geoNodeId} has error:`, runtime.error);
+            hasIssues = true;
+          } else {
+            console.debug(`[validatePostImportComputation] Subflow node ${nodeId} (${runtime.type}) in ${geoNodeId} OK`);
+          }
+        }
+        
+        // Check active output nodes specifically
+        if (subFlow.activeOutputNodeId) {
+          const outputRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
+          if (!outputRuntime?.output) {
+            console.error(`[validatePostImportComputation] Active output node ${subFlow.activeOutputNodeId} in ${geoNodeId} has no output!`);
+            hasIssues = true;
+          }
+        }
+      }
+      
+      if (hasIssues) {
+        console.warn('[validatePostImportComputation] Some nodes failed to compute properly after import');
+      } else {
+        console.log('[validatePostImportComputation] All nodes computed successfully');
+      }
+    },
+
+    clearRecomputationTracking: () => {
+      recomputationGuard.clear();
+      recomputationCycleTracker.clear();
+      globalRecomputationTracker.clear();
+      console.log('[clearRecomputationTracking] Cleared all recomputation tracking including active guards');
+    },
+
+    forceResetImportedNodeTracking: (nodeIds: string[], contexts: GraphContext[]) => {
+      // Nuclear reset for imported nodes that are stuck in tracking state
+      nodeIds.forEach(nodeId => {
+        contexts.forEach(context => {
+          const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
+          recomputationGuard.delete(key);
+          recomputationCycleTracker.delete(key);
+          globalRecomputationTracker.delete(nodeId);
+        });
+      });
+      console.log(`[forceResetImportedNodeTracking] Force reset tracking for ${nodeIds.length} imported nodes`);
+    },
+
+    recomputeFromSync: async (nodeId: string, context: GraphContext) => {
+      return new Promise<void>((resolve) => {
+        // Create a synchronous version for import
+        const syncRecompute = (nodeId: string, context: GraphContext) => {
+          if (!startRecomputation(nodeId, context)) {
+            resolve();
+            return;
+          }
+
+          console.log(`[recomputeFromSync] Starting synchronous recomputation for ${nodeId} in ${context.type} context`);
+
+          // Skip debouncing and execute immediately
+          const nodeRuntime = context.type === "root" 
+            ? get().rootNodeRuntime 
+            : get().subFlows[context.geoNodeId!]?.nodeRuntime;
+          const dependencyMap = context.type === "root" 
+            ? get().rootDependencyMap 
+            : get().subFlows[context.geoNodeId!]?.dependencyMap;
+          const reverseDeps = context.type === "root" 
+            ? get().rootReverseDeps 
+            : get().subFlows[context.geoNodeId!]?.reverseDeps;
+
+          if (!nodeRuntime || !dependencyMap || !reverseDeps) {
+            console.error(`[recomputeFromSync] Invalid context for ${nodeId}`);
+            resolve();
+            return;
+          }
+
+          // Execute batch recomputation directly
+          const batchRecompute = (startNodeId: string) => {
+            const allEvalOrders = computeEngine.getEvaluationOrder(startNodeId, dependencyMap);
+
+            const computationResults: Array<{
+              nodeId: string;
+              success: boolean;
+              output?: any;
+              error?: string;
+            }> = [];
+
+            // Compute all nodes
+            for (const id of allEvalOrders) {
+              const node = nodeRuntime[id];
+              if (!node || !node.isDirty) continue;
+
+              const nodeDef = nodeRegistry[node.type];
+              if (!nodeDef) {
+                computationResults.push({ nodeId: id, success: false, error: `Node definition not found for type ${node.type}` });
+                continue;
+              }
+
+              // FIXED: Use dependencyMap to get nodes this node depends on (input sources)
+              const inputSources = dependencyMap[id] || [];
+              const inputs: Record<string, any> = {};
+              
+              for (const sourceId of inputSources) {
+                const sourceNode = nodeRuntime[sourceId];
+                if (sourceNode && sourceNode.output !== undefined) {
+                  inputs[sourceId] = sourceNode.output;
+                }
+              }
+
+              try {
+                const result = computeEngine.evaluateNode(id, node.params, inputs, nodeDef.compute);
+                computationResults.push({ nodeId: id, success: true, output: result });
+              } catch (err) {
+                computationResults.push({ 
+                  nodeId: id, 
+                  success: false, 
+                  error: err instanceof Error ? err.message : String(err) 
+                });
+              }
+            }
+
+            // Apply results
+            set((state) => {
+              const targetNodeRuntime = context.type === "root"
+                ? state.rootNodeRuntime
+                : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+
+              if (!targetNodeRuntime) return;
+
+              for (const result of computationResults) {
+                if (targetNodeRuntime[result.nodeId]) {
+                  if (result.success) {
+                    targetNodeRuntime[result.nodeId].output = result.output;
+                    targetNodeRuntime[result.nodeId].isDirty = false;
+                    targetNodeRuntime[result.nodeId].error = undefined;
+                  } else {
+                    targetNodeRuntime[result.nodeId].error = result.error;
+                    targetNodeRuntime[result.nodeId].isDirty = false;
+                  }
+                }
+              }
+
+              // Handle active output updates for subflows
+              // BUT ONLY if we're not currently importing (to avoid overriding restored active output)
+              if (context.type === "subflow" && context.geoNodeId && !state.isImporting) {
+                for (const result of computationResults) {
+                  if (result.success && result.output?.shouldSetAsActiveOutput) {
+                    const subFlow = state.subFlows[context.geoNodeId];
+                    if (subFlow) {
+                      subFlow.activeOutputNodeId = result.nodeId;
+                    }
+                  }
+                }
+              }
+            });
+
+            resolve();
+          };
+
+          batchRecompute(nodeId);
+        };
+
+        syncRecompute(nodeId, context);
+      });
     },
 
     exportGraph: async (nodePositions?: Record<string, { x: number; y: number }>) => {
@@ -965,15 +1537,9 @@ export const useGraphStore = create<GraphState>()(
           };
         });
         
-        // Get subflow node positions (if available)
+        // Get subflow node positions - for now, leave empty as positions will be
+        // captured by the export caller through events and passed to this function
         const subFlowPositions: Record<string, { x: number; y: number }> = {};
-        if (nodePositions) {
-          Object.entries(nodePositions).forEach(([nodeId, position]) => {
-            if (subFlow.nodeRuntime[nodeId]) {
-              subFlowPositions[nodeId] = position;
-            }
-          });
-        }
         
         subFlows[geoNodeId] = {
           nodes: subFlowNodes,
@@ -981,6 +1547,8 @@ export const useGraphStore = create<GraphState>()(
           nodeRuntime: subFlowNodeRuntime,
           positions: subFlowPositions,
           activeOutputNodeId: subFlow.activeOutputNodeId,
+          dependencyMap: subFlow.dependencyMap,
+          reverseDeps: subFlow.reverseDeps,
         };
       });
       
@@ -991,6 +1559,16 @@ export const useGraphStore = create<GraphState>()(
         positions: nodePositions || {},
         subFlows,
       };
+    },
+
+    setSubFlowActiveOutput: (geoNodeId: string, nodeId: string) => {
+      set((state) => {
+        const subFlow = state.subFlows[geoNodeId];
+        if (subFlow) {
+          subFlow.activeOutputNodeId = nodeId;
+          console.log(`[setSubFlowActiveOutput] Set active output: geoNode=${geoNodeId}, outputNode=${nodeId}`);
+        }
+      });
     },
   }))
 );

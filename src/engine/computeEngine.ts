@@ -71,7 +71,9 @@ export function getEvaluationOrder(
 export function evaluateNode(id: string, params: any, inputs: any, compute: any): any {
   try {
     if (typeof compute === "function") {
-      const result = compute(params, inputs);
+      // Pass nodeId as context to compute functions that need it (like geoNode)
+      const context = { nodeId: id };
+      const result = compute(params, inputs, context);
       return result;
     }
     console.warn(`[evaluateNode] Node ${id} has no compute function`);
@@ -123,14 +125,16 @@ export function rebuildDependencyMaps(edges: { source: string; target: string }[
   for (const edge of edges) {
     const { source, target } = edge;
     
-    // dependencyMap[source] contains nodes that source depends on (targets)
-    if (!dependencyMap[source].includes(target)) {
-      dependencyMap[source].push(target);
+    // dependencyMap[target] contains nodes that target depends on (sources)
+    // For edge A→B: B depends on A, so dependencyMap[B] contains A
+    if (!dependencyMap[target].includes(source)) {
+      dependencyMap[target].push(source);
     }
     
-    // reverseDeps[target] contains nodes that depend on target (sources)
-    if (!reverseDeps[target].includes(source)) {
-      reverseDeps[target].push(source);
+    // reverseDeps[source] contains nodes that depend on source (targets)
+    // For edge A→B: B depends on A, so reverseDeps[A] contains B
+    if (!reverseDeps[source].includes(target)) {
+      reverseDeps[source].push(target);
     }
   }
 

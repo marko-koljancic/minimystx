@@ -29,9 +29,9 @@ function createPlaneGeometry(data: PlaneNodeData): BufferGeometry {
 export const processor: NodeProcessor<
   PlaneNodeData,
   { object: Object3D; geometry: BufferGeometry }
-> = (data: PlaneNodeData, input?: Object3D) => {
+> = (data: PlaneNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
   const geometry = createPlaneGeometry(data);
-  return createGeometryMesh(data, geometry, input);
+  return createGeometryMesh(data, geometry, input?.object);
 };
 
 export const planeNodeParams: NodeParams = {

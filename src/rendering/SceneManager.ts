@@ -684,6 +684,7 @@ export class SceneManager {
     // Get the hierarchical renderable objects directly from store state
     const state = useGraphStore.getState();
     const renderableObjects: any[] = [];
+    console.log("[SceneManager] Updating scene from renderable objects. State:", state);
 
 
     // Process root-level nodes
@@ -711,17 +712,24 @@ export class SceneManager {
         // Get the active output node from sub-flow
         const outputNodeRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
         if (!outputNodeRuntime) {
-          console.warn(`[SceneManager] No output node runtime for ${subFlow.activeOutputNodeId}`);
+          console.debug(`[SceneManager] No output node runtime for ${subFlow.activeOutputNodeId} in subflow ${nodeId}`);
           continue;
         }
         
         if (outputNodeRuntime.error) {
-          console.warn(`[SceneManager] Output node ${subFlow.activeOutputNodeId} has error:`, outputNodeRuntime.error);
+          console.debug(`[SceneManager] Output node ${subFlow.activeOutputNodeId} has error, skipping render:`, outputNodeRuntime.error);
           continue;
         }
         
+        // Allow rendering of cached output even if node is dirty (for smooth updates)
         if (!outputNodeRuntime.output) {
-          console.warn(`[SceneManager] Output node ${subFlow.activeOutputNodeId} has no output`);
+          console.debug(`[SceneManager] Output node ${subFlow.activeOutputNodeId} has no output (may still be computing)`);
+          continue;
+        }
+        
+        // Skip if output is not a valid object structure
+        if (!outputNodeRuntime.output || typeof outputNodeRuntime.output !== "object") {
+          console.debug(`[SceneManager] Output node ${subFlow.activeOutputNodeId} has invalid output type:`, typeof outputNodeRuntime.output);
           continue;
         }
         
@@ -738,23 +746,40 @@ export class SceneManager {
         // Handle both direct Object3D and { object: Object3D } formats
         let object3D = null;
         if (subFlowOutput && typeof subFlowOutput === "object") {
-          if ("isObject3D" in subFlowOutput) {
-            // Direct Object3D
-            object3D = subFlowOutput;
+          if ("isObject3D" in subFlowOutput && subFlowOutput.isObject3D) {
+            // Direct Object3D - validate it's actually a Three.js object
+            if (typeof subFlowOutput.clone === "function") {
+              object3D = subFlowOutput;
+            } else {
+              console.debug(`[SceneManager] Invalid Object3D detected (missing clone method) for node ${subFlow.activeOutputNodeId}`);
+            }
           } else if (
             "object" in subFlowOutput &&
             subFlowOutput.object &&
             typeof subFlowOutput.object === "object" &&
-            "isObject3D" in subFlowOutput.object
+            "isObject3D" in subFlowOutput.object &&
+            subFlowOutput.object.isObject3D
           ) {
-            // Wrapped in { object: Object3D } format
-            object3D = subFlowOutput.object;
+            // Wrapped in { object: Object3D } format - validate it's actually a Three.js object
+            if (typeof subFlowOutput.object.clone === "function") {
+              object3D = subFlowOutput.object;
+            } else {
+              console.debug(`[SceneManager] Invalid Object3D detected (missing clone method) for node ${subFlow.activeOutputNodeId}`);
+            }
+          } else {
+            console.debug(`[SceneManager] Unknown output format for node ${subFlow.activeOutputNodeId}:`, Object.keys(subFlowOutput));
           }
         }
 
         if (object3D) {
           // Clone the object to avoid modifying the original
-          const clonedOutput = object3D.clone();
+          let clonedOutput;
+          try {
+            clonedOutput = object3D.clone();
+          } catch (error) {
+            console.warn(`[SceneManager] Failed to clone Object3D for node ${subFlow.activeOutputNodeId}:`, error);
+            continue; // Skip this object if cloning fails
+          }
 
           // Apply GeoNode transforms ADDITIVELY on top of sub-flow transforms
           const transform = runtime.params?.transform;
@@ -832,12 +857,17 @@ export class SceneManager {
     this.nodeObjects.clear();
 
     // Add all renderable objects to scene
+    console.log("[SceneManager] Adding", renderableObjects.length, "renderable objects to scene:", renderableObjects);
     renderableObjects.forEach((object3D, index) => {
+      console.log("[SceneManager] Processing renderable object", index, ":", object3D);
       if (object3D && typeof object3D === "object" && "isObject3D" in object3D) {
         // Generate a unique ID for tracking (use object UUID or index-based ID)
         const objectId = object3D.uuid || `renderable_${index}`;
         this.scene.add(object3D);
         this.nodeObjects.set(objectId, object3D);
+        console.log("[SceneManager] Added object to scene with ID:", objectId);
+      } else {
+        console.log("[SceneManager] Skipping invalid object:", object3D);
       }
     });
     

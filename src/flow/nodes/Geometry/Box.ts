@@ -24,9 +24,11 @@ function createBoxGeometry(data: BoxNodeData): BufferGeometry {
 export const processor: NodeProcessor<
   BoxNodeData,
   { object: Object3D; geometry: BufferGeometry }
-> = (data: BoxNodeData, input?: Object3D) => {
+> = (data: BoxNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
   const geometry = createBoxGeometry(data);
-  return createGeometryMesh(data, geometry, input);
+  const result = createGeometryMesh(data, geometry, input?.object);
+  console.log("[Box processor] Produced result:", result);
+  return result;
 };
 
 export const boxNodeParams: NodeParams = {
@@ -55,6 +57,8 @@ export const boxNodeParams: NodeParams = {
 };
 
 export const boxNodeCompute = (params: Record<string, any>) => {
+  console.log("[boxNodeCompute] Called with params:", params);
+  
   // Convert params to structured data - validation is handled at the graph store level
   const data: BoxNodeData = {
     general: params.general,
@@ -67,5 +71,7 @@ export const boxNodeCompute = (params: Record<string, any>) => {
     rendering: params.rendering,
   };
   const inputObject = undefined;
-  return processor(data, inputObject);
+  const result = processor(data, inputObject);
+  console.log("[boxNodeCompute] Returning result:", result);
+  return result;
 };

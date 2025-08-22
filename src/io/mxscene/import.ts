@@ -229,17 +229,30 @@ export async function applyImportedScene(result: ImportResult): Promise<void> {
   const { scene } = result;
   
   try {
+    // First, restore asset references in node parameters
+    const restoredGraph = await restoreAssetsFromReferences({
+      nodes: scene.graph.nodes,
+      subFlows: scene.graph.subFlows,
+    }, result);
+    
+    // Update nodeRuntime with restored file objects
+    const restoredNodeRuntime = updateNodeRuntimeWithRestoredAssets(
+      scene.graph.nodeRuntime, 
+      restoredGraph.nodes, 
+      restoredGraph.subFlows
+    );
+    
     // Import graph data using the graph store's importGraph method
     const { useGraphStore } = await import('../../engine/graphStore');
     const graphStore = useGraphStore.getState();
     
     // Import the graph (this clears existing state and restores nodes/edges)
-    graphStore.importGraph({
-      nodes: scene.graph.nodes,
+    await graphStore.importGraph({
+      nodes: restoredGraph.nodes,
       edges: scene.graph.edges,
-      nodeRuntime: scene.graph.nodeRuntime,
+      nodeRuntime: restoredNodeRuntime,
       positions: scene.graph.positions,
-      subFlows: scene.graph.subFlows,
+      subFlows: restoredGraph.subFlows,
     });
     
     // Restore viewport
@@ -257,6 +270,13 @@ export async function applyImportedScene(result: ImportResult): Promise<void> {
         detail: scene.camera 
       }));
     }, 200);
+    
+    // Restore project name to document title
+    if (scene.meta.name && scene.meta.name !== 'Untitled Project') {
+      document.title = `${scene.meta.name} - Minimystx`;
+    } else {
+      document.title = 'Minimystx';
+    }
     
     console.info(`[applyImportedScene] Scene restored: ${scene.meta.name}`);
     
@@ -350,4 +370,240 @@ export async function createAssetReferencesFromImport(
   }
   
   return assetReferences;
+}
+
+/**
+ * Restore asset hash references back to loadable SerializableObjFile objects in node parameters
+ * This enables nodes to load assets that were cached during export
+ */
+async function restoreAssetsFromReferences(
+  graphData: {
+    nodes: Array<{ id: string; type: string; params?: Record<string, unknown> }>;
+    subFlows: Record<string, any>;
+  },
+  importResult: ImportResult
+): Promise<{
+  nodes: Array<{ id: string; type: string; params?: Record<string, unknown> }>;
+  subFlows: Record<string, any>;
+}> {
+  const assetCache = getAssetCache();
+
+  const restoredNodes = await Promise.all(
+    graphData.nodes.map(async (node) => {
+      if (node.type === 'importObjNode' && node.params?.object) {
+        const updatedParams = { ...node.params };
+        const objectParams = updatedParams.object as any;
+        
+        if (objectParams?.assetHash && !objectParams?.file) {
+          console.log(`[restoreAssetsFromReferences] Restoring asset for node ${node.id}, hash: ${objectParams.assetHash}`);
+          try {
+            const restoredFile = await restoreAssetFromHash(objectParams.assetHash, importResult, assetCache);
+            if (restoredFile) {
+              console.log(`[restoreAssetsFromReferences] Successfully restored file: ${restoredFile.name}`);
+              // Add the restored file while preserving the asset hash
+              updatedParams.object = {
+                ...objectParams,
+                file: restoredFile,
+                // Keep the assetHash for asset tracking
+              };
+            } else {
+              console.warn(`[restoreAssetsFromReferences] Failed to restore asset for node ${node.id}, will skip file loading`);
+              // Keep the original object params but clear the asset hash to prevent repeated attempts
+              updatedParams.object = {
+                ...objectParams,
+                assetHash: null,
+              };
+            }
+          } catch (error) {
+            console.error(`[restoreAssetsFromReferences] Error during asset restoration for node ${node.id}:`, error);
+            // Clear the asset hash to prevent repeated attempts
+            updatedParams.object = {
+              ...objectParams,
+              assetHash: null,
+            };
+          }
+        } else if (objectParams?.file) {
+          console.log(`[restoreAssetsFromReferences] Node ${node.id} already has file:`, objectParams.file);
+        } else if (objectParams?.assetHash) {
+          console.log(`[restoreAssetsFromReferences] Node ${node.id} has both file and assetHash`);
+        } else {
+          console.log(`[restoreAssetsFromReferences] Node ${node.id} has no file or assetHash`);
+        }
+        
+        return { ...node, params: updatedParams };
+      }
+      return node;
+    })
+  );
+
+  const restoredSubFlows: Record<string, any> = {};
+  for (const [geoNodeId, subFlow] of Object.entries(graphData.subFlows)) {
+    const restoredSubFlowNodes = await Promise.all(
+      subFlow.nodes.map(async (node: any) => {
+        if (node.type === 'importObjNode' && node.params?.object) {
+          const updatedParams = { ...node.params };
+          const objectParams = updatedParams.object as any;
+          
+          if (objectParams?.assetHash && !objectParams?.file) {
+            console.log(`[restoreAssetsFromReferences] [SubFlow] Restoring asset for node ${node.id}, hash: ${objectParams.assetHash}`);
+            try {
+              const restoredFile = await restoreAssetFromHash(objectParams.assetHash, importResult, assetCache);
+              if (restoredFile) {
+                console.log(`[restoreAssetsFromReferences] [SubFlow] Successfully restored file: ${restoredFile.name}`);
+                // Add the restored file while preserving the asset hash
+                updatedParams.object = {
+                  ...objectParams,
+                  file: restoredFile,
+                  // Keep the assetHash for asset tracking
+                };
+              } else {
+                console.warn(`[restoreAssetsFromReferences] [SubFlow] Failed to restore asset for node ${node.id}, will skip file loading`);
+                // Keep the original object params but clear the asset hash to prevent repeated attempts
+                updatedParams.object = {
+                  ...objectParams,
+                  assetHash: null,
+                };
+              }
+            } catch (error) {
+              console.error(`[restoreAssetsFromReferences] [SubFlow] Error during asset restoration for node ${node.id}:`, error);
+              // Clear the asset hash to prevent repeated attempts
+              updatedParams.object = {
+                ...objectParams,
+                assetHash: null,
+              };
+            }
+          } else if (objectParams?.file) {
+            console.log(`[restoreAssetsFromReferences] [SubFlow] Node ${node.id} already has file:`, objectParams.file);
+          } else if (objectParams?.assetHash) {
+            console.log(`[restoreAssetsFromReferences] [SubFlow] Node ${node.id} has both file and assetHash`);
+          } else {
+            console.log(`[restoreAssetsFromReferences] [SubFlow] Node ${node.id} has no file or assetHash`);
+          }
+          
+          return { ...node, params: updatedParams };
+        }
+        return node;
+      })
+    );
+    
+    restoredSubFlows[geoNodeId] = {
+      ...subFlow,
+      nodes: restoredSubFlowNodes,
+    };
+  }
+
+  return {
+    nodes: restoredNodes,
+    subFlows: restoredSubFlows,
+  };
+}
+
+/**
+ * Update nodeRuntime with restored file objects from asset restoration
+ * This ensures that the runtime state includes the properly restored files
+ */
+function updateNodeRuntimeWithRestoredAssets(
+  originalNodeRuntime: Record<string, any>,
+  restoredNodes: Array<{ id: string; type: string; params?: Record<string, unknown> }>,
+  restoredSubFlows: Record<string, any>
+): Record<string, any> {
+  const updatedNodeRuntime = { ...originalNodeRuntime };
+  
+  // Update root level nodes
+  restoredNodes.forEach(node => {
+    if (node.type === 'importObjNode' && updatedNodeRuntime[node.id]) {
+      console.log(`[updateNodeRuntimeWithRestoredAssets] Updating runtime for root node ${node.id}`);
+      updatedNodeRuntime[node.id] = {
+        ...updatedNodeRuntime[node.id],
+        params: node.params,
+      };
+    }
+  });
+  
+  // Update subflow nodes
+  Object.entries(restoredSubFlows).forEach(([geoNodeId, subFlow]) => {
+    subFlow.nodes.forEach((node: any) => {
+      if (node.type === 'importObjNode' && subFlow.nodeRuntime[node.id]) {
+        console.log(`[updateNodeRuntimeWithRestoredAssets] Updating runtime for subflow node ${node.id} in ${geoNodeId}`);
+        subFlow.nodeRuntime[node.id] = {
+          ...subFlow.nodeRuntime[node.id],
+          params: node.params,
+        };
+      }
+    });
+  });
+  
+  return updatedNodeRuntime;
+}
+
+/**
+ * Restore an asset from its hash using the OPFS cache and import result metadata
+ */
+async function restoreAssetFromHash(
+  assetHash: string, 
+  importResult: ImportResult, 
+  assetCache: any
+): Promise<{ name: string; size: number; lastModified: number; content: string } | null> {
+  try {
+    // Get asset data from cache
+    const assetData = await assetCache.get(assetHash);
+    if (!assetData) {
+      console.warn(`[restoreAssetFromHash] Asset not found in cache: ${assetHash}`);
+      return null;
+    }
+
+    // Find asset metadata from import result
+    const manifestAsset = importResult.manifest.assets.find(a => a.id === assetHash);
+    if (!manifestAsset) {
+      console.warn(`[restoreAssetFromHash] Asset metadata not found: ${assetHash}`);
+      return null;
+    }
+
+    // Convert asset data to text content with proper error handling
+    let content: string;
+    try {
+      const decoder = new TextDecoder();
+      content = decoder.decode(assetData);
+      
+      // Validate that the content is not empty
+      if (!content || content.length === 0) {
+        console.warn(`[restoreAssetFromHash] Asset content is empty: ${assetHash}`);
+        return null;
+      }
+      
+      // Basic validation for OBJ files
+      if (manifestAsset.name.toLowerCase().endsWith('.obj')) {
+        if (!content.includes('v ') && !content.includes('f ')) {
+          console.warn(`[restoreAssetFromHash] Asset content does not appear to be valid OBJ format: ${assetHash}`);
+          return null;
+        }
+      }
+    } catch (decodeError) {
+      console.error(`[restoreAssetFromHash] Failed to decode asset content for ${assetHash}:`, decodeError);
+      return null;
+    }
+    
+    // Create a SerializableObjFile object with validation
+    let encodedContent: string;
+    try {
+      encodedContent = btoa(content); // Base64 encode the content
+    } catch (encodeError) {
+      console.error(`[restoreAssetFromHash] Failed to encode asset content for ${assetHash}:`, encodeError);
+      return null;
+    }
+    
+    const serializableFile = {
+      name: manifestAsset.name,
+      size: manifestAsset.size,
+      lastModified: Date.now(), // Use current time since we don't have original
+      content: encodedContent,
+    };
+
+    console.debug(`[restoreAssetFromHash] Restored asset: ${manifestAsset.name} (${content.length} chars, ${encodedContent.length} encoded)`);
+    return serializableFile;
+
+  } catch (error) {
+    console.error(`[restoreAssetFromHash] Failed to restore asset ${assetHash}:`, error);
+    return null;
+  }
 }

@@ -4,13 +4,15 @@ import { ThemeToggle } from "../common/ThemeToggle";
 import { useUIStore, useCurrentContext } from "../store";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { PromptModal } from "../common/PromptModal";
-import { exportGraphWithMeta, importGraphWithMeta } from "../engine/graphStore";
-import {
-  downloadObjectAsJson,
-  selectJsonFile,
-  sanitizeFilename,
-  getDefaultFilename,
-} from "../utils";
+import { sanitizeFilename, getDefaultFilename } from "../utils";
+import { 
+  exportToMxScene, 
+  downloadMxSceneFile, 
+  selectAndImportMxSceneFile,
+  applyImportedScene,
+  getCurrentSceneData,
+  initializeMxScene
+} from "../io/mxscene";
 import {
   getNodesByCategoryForContext,
   getAvailableCategoriesForContext,
@@ -61,6 +63,10 @@ export default function Header() {
   }, []);
 
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ percentage: number; message: string } | null>(null);
+  const [importProgress, setImportProgress] = useState<{ percentage: number; message: string } | null>(null);
 
   const handleSave = useCallback(() => {
     setShowSaveModal(true);
@@ -70,14 +76,48 @@ export default function Header() {
     const sanitized = sanitizeFilename(filename);
     const finalFilename = sanitized || getDefaultFilename();
 
+    setShowSaveModal(false);
+    setIsExporting(true);
+    setExportProgress({ percentage: 0, message: 'Starting export...' });
+
     try {
-      const data = await exportGraphWithMeta();
-      downloadObjectAsJson(data, finalFilename);
+      // Get current scene data
+      const sceneData = await getCurrentSceneData();
+      
+      // Export to .mxscene format
+      const result = await exportToMxScene(sceneData, {
+        projectName: finalFilename,
+        onProgress: (progress) => {
+          setExportProgress({
+            percentage: progress.percentage,
+            message: progress.message
+          });
+        },
+        onError: (error) => {
+          console.error("Export error:", error);
+          setExportProgress(null);
+          setIsExporting(false);
+          // Could show error modal here
+        }
+      });
+
+      // Download the file
+      downloadMxSceneFile(result);
+      
+      setExportProgress({ percentage: 100, message: 'Export complete!' });
+      
+      // Hide progress after a delay
+      setTimeout(() => {
+        setExportProgress(null);
+        setIsExporting(false);
+      }, 1000);
+
     } catch (error) {
       console.error("Failed to export project:", error);
+      setExportProgress(null);
+      setIsExporting(false);
+      // Could show error modal here
     }
-
-    setShowSaveModal(false);
   }, []);
 
   const handleSaveCancel = useCallback(() => {
@@ -85,18 +125,61 @@ export default function Header() {
   }, []);
 
   const handleOpen = useCallback(async () => {
+    setIsImporting(true);
+    setImportProgress({ percentage: 0, message: 'Opening file picker...' });
+
     try {
-      const data = await selectJsonFile();
-      if (data) {
-        importGraphWithMeta(data);
-        console.info("Project loaded");
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("Unsupported schema")) {
-        console.warn("Schema mismatch detected, import aborted:", error.message);
+      const result = await selectAndImportMxSceneFile({
+        onProgress: (progress) => {
+          setImportProgress({
+            percentage: progress.percentage,
+            message: progress.message
+          });
+        },
+        onError: (error) => {
+          console.error("Import error:", error);
+          setImportProgress(null);
+          setIsImporting(false);
+          // Could show error modal here
+        }
+      });
+
+      if (result) {
+        // Apply the imported scene to the current session
+        await applyImportedScene(result);
+        
+        setImportProgress({ percentage: 100, message: 'Project loaded successfully!' });
+        console.info(`Project loaded: ${result.scene.meta.name}`);
+        
+        if (result.warnings && result.warnings.length > 0) {
+          console.warn('Import completed with warnings:', result.warnings);
+        }
+        
+        // Hide progress after a delay
+        setTimeout(() => {
+          setImportProgress(null);
+          setIsImporting(false);
+        }, 1000);
       } else {
-        console.error("Failed to import project:", error);
+        // User cancelled
+        setImportProgress(null);
+        setIsImporting(false);
       }
+      
+    } catch (error) {
+      console.error("Failed to import project:", error);
+      setImportProgress(null);
+      setIsImporting(false);
+      
+      // Handle specific error types
+      if (error instanceof Error) {
+        if (error.message.includes("Unsupported")) {
+          console.warn("Schema mismatch or unsupported format:", error.message);
+        } else if (error.message.includes("integrity")) {
+          console.error("File integrity check failed:", error.message);
+        }
+      }
+      // Could show error modal here
     }
   }, []);
 
@@ -108,6 +191,13 @@ export default function Header() {
       },
     });
     window.dispatchEvent(event);
+  }, []);
+
+  // Initialize mxscene system
+  useEffect(() => {
+    initializeMxScene().catch(error => {
+      console.warn('Failed to initialize mxscene system:', error);
+    });
   }, []);
 
   // Keyboard shortcuts
@@ -165,13 +255,13 @@ export default function Header() {
 
   const fileDropdownItems = [
     {
-      label: "Save… (Ctrl+Shift+S)",
-      onClick: handleSave,
+      label: isExporting ? "Exporting..." : "Save (.mxscene)… (Ctrl+Shift+S)",
+      onClick: isExporting ? () => {} : handleSave,
       testId: "file-save",
     },
     {
-      label: "Open… (Ctrl+O)",
-      onClick: handleOpen,
+      label: isImporting ? "Importing..." : "Open (.mxscene)… (Ctrl+O)",
+      onClick: isImporting ? () => {} : handleOpen,
       testId: "file-open",
     },
   ];
@@ -400,7 +490,20 @@ export default function Header() {
         <MenuItem title="View" dropdownItems={viewDropdownItems} />
         <MenuItem title="Help" />
       </div>
-      <ThemeToggle />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Progress indicators */}
+        {exportProgress && (
+          <div style={{ fontSize: '12px', color: '#888' }}>
+            Exporting... {exportProgress.percentage}%
+          </div>
+        )}
+        {importProgress && (
+          <div style={{ fontSize: '12px', color: '#888' }}>
+            Importing... {importProgress.percentage}%
+          </div>
+        )}
+        <ThemeToggle />
+      </div>
       {showSaveModal && (
         <PromptModal
           title="Save Project"

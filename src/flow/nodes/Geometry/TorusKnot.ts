@@ -34,9 +34,9 @@ function createTorusKnotGeometry(data: TorusKnotNodeData): BufferGeometry {
 export const processor: NodeProcessor<
   TorusKnotNodeData,
   { object: Object3D; geometry: BufferGeometry }
-> = (data: TorusKnotNodeData, input?: Object3D) => {
+> = (data: TorusKnotNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
   const geometry = createTorusKnotGeometry(data);
-  return createGeometryMesh(data, geometry, input);
+  return createGeometryMesh(data, geometry, input?.object);
 };
 
 export const torusKnotNodeParams: NodeParams = {

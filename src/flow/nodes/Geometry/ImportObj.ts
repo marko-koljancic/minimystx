@@ -7,6 +7,8 @@ import {
   createGeneralParams,
   createSubflowRenderingParams,
 } from "../../../engine/nodeParameterFactories";
+import { getAssetCache } from "../../../io/mxscene/opfs-cache";
+import { hashBytesSHA256 } from "../../../io/mxscene/crypto";
 
 // Simplified serializable file representation for OBJ files
 export interface SerializableObjFile {
@@ -77,19 +79,28 @@ function centerObject(object: Object3D): void {
   object.position.sub(center);
 }
 
-// Global cache to store loaded OBJ objects
+// Global in-memory cache for immediate access (runtime performance)
 const objCache = new Map<string, Object3D>();
 
+// Cache key for OPFS storage (based on content hash)
+async function getAssetHash(file: File | SerializableObjFile): Promise<string> {
+  const content = await getFileContent(file);
+  const encoder = new TextEncoder();
+  const data = encoder.encode(content);
+  return hashBytesSHA256(data.buffer);
+}
+
+// Legacy cache key for memory cache (for backward compatibility)
 function getCacheKey(file: File | SerializableObjFile): string {
   return `${file.name}_${file.lastModified}_${file.size}`;
 }
 
 async function loadObjFile(file: File | SerializableObjFile): Promise<Object3D> {
-  const cacheKey = getCacheKey(file);
-
-  // Check cache first
-  if (objCache.has(cacheKey)) {
-    const cached = objCache.get(cacheKey)!;
+  const memoryCacheKey = getCacheKey(file);
+  
+  // Check in-memory cache first for immediate access
+  if (objCache.has(memoryCacheKey)) {
+    const cached = objCache.get(memoryCacheKey)!;
     return cached.clone();
   }
 
@@ -98,8 +109,27 @@ async function loadObjFile(file: File | SerializableObjFile): Promise<Object3D> 
 
   try {
     const object = loader.parse(text);
-    // Cache the original object
-    objCache.set(cacheKey, object);
+    
+    // Cache in memory for immediate access
+    objCache.set(memoryCacheKey, object);
+    
+    // Also store raw file data in OPFS for persistence across sessions
+    try {
+      const assetHash = await getAssetHash(file);
+      const assetCache = getAssetCache();
+      
+      // Only store if not already cached
+      if (!(await assetCache.has(assetHash))) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text);
+        await assetCache.put(assetHash, data.buffer);
+        console.debug(`[ImportObjProcessor] Cached asset ${file.name} with hash ${assetHash}`);
+      }
+    } catch (cacheError) {
+      console.warn('[ImportObjProcessor] Failed to cache asset in OPFS:', cacheError);
+      // Non-fatal - object loading can still succeed
+    }
+    
     return object.clone();
   } catch (error) {
     console.error("[ImportObjProcessor] Failed to parse OBJ file:", error);
@@ -107,13 +137,42 @@ async function loadObjFile(file: File | SerializableObjFile): Promise<Object3D> 
   }
 }
 
+// New function to load from OPFS cache using hash
+async function loadObjFromCache(hash: string): Promise<Object3D | null> {
+  try {
+    const assetCache = getAssetCache();
+    const data = await assetCache.get(hash);
+    
+    if (!data) {
+      return null;
+    }
+    
+    const decoder = new TextDecoder();
+    const text = decoder.decode(data);
+    
+    const loader = new OBJLoader();
+    const object = loader.parse(text);
+    
+    return object;
+  } catch (error) {
+    console.warn('[loadObjFromCache] Failed to load from OPFS cache:', error);
+    return null;
+  }
+}
+
 export const processor: NodeProcessor<
   ImportObjNodeData,
-  { object: Object3D; geometry?: BufferGeometry }
-> = (data: ImportObjNodeData, input?: Object3D) => {
+  { object: Object3D; geometry?: BufferGeometry; shouldSetAsActiveOutput?: boolean }
+> = (data: ImportObjNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
+  console.log("[ImportObjProcessor] Processing data:", data);
+  console.log("[ImportObjProcessor] File object:", data.object.file);
+  
   if (!data.object.file) {
-    console.warn("[ImportObjProcessor] No file provided");
-    return { object: new Group(), geometry: undefined };
+    console.warn("[ImportObjProcessor] No file provided - returning empty geometry (will not recompute)");
+    // Create a stable empty group that won't cause recomputation loops
+    const emptyGroup = new Group();
+    emptyGroup.name = "EmptyImportObjGroup"; // Give it a name for debugging
+    return { object: emptyGroup, geometry: undefined };
   }
 
   const validation = validateFile(data.object.file);
@@ -121,6 +180,8 @@ export const processor: NodeProcessor<
     console.warn("[ImportObjProcessor] File validation failed:", validation.error);
     return { object: new Group(), geometry: undefined };
   }
+  
+  console.log("[ImportObjProcessor] File validation passed:", validation);
 
   // For synchronous processing, check if the object is already cached
   const cacheKey = getCacheKey(data.object.file);
@@ -176,16 +237,51 @@ export const processor: NodeProcessor<
     geometry = (loadedObject.children[0] as Mesh).geometry;
   }
 
-  if (input) {
-    input.updateMatrixWorld(true);
-    loadedObject.applyMatrix4(input.matrixWorld);
+  if (input && input.object) {
+    // Comprehensive validation for Three.js Object3D
+    const isValidObject3D = (obj: any): obj is Object3D => {
+      return obj && 
+        typeof obj === "object" && 
+        obj.isObject3D === true &&
+        "updateMatrixWorld" in obj && 
+        typeof obj.updateMatrixWorld === "function" &&
+        "matrixWorld" in obj &&
+        obj.matrixWorld !== null &&
+        obj.matrixWorld !== undefined;
+    };
+
+    if (isValidObject3D(input.object)) {
+      try {
+        // Ensure the matrix world is up to date before using it
+        input.object.updateMatrixWorld(true);
+        if (input.object.matrixWorld) {
+          loadedObject.applyMatrix4(input.object.matrixWorld);
+          console.log("[ImportObjProcessor] Successfully applied input matrix transformation");
+        } else {
+          console.warn("[ImportObjProcessor] Input matrixWorld is null after updateMatrixWorld");
+        }
+      } catch (error) {
+        console.error("[ImportObjProcessor] Failed to apply input matrix transformation:", error);
+        // Continue without applying transformation rather than failing completely
+      }
+    } else {
+      const inputObj = input?.object;
+      console.warn("[ImportObjProcessor] Input is not a valid Three.js Object3D:", typeof inputObj, (inputObj as any)?.constructor?.name, inputObj);
+      console.warn("[ImportObjProcessor] Input validation details:", {
+        hasIsObject3D: (inputObj as any)?.isObject3D,
+        hasUpdateMatrixWorld: inputObj ? "updateMatrixWorld" in inputObj : false,
+        updateMatrixWorldType: inputObj ? typeof (inputObj as any).updateMatrixWorld : 'undefined',
+        hasMatrixWorld: inputObj ? "matrixWorld" in inputObj : false,
+        matrixWorldValue: (inputObj as any)?.matrixWorld
+      });
+    }
   }
 
   return { object: loadedObject, geometry };
 };
 
 // Export functions for use in components and serialization
-export { loadObjFile, fileToSerializableObjFile };
+export { loadObjFile, fileToSerializableObjFile, loadObjFromCache, getAssetHash };
 
 export const importObjNodeParams: NodeParams = {
   general: createGeneralParams("Import OBJ 1", "Load geometry from .obj file"),
@@ -202,7 +298,10 @@ export const importObjNodeParams: NodeParams = {
   rendering: createSubflowRenderingParams(),
 };
 
-export const importObjNodeCompute = (params: Record<string, unknown>, inputs?: any) => {
+export const importObjNodeCompute = (params: Record<string, unknown>, inputs?: unknown, context?: { nodeId?: string }) => {
+  console.log(`[importObjNodeCompute] Starting computation for node ${context?.nodeId}`);
+  console.log(`[importObjNodeCompute] Params:`, params);
+  
   // Get defaults for missing parameters
   const defaultParams = extractDefaultValues(importObjNodeParams);
 
@@ -218,6 +317,27 @@ export const importObjNodeCompute = (params: Record<string, unknown>, inputs?: a
   };
   // Use first input if available, otherwise undefined
   const inputObject =
-    inputs && Object.keys(inputs).length > 0 ? (Object.values(inputs)[0] as Object3D) : undefined;
-  return processor(data, inputObject);
+    inputs && Object.keys(inputs).length > 0 ? (Object.values(inputs)[0] as { object: Object3D; geometry?: BufferGeometry }) : undefined;
+  
+  const result = processor(data, inputObject);
+  
+  // If we successfully produced geometry and we're in a subflow context, 
+  // mark this node to be set as the active output after computation completes
+  if (result?.object && context?.nodeId) {
+    console.log(`[importObjNodeCompute] Produced geometry for node ${context.nodeId}`, result.object);
+    
+    // Create a new result object to avoid modifying frozen objects
+    // Note: We'll set shouldSetAsActiveOutput to true for now, the graphStore will handle import logic
+    const finalResult = { ...result, shouldSetAsActiveOutput: true };
+    return finalResult;
+  } else {
+    if (!result?.object) {
+      console.log(`[importObjNodeCompute] No object produced for node ${context?.nodeId}`);
+    }
+    if (!context?.nodeId) {
+      console.log(`[importObjNodeCompute] No context nodeId provided`);
+    }
+  }
+  
+  return result;
 };

@@ -32,9 +32,9 @@ function createCylinderGeometry(data: CylinderNodeData): BufferGeometry {
 export const processor: NodeProcessor<
   CylinderNodeData,
   { object: Object3D; geometry: BufferGeometry }
-> = (data: CylinderNodeData, input?: Object3D) => {
+> = (data: CylinderNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
   const geometry = createCylinderGeometry(data);
-  return createGeometryMesh(data, geometry, input);
+  return createGeometryMesh(data, geometry, input?.object);
 };
 
 export const cylinderNodeParams: NodeParams = {

@@ -29,9 +29,9 @@ function createConeGeometry(data: ConeNodeData): BufferGeometry {
 export const processor: NodeProcessor<
   ConeNodeData,
   { object: Object3D; geometry: BufferGeometry }
-> = (data: ConeNodeData, input?: Object3D) => {
+> = (data: ConeNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
   const geometry = createConeGeometry(data);
-  return createGeometryMesh(data, geometry, input);
+  return createGeometryMesh(data, geometry, input?.object);
 };
 
 export const coneNodeParams: NodeParams = {

@@ -1,4 +1,4 @@
-import { Object3D, BufferGeometry, Vector3 } from "three";
+import { Object3D, BufferGeometry, Vector3, Mesh, Group } from "three";
 import type { GeneralProps, TransformProps, RenderingProps, NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createGeneralParams, createTransformParams } from "../../../engine/nodeParameterFactories";
@@ -17,15 +17,36 @@ export const processor: NodeProcessor<
   { object: Object3D; geometry?: BufferGeometry }
 > = (
   data: TransformNodeData,
-  input?: Object3D
+  input?: { object: Object3D; geometry?: BufferGeometry }
 ): { object: Object3D; geometry?: BufferGeometry } => {
-  if (!input) {
+  console.log("[Transform processor] Input received:", input, "Data:", data);
+  
+  if (!input || !input.object) {
+    console.log("[Transform processor] No input or no input.object, returning empty Object3D");
     const emptyObj = new Object3D();
     return { object: emptyObj };
   }
 
-  const obj = input.clone();
-  let geometry: BufferGeometry | undefined;
+  // Clone with proper type preservation
+  let obj: Object3D;
+  if (input.object instanceof Mesh) {
+    // For Mesh objects, create a new Mesh with cloned geometry and material
+    const mesh = input.object as Mesh;
+    obj = new Mesh(
+      mesh.geometry.clone(),
+      mesh.material ? (Array.isArray(mesh.material) ? mesh.material.map(m => m.clone()) : mesh.material.clone()) : undefined
+    );
+    // Copy all other properties
+    obj.copy(input.object, false); // false = don't copy children
+  } else if (input.object instanceof Group) {
+    // For Groups, clone recursively
+    obj = input.object.clone(true);
+  } else {
+    // For other Object3D types, use standard cloning
+    obj = input.object.clone(true);
+  }
+  
+  let geometry: BufferGeometry | undefined = input.geometry;
 
   // Apply additive position (relative to current position)
   const position = data.transform.position || { x: 0, y: 0, z: 0 };
@@ -55,8 +76,8 @@ export const processor: NodeProcessor<
   // Set visibility
   obj.visible = data.rendering?.visible !== false;
 
-  // Extract geometry if input is a mesh
-  if ((obj as any).geometry) {
+  // Extract geometry if object is a mesh (preserve input geometry if available)
+  if (!geometry && (obj as any).geometry) {
     geometry = (obj as any).geometry;
   }
 
@@ -78,16 +99,24 @@ export const transformNodeParams: NodeParams = {
 };
 
 export const transformNodeCompute = (params: Record<string, any>, inputs: Record<string, any>) => {
+  console.log("[transformNodeCompute] Called with params:", params, "inputs:", inputs);
+  
   const inputKeys = Object.keys(inputs);
   let inputObject: { object: Object3D; geometry?: BufferGeometry } | undefined = undefined;
 
   if (inputKeys.length > 0) {
     const input = inputs[inputKeys[0]];
+    console.log("[transformNodeCompute] Processing input:", input);
     
     // Expect standard format: { object: Object3D, geometry?: BufferGeometry }
     if (input && typeof input === "object" && (input as any).object && (input as any).object.isObject3D) {
       inputObject = input as { object: Object3D; geometry?: BufferGeometry };
+      console.log("[transformNodeCompute] Valid input object found:", inputObject);
+    } else {
+      console.log("[transformNodeCompute] Input is not a valid Object3D:", input);
     }
+  } else {
+    console.log("[transformNodeCompute] No inputs received");
   }
 
   // Convert params to structured data with proper fallbacks
@@ -102,8 +131,12 @@ export const transformNodeCompute = (params: Record<string, any>, inputs: Record
       },
       rotationOrder: params.transform?.rotationOrder || "XYZ",
     },
-    rendering: params.rendering || { visible: true },
+    rendering: {
+      visible: params.rendering?.visible !== false, // Default to true unless explicitly false
+      ...params.rendering
+    },
   };
   
-  return processor(data, inputObject?.object);
+  
+  return processor(data, inputObject);
 };

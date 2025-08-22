@@ -24,9 +24,9 @@ function createSphereGeometry(data: SphereNodeData): BufferGeometry {
 export const processor: NodeProcessor<
   SphereNodeData,
   { object: Object3D; geometry: BufferGeometry }
-> = (data: SphereNodeData, input?: Object3D) => {
+> = (data: SphereNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
   const geometry = createSphereGeometry(data);
-  return createGeometryMesh(data, geometry, input);
+  return createGeometryMesh(data, geometry, input?.object);
 };
 
 export const sphereNodeParams: NodeParams = {

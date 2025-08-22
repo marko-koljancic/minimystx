@@ -18,6 +18,8 @@ export function useEdgeManagement(
     (connection: Connection) => {
       const edge = {
         ...connection,
+        sourceHandle: connection.sourceHandle || undefined,
+        targetHandle: connection.targetHandle || undefined,
         type: "wire",
         id: uuid(),
       };

@@ -29,9 +29,9 @@ function createTorusGeometry(data: TorusNodeData): BufferGeometry {
 export const processor: NodeProcessor<
   TorusNodeData,
   { object: Object3D; geometry: BufferGeometry }
-> = (data: TorusNodeData, input?: Object3D) => {
+> = (data: TorusNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
   const geometry = createTorusGeometry(data);
-  return createGeometryMesh(data, geometry, input);
+  return createGeometryMesh(data, geometry, input?.object);
 };
 
 export const torusNodeParams: NodeParams = {

@@ -194,9 +194,17 @@ export default function FlowCanvas() {
         };
       });
       setNodes(newNodes as any);
+      
+      // Also sync edges when nodes change
+      setEdges(contextEdges);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contextNodes, setNodes]); // nodes dependency intentionally excluded to prevent infinite loop
+  }, [contextNodes, setNodes, contextEdges, setEdges]); // nodes dependency intentionally excluded to prevent infinite loop
+
+  // Sync context edges to React Flow edges
+  useEffect(() => {
+    setEdges(contextEdges);
+  }, [contextEdges, setEdges]);
 
   // Update existing nodes with latest data from graph store
   const lastContextNodesRef = useRef(contextNodes);

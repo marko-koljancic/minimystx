@@ -59,7 +59,7 @@ export const isValidConnection = (
   edges: Edge[],
   currentContext?: { type: "root" | "subflow"; geoNodeId?: string }
 ): boolean => {
-  const { source, target, sourceHandle, targetHandle } = connection;
+  const { source, target, targetHandle } = connection;
   const sourceNode = nodes.find((node) => node.id === source);
   const targetNode = nodes.find((node) => node.id === target);
   // Only check for existing target connections (inputs can only have one connection)
@@ -68,7 +68,7 @@ export const isValidConnection = (
     (edge) => edge.target === target && edge.targetHandle === targetHandle
   );
 
-  if (!source || !target || !sourceHandle || !targetHandle) return false;
+  if (!source || !target) return false;
   if (source === target) return false;
   if (!sourceNode || !targetNode) return false;
 

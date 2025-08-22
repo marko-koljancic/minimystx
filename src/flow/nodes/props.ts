@@ -1,4 +1,4 @@
-import { Material, Object3D } from "three";
+import { Material, Object3D, BufferGeometry } from "three";
 
 export interface GeneralProps {
   name: string;
@@ -112,4 +112,4 @@ export interface ShadowProps extends BaseShadowProps {
   radius: number;
 }
 
-export type NodeProcessor<I = unknown, O = unknown> = (data: I, input?: Object3D | undefined) => O;
+export type NodeProcessor<I = unknown, O = unknown> = (data: I, input?: { object: Object3D; geometry?: BufferGeometry } | undefined) => O;
