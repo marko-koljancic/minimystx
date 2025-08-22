@@ -134,11 +134,20 @@ export type GraphState = {
   ) => Promise<SerializedGraph>;
 };
 
+export type SerializedSubFlow = {
+  nodes: NodeInitData[];
+  edges: EdgeData[];
+  nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">>;
+  positions: Record<string, { x: number; y: number }>;
+  activeOutputNodeId: string | null;
+};
+
 export type SerializedGraph = {
   nodes: NodeInitData[];
   edges: EdgeData[];
   nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">>;
   positions: Record<string, { x: number; y: number }>;
+  subFlows: Record<string, SerializedSubFlow>;
 };
 
 export { nodeRegistry } from "./nodeRegistry";
@@ -794,19 +803,193 @@ export const useGraphStore = create<GraphState>()(
       });
     },
 
-    importGraph: (_serialized: SerializedGraph) => {
-      // TODO: Update for hierarchical structure in Phase 5
-      console.warn("importGraph not yet updated for hierarchical structure");
+    importGraph: (serialized: SerializedGraph) => {
+      const { nodes, edges, nodeRuntime, positions, subFlows } = serialized;
+      
+      // Clear existing graph state
+      get().clear();
+      
+      // Add nodes first (this creates the runtime entries)
+      const rootContext: GraphContext = { type: "root" };
+      nodes.forEach(node => {
+        get().addNode(node, rootContext);
+      });
+      
+      // Then add edges to establish connections
+      edges.forEach(edge => {
+        get().addEdge(edge.source, edge.target, rootContext, edge.sourceHandle, edge.targetHandle);
+      });
+      
+      // Restore subflows
+      if (subFlows) {
+        Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
+          const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
+          
+          // Add subflow nodes
+          subFlow.nodes.forEach(node => {
+            get().addNode(node, subFlowContext);
+          });
+          
+          // Add subflow edges
+          subFlow.edges.forEach(edge => {
+            get().addEdge(edge.source, edge.target, subFlowContext, edge.sourceHandle, edge.targetHandle);
+          });
+          
+          // Update subflow runtime data and active output
+          set((state) => {
+            const targetSubFlow = state.subFlows[geoNodeId];
+            if (targetSubFlow) {
+              // Restore inputs from serialized data
+              Object.entries(subFlow.nodeRuntime).forEach(([nodeId, runtime]) => {
+                if (targetSubFlow.nodeRuntime[nodeId]) {
+                  targetSubFlow.nodeRuntime[nodeId].inputs = runtime.inputs;
+                }
+              });
+              
+              // Restore active output node
+              targetSubFlow.activeOutputNodeId = subFlow.activeOutputNodeId;
+            }
+          });
+        });
+      }
+      
+      // Update root node runtime data (inputs) after connections are established
+      set((state) => {
+        Object.entries(nodeRuntime).forEach(([nodeId, runtime]) => {
+          if (state.rootNodeRuntime[nodeId]) {
+            // Restore inputs from serialized data
+            state.rootNodeRuntime[nodeId].inputs = runtime.inputs;
+          }
+        });
+      });
+      
+      // Store positions for React Flow (will be used when UI components query positions)
+      // The positions are handled by the UI layer through custom events
+      const allPositions = { ...positions };
+      
+      // Include subflow positions
+      if (subFlows) {
+        Object.entries(subFlows).forEach(([_, subFlow]) => {
+          Object.assign(allPositions, subFlow.positions);
+        });
+      }
+      
+      if (allPositions && Object.keys(allPositions).length > 0) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('minimystx:setNodePositions', { 
+            detail: allPositions 
+          }));
+        }, 100);
+      }
+      
+      // Trigger recomputation of the entire graph
+      if (get().evaluationMode === "eager") {
+        // Recompute root nodes
+        nodes.forEach(node => {
+          get().recomputeFrom(node.id, rootContext);
+        });
+        
+        // Recompute subflow nodes
+        if (subFlows) {
+          Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
+            const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
+            subFlow.nodes.forEach(node => {
+              get().recomputeFrom(node.id, subFlowContext);
+            });
+          });
+        }
+      }
     },
 
-    exportGraph: async (_nodePositions?: Record<string, { x: number; y: number }>) => {
-      // TODO: Update for hierarchical structure in Phase 5
-      console.warn("exportGraph not yet updated for hierarchical structure");
+    exportGraph: async (nodePositions?: Record<string, { x: number; y: number }>) => {
+      const state = get();
+      
+      // Convert rootNodeRuntime to NodeInitData format
+      const nodes: NodeInitData[] = Object.entries(state.rootNodeRuntime).map(([id, runtime]) => ({
+        id,
+        type: runtime.type,
+        params: runtime.params,
+      }));
+      
+      // Convert rootDependencyMap to EdgeData format
+      const edges: EdgeData[] = [];
+      Object.entries(state.rootDependencyMap).forEach(([targetId, sourceIds]) => {
+        sourceIds.forEach(sourceId => {
+          edges.push({
+            id: `${sourceId}-${targetId}`,
+            source: sourceId,
+            target: targetId,
+          });
+        });
+      });
+      
+      // Extract node runtime data (excluding output, isDirty, error for serialization)
+      const nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">> = {};
+      Object.entries(state.rootNodeRuntime).forEach(([id, runtime]) => {
+        nodeRuntime[id] = {
+          type: runtime.type,
+          params: runtime.params,
+          inputs: runtime.inputs,
+        };
+      });
+      
+      // Serialize subflows
+      const subFlows: Record<string, SerializedSubFlow> = {};
+      Object.entries(state.subFlows).forEach(([geoNodeId, subFlow]) => {
+        // Convert subflow nodeRuntime to NodeInitData format
+        const subFlowNodes: NodeInitData[] = Object.entries(subFlow.nodeRuntime).map(([id, runtime]) => ({
+          id,
+          type: runtime.type,
+          params: runtime.params,
+        }));
+        
+        // Convert subflow dependencyMap to EdgeData format
+        const subFlowEdges: EdgeData[] = [];
+        Object.entries(subFlow.dependencyMap).forEach(([targetId, sourceIds]) => {
+          sourceIds.forEach(sourceId => {
+            subFlowEdges.push({
+              id: `${sourceId}-${targetId}`,
+              source: sourceId,
+              target: targetId,
+            });
+          });
+        });
+        
+        // Extract subflow node runtime data
+        const subFlowNodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">> = {};
+        Object.entries(subFlow.nodeRuntime).forEach(([id, runtime]) => {
+          subFlowNodeRuntime[id] = {
+            type: runtime.type,
+            params: runtime.params,
+            inputs: runtime.inputs,
+          };
+        });
+        
+        // Get subflow node positions (if available)
+        const subFlowPositions: Record<string, { x: number; y: number }> = {};
+        if (nodePositions) {
+          Object.entries(nodePositions).forEach(([nodeId, position]) => {
+            if (subFlow.nodeRuntime[nodeId]) {
+              subFlowPositions[nodeId] = position;
+            }
+          });
+        }
+        
+        subFlows[geoNodeId] = {
+          nodes: subFlowNodes,
+          edges: subFlowEdges,
+          nodeRuntime: subFlowNodeRuntime,
+          positions: subFlowPositions,
+          activeOutputNodeId: subFlow.activeOutputNodeId,
+        };
+      });
+      
       return {
-        nodes: [],
-        edges: [],
-        nodeRuntime: {},
-        positions: {},
+        nodes,
+        edges,
+        nodeRuntime,
+        positions: nodePositions || {},
+        subFlows,
       };
     },
   }))
