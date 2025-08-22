@@ -36,54 +36,47 @@ export const useContextNodes = () => {
  */
 export const useContextEdges = () => {
   const currentContext = useCurrentContext();
-  const { rootDependencyMap, subFlows } = useGraphStore();
-
-  // Extract the specific subflow dependency map to create a stable reference
-  const subFlowDependencyMap = useMemo(() => {
-    if (currentContext.type === "subflow" && currentContext.geoNodeId) {
-      return subFlows[currentContext.geoNodeId]?.dependencyMap;
-    }
-    return null;
-  }, [currentContext.type, currentContext.geoNodeId, subFlows]);
+  const { connectionManager, rootNodeRuntime, subFlows } = useGraphStore();
 
   return useMemo(() => {
-    let dependencyMap: Record<string, string[]>;
+    const edges = [];
+    let contextNodeIds: string[];
 
     if (currentContext.type === "root") {
-      dependencyMap = rootDependencyMap;
-    } else if (currentContext.type === "subflow" && subFlowDependencyMap) {
-      dependencyMap = subFlowDependencyMap;
+      contextNodeIds = Object.keys(rootNodeRuntime);
+    } else if (currentContext.type === "subflow" && currentContext.geoNodeId) {
+      const subFlow = subFlows[currentContext.geoNodeId];
+      if (!subFlow) return [];
+      contextNodeIds = Object.keys(subFlow.nodeRuntime);
     } else {
-      // Return empty array for invalid contexts without logging on every render
       return [];
     }
 
-    // Only process if we have valid dependency map
-    if (!dependencyMap || typeof dependencyMap !== "object") {
-      return [];
-    }
-
-    const edges = [];
-    
-    for (const [targetId, sources] of Object.entries(dependencyMap)) {
-      if (!Array.isArray(sources)) continue;
+    // Get all connections from ConnectionManager for nodes in this context
+    for (const nodeId of contextNodeIds) {
+      const connections = connectionManager.getOutputConnections(nodeId);
       
-      for (const sourceId of sources) {
-        edges.push({
-          id: `${sourceId}-${targetId}`,
-          source: sourceId,
-          target: targetId,
-          sourceHandle: undefined,
-          targetHandle: undefined,
-          type: "wire",
-        });
+      for (const connection of connections) {
+        // Only include connections between nodes in the same context
+        if (contextNodeIds.includes(connection.targetNodeId)) {
+          edges.push({
+            id: connection.id,
+            source: connection.sourceNodeId,
+            target: connection.targetNodeId,
+            sourceHandle: connection.sourceHandle,
+            targetHandle: connection.targetHandle,
+            type: "wire",
+          });
+        }
       }
     }
     
     return edges;
   }, [
     currentContext.type,
-    rootDependencyMap,
-    subFlowDependencyMap
+    currentContext.geoNodeId,
+    connectionManager,
+    rootNodeRuntime,
+    subFlows
   ]);
 };

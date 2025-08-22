@@ -5,6 +5,7 @@ import * as computeEngine from "./computeEngine";
 import { nodeRegistry } from "./nodeRegistry";
 import { GRAPH_SCHEMA } from "../constants";
 import { extractDefaultValues, validateAndNormalizeParams } from "./parameterUtils";
+import { CoreGraph, ConnectionManager, Cooker, DirtyController, type Connection, type GraphNode } from "./graph";
 
 export type Result<T = void> =
   | {
@@ -88,22 +89,24 @@ export type NodeRuntime = {
   output: any;
   isDirty: boolean;
   error?: string;
+  dirtyController?: DirtyController;
 };
 
 export type SubFlowGraph = {
   nodeRuntime: Record<string, NodeRuntime>;
-  dependencyMap: Record<string, string[]>;
-  reverseDeps: Record<string, string[]>;
   activeOutputNodeId: string | null;
 };
 
 export type GraphState = {
   rootNodeRuntime: Record<string, NodeRuntime>;
-  rootDependencyMap: Record<string, string[]>;
-  rootReverseDeps: Record<string, string[]>;
   subFlows: Record<string, SubFlowGraph>;
   evaluationMode: "eager" | "lazy";
   isImporting: boolean;
+  
+  // Phase 1-2 architecture components (complete)
+  graph: CoreGraph;
+  connectionManager: ConnectionManager;
+  cooker: Cooker;
 
   addNode: (node: NodeInitData, context: GraphContext) => void;
   removeNode: (nodeId: string, context: GraphContext) => void;
@@ -150,8 +153,6 @@ export type SerializedSubFlow = {
   nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">>;
   positions: Record<string, { x: number; y: number }>;
   activeOutputNodeId: string | null;
-  dependencyMap: Record<string, string[]>;
-  reverseDeps: Record<string, string[]>;
 };
 
 export type SerializedGraph = {
@@ -164,147 +165,113 @@ export type SerializedGraph = {
 
 export { nodeRegistry } from "./nodeRegistry";
 
-// Recomputation guard to prevent infinite loops
-const recomputationGuard = new Map<string, Set<string>>();
 
-// Enhanced cycle detection to prevent recomputation cycles across contexts
-const recomputationCycleTracker = new Map<string, Array<{ nodeId: string, timestamp: number, context: string }>>();
-const globalRecomputationTracker = new Map<string, { count: number, lastSeen: number, contexts: Set<string> }>();
-const CYCLE_DETECTION_WINDOW_MS = 1000; // Track recomputations within 1 second
-const MAX_RECOMPUTATIONS_PER_WINDOW = 5; // Max recomputations for same node within window
-const GLOBAL_RECOMPUTATION_LIMIT = 10; // Global limit per node across all contexts
+// Create singleton instances of the new architecture components
+const coreGraph = new CoreGraph();
+const connectionManager = new ConnectionManager();
+const cooker = new Cooker(coreGraph);
 
-// Debouncing mechanism to prevent cascading recomputations
-const recomputationTimers = new Map<string, ReturnType<typeof setTimeout>>();
-const RECOMPUTATION_DEBOUNCE_MS = 50; // 50ms debounce delay
-
-function getRecomputationKey(nodeId: string, contextType: string, geoNodeId?: string): string {
-  return contextType === "root" ? `root:${nodeId}` : `subflow:${geoNodeId}:${nodeId}`;
-}
-
-function detectRecomputationCycle(nodeId: string, context: GraphContext): boolean {
-  const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
-  const contextKey = `${context.type}:${context.geoNodeId || 'root'}`;
-  const now = Date.now();
+// Set up the cooker's compute function
+cooker.setComputeFunction(async (nodeId: string) => {
+  const state = useGraphStore.getState();
   
-  // Local cycle detection (per context)
-  if (!recomputationCycleTracker.has(key)) {
-    recomputationCycleTracker.set(key, []);
-  }
+  // Find the node in root or subflow context
+  let nodeRuntime: NodeRuntime | undefined;
+  let context: GraphContext | undefined;
   
-  const history = recomputationCycleTracker.get(key)!;
-  
-  // Remove old entries outside the window
-  const validEntries = history.filter(entry => now - entry.timestamp < CYCLE_DETECTION_WINDOW_MS);
-  
-  // Add current recomputation
-  validEntries.push({ nodeId, timestamp: now, context: contextKey });
-  
-  // Update the tracker
-  recomputationCycleTracker.set(key, validEntries);
-  
-  // Global cycle detection (across all contexts for the same node)
-  if (!globalRecomputationTracker.has(nodeId)) {
-    globalRecomputationTracker.set(nodeId, { count: 0, lastSeen: now, contexts: new Set() });
-  }
-  
-  const globalTracker = globalRecomputationTracker.get(nodeId)!;
-  
-  // Reset global counter if enough time has passed
-  if (now - globalTracker.lastSeen > CYCLE_DETECTION_WINDOW_MS) {
-    globalTracker.count = 0;
-    globalTracker.contexts.clear();
-  }
-  
-  globalTracker.count++;
-  globalTracker.lastSeen = now;
-  globalTracker.contexts.add(contextKey);
-  
-  // Check for local cycles
-  if (validEntries.length > MAX_RECOMPUTATIONS_PER_WINDOW) {
-    console.warn(`[detectRecomputationCycle] Local cycle detected for ${key}: ${validEntries.length} recomputations in ${CYCLE_DETECTION_WINDOW_MS}ms`);
-    // Clear the history to allow eventual recovery
-    recomputationCycleTracker.delete(key);
-    return true;
-  }
-  
-  // Check for global cross-context cycles
-  if (globalTracker.count > GLOBAL_RECOMPUTATION_LIMIT) {
-    console.warn(`[detectRecomputationCycle] Global cycle detected for node ${nodeId}: ${globalTracker.count} recomputations across ${globalTracker.contexts.size} contexts in ${CYCLE_DETECTION_WINDOW_MS}ms`);
-    console.warn(`[detectRecomputationCycle] Contexts involved:`, Array.from(globalTracker.contexts));
-    // Clear trackers to allow eventual recovery
-    globalRecomputationTracker.delete(nodeId);
-    return true;
-  }
-  
-  return false;
-}
-
-// Helper function for checking if recomputation is in progress (available for future use)
-// function isRecomputationInProgress(nodeId: string, context: GraphContext): boolean {
-//   const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
-//   const stack = recomputationGuard.get(key) || new Set();
-//   return stack.has(nodeId);
-// }
-
-function startRecomputation(nodeId: string, context: GraphContext): boolean {
-  const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
-  const stack = recomputationGuard.get(key) || new Set();
-  
-  // First check for direct recursion
-  if (stack.has(nodeId)) {
-    console.warn(`[recomputeFrom] Preventing infinite loop: ${nodeId} in ${context.type} context`);
-    return false; // Already recomputing this node
-  }
-  
-  // Then check for longer cycles
-  if (detectRecomputationCycle(nodeId, context)) {
-    console.warn(`[recomputeFrom] Preventing recomputation cycle: ${nodeId} in ${context.type} context`);
-    return false; // Cycle detected
-  }
-  
-  stack.add(nodeId);
-  recomputationGuard.set(key, stack);
-  return true;
-}
-
-function endRecomputation(nodeId: string, context: GraphContext): void {
-  const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
-  const stack = recomputationGuard.get(key);
-  if (stack) {
-    stack.delete(nodeId);
-    if (stack.size === 0) {
-      recomputationGuard.delete(key);
+  if (state.rootNodeRuntime[nodeId]) {
+    nodeRuntime = state.rootNodeRuntime[nodeId];
+    context = { type: "root" };
+  } else {
+    // Search in subflows
+    for (const [geoNodeId, subFlow] of Object.entries(state.subFlows)) {
+      if (subFlow.nodeRuntime[nodeId]) {
+        nodeRuntime = subFlow.nodeRuntime[nodeId];
+        context = { type: "subflow", geoNodeId };
+        break;
+      }
     }
   }
-}
-
-function debouncedRecomputeFrom(nodeId: string, context: GraphContext, recomputeFn: () => void): void {
-  const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
   
-  // Clear existing timer for this node
-  const existingTimer = recomputationTimers.get(key);
-  if (existingTimer) {
-    clearTimeout(existingTimer);
+  if (!nodeRuntime || !context) {
+    console.error(`[Cooker] Node ${nodeId} not found in any context`);
+    return;
   }
   
-  // Set new debounced timer
-  const timer = setTimeout(() => {
-    recomputationTimers.delete(key);
-    recomputeFn();
-  }, RECOMPUTATION_DEBOUNCE_MS);
+  if (!nodeRuntime.isDirty) {
+    console.debug(`[Cooker] Node ${nodeId} is not dirty, skipping computation`);
+    return;
+  }
   
-  recomputationTimers.set(key, timer);
-}
+  const nodeDef = nodeRegistry[nodeRuntime.type];
+  if (!nodeDef) {
+    console.error(`[Cooker] Node definition not found for type ${nodeRuntime.type}`);
+    return;
+  }
+  
+  // Get inputs using connection manager
+  const inputConnections = connectionManager.getInputConnections(nodeId);
+  const inputs: Record<string, any> = {};
+  
+  const sourceRuntime = context.type === "root" 
+    ? state.rootNodeRuntime 
+    : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+  
+  if (sourceRuntime) {
+    for (const connection of inputConnections) {
+      const sourceNode = sourceRuntime[connection.sourceNodeId];
+      if (sourceNode && sourceNode.output !== undefined) {
+        const inputHandle = connection.targetHandle || connection.sourceNodeId;
+        inputs[inputHandle] = sourceNode.output;
+      }
+    }
+  }
+  
+  try {
+    const result = computeEngine.evaluateNode(nodeId, nodeRuntime.params, inputs, nodeDef.compute);
+    
+    // Update the node runtime directly
+    useGraphStore.setState((state) => {
+      const targetRuntime = context.type === "root"
+        ? state.rootNodeRuntime[nodeId]
+        : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+        
+      if (targetRuntime) {
+        targetRuntime.output = result;
+        targetRuntime.isDirty = false;
+        targetRuntime.error = undefined;
+      }
+    });
+    
+    console.debug(`[Cooker] Successfully computed node ${nodeId}`);
+    
+  } catch (err) {
+    useGraphStore.setState((state) => {
+      const targetRuntime = context.type === "root"
+        ? state.rootNodeRuntime[nodeId]
+        : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+        
+      if (targetRuntime) {
+        targetRuntime.error = err instanceof Error ? err.message : String(err);
+        targetRuntime.isDirty = false;
+      }
+    });
+    
+    console.error(`[Cooker] Error computing node ${nodeId}:`, err);
+  }
+});
 
 export const useGraphStore = create<GraphState>()(
   immer((set, get) => ({
     rootNodeRuntime: {},
-    rootDependencyMap: {},
-    rootReverseDeps: {},
     subFlows: {},
     evaluationMode: "eager",
     isImporting: false,
+    
+    // Phase 1-2 architecture components (complete)
+    graph: coreGraph,
+    connectionManager: connectionManager,
+    cooker: cooker,
 
     addNode: (node: NodeInitData, context: GraphContext) => {
       const { id, type, params: overrideParams } = node;
@@ -381,78 +348,60 @@ export const useGraphStore = create<GraphState>()(
           output: null,
           isDirty: true,
         };
+        
+        // Initialize DirtyController for Phase 2 enhanced dirty management
+        const graphNodeForDirty: GraphNode = { 
+          id, 
+          isDirty: () => newNodeRuntime.isDirty,
+          cook: async () => {
+            // This will be enhanced in Phase 3 with proper cooking
+            console.log(`Cooking node ${id}`);
+          }
+        };
+        newNodeRuntime.dirtyController = new DirtyController(
+          graphNodeForDirty, 
+          get().cooker, 
+          (nodeId: string) => get().graph.getAllSuccessors(nodeId)
+        );
 
         if (context.type === "root") {
           state.rootNodeRuntime[id] = newNodeRuntime;
-          state.rootDependencyMap[id] = [];
-          state.rootReverseDeps[id] = [];
 
           // Initialize sub-flow for GeoNode
           if (type === "geoNode") {
             state.subFlows[id] = {
               nodeRuntime: {},
-              dependencyMap: {},
-              reverseDeps: {},
               activeOutputNodeId: null,
             };
           }
         } else {
           const subFlow = state.subFlows[context.geoNodeId!];
           subFlow.nodeRuntime[id] = newNodeRuntime;
-          subFlow.dependencyMap[id] = [];
-          subFlow.reverseDeps[id] = [];
         }
+
+        // Add node to new graph system
+        const graphNodeForGraph: GraphNode = { id };
+        state.graph.addNode(graphNodeForGraph);
       });
 
       if (get().evaluationMode === "eager") {
-        get().recomputeFrom(id, context);
+        // Use new batched recomputation system
+        get().cooker.enqueue(id);
       }
     },
 
     removeNode: (nodeId: string, context: GraphContext) => {
       set((state) => {
         if (context.type === "root") {
-          const outgoingDeps = state.rootDependencyMap[nodeId] || [];
-          const incomingDeps = state.rootReverseDeps[nodeId] || [];
-
-          for (const targetId of outgoingDeps) {
-            state.rootReverseDeps[targetId] = state.rootReverseDeps[targetId].filter(
-              (id) => id !== nodeId
-            );
-          }
-
-          for (const sourceId of incomingDeps) {
-            state.rootDependencyMap[sourceId] = state.rootDependencyMap[sourceId].filter(
-              (id) => id !== nodeId
-            );
-          }
-
           // If removing GeoNode, delete its entire sub-flow
           if (state.rootNodeRuntime[nodeId]?.type === "geoNode") {
             delete state.subFlows[nodeId];
           }
 
           delete state.rootNodeRuntime[nodeId];
-          delete state.rootDependencyMap[nodeId];
-          delete state.rootReverseDeps[nodeId];
         } else {
           const subFlow = state.subFlows[context.geoNodeId!];
           if (!subFlow) return;
-
-          const outgoingDeps = subFlow.dependencyMap[nodeId] || [];
-          const incomingDeps = subFlow.reverseDeps[nodeId] || [];
-
-          for (const targetId of outgoingDeps) {
-            subFlow.reverseDeps[targetId] = subFlow.reverseDeps[targetId].filter(
-              (id) => id !== nodeId
-            );
-          }
-
-          for (const sourceId of incomingDeps) {
-            subFlow.dependencyMap[sourceId] = subFlow.dependencyMap[sourceId].filter(
-              (id) => id !== nodeId
-            );
-          }
 
           // Clear active output if this was the active node
           if (subFlow.activeOutputNodeId === nodeId) {
@@ -460,31 +409,15 @@ export const useGraphStore = create<GraphState>()(
           }
 
           delete subFlow.nodeRuntime[nodeId];
-          delete subFlow.dependencyMap[nodeId];
-          delete subFlow.reverseDeps[nodeId];
         }
+
+        // Remove from graph system and connection manager (handles all dependency cleanup)
+        state.graph.removeNode(nodeId);
+        state.connectionManager.removeAllConnectionsForNode(nodeId);
       });
 
-      const state = get();
-      const dependencyMap =
-        context.type === "root"
-          ? state.rootDependencyMap
-          : state.subFlows[context.geoNodeId!]?.dependencyMap;
-      const nodeRuntime =
-        context.type === "root"
-          ? state.rootNodeRuntime
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-      if (dependencyMap && nodeRuntime) {
-        for (const sourceId in dependencyMap) {
-          if (dependencyMap[sourceId].some((id) => !nodeRuntime[id])) {
-            get().markDirty(sourceId, context);
-            if (state.evaluationMode === "eager") {
-              get().recomputeFrom(sourceId, context);
-            }
-          }
-        }
-      }
+      // Node removal is handled entirely by the graph system and connection manager
+      // No additional cleanup needed as connections are automatically managed
     },
 
     setParams: (nodeId: string, params: Partial<Record<string, any>>, context: GraphContext) => {
@@ -547,13 +480,12 @@ export const useGraphStore = create<GraphState>()(
 
       // BATCH: Perform recomputation AFTER state updates are complete
       if (get().evaluationMode === "eager") {
-        // Recompute subflow node first
-        get().recomputeFrom(nodeId, context);
+        // Use new batched recomputation system
+        get().cooker.enqueue(nodeId);
         
         // Then recompute parent GeoNode if needed
         if (context.type === "subflow" && context.geoNodeId) {
-          const rootContext: GraphContext = { type: "root" };
-          get().recomputeFrom(context.geoNodeId, rootContext);
+          get().cooker.enqueue(context.geoNodeId);
         }
       }
     },
@@ -562,8 +494,8 @@ export const useGraphStore = create<GraphState>()(
       source: string,
       target: string,
       context: GraphContext,
-      _sourceHandle?: string,
-      _targetHandle?: string
+      sourceHandle?: string,
+      targetHandle?: string
     ): Result => {
       if (source === target) return { ok: false, error: "Self-connections are not allowed" };
 
@@ -572,74 +504,49 @@ export const useGraphStore = create<GraphState>()(
         context.type === "root"
           ? state.rootNodeRuntime
           : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-      const dependencyMap =
-        context.type === "root"
-          ? state.rootDependencyMap
-          : state.subFlows[context.geoNodeId!]?.dependencyMap;
 
-      if (!nodeRuntime || !dependencyMap) {
+      if (!nodeRuntime) {
         return { ok: false, error: `Context not found` };
       }
 
       if (!nodeRuntime[source] || !nodeRuntime[target])
         return { ok: false, error: `Node "${source}" or "${target}" not found` };
 
-      if (computeEngine.wouldCreateCycle(source, target, dependencyMap))
+      // Use new graph system for cycle detection - MUCH MORE EFFICIENT
+      if (state.graph.wouldCreateCycle(source, target)) {
         return { ok: false, error: "Connection creates a cycle—edge not added" };
+      }
 
-      // ATOMIC OPERATION: All state updates and recomputation in single transaction
-      let recomputationQueue: string[] = [];
-
+      // NEW SYSTEM: Use connection manager and graph - SOLVES ONE-TO-MANY ISSUE
       set((state) => {
-        // Get current edge list for this context
-        const currentDependencyMap = context.type === "root"
-          ? state.rootDependencyMap
-          : state.subFlows[context.geoNodeId!].dependencyMap;
+        // Create connection using new system
+        const connection: Connection = {
+          id: state.connectionManager.generateConnectionId(),
+          sourceNodeId: source,
+          targetNodeId: target,
+          sourceHandle,
+          targetHandle
+        };
 
-        // Build current edges from dependency map
-        const currentEdges: { source: string; target: string }[] = [];
-        for (const [sourceId, targets] of Object.entries(currentDependencyMap)) {
-          for (const targetId of targets) {
-            currentEdges.push({ source: sourceId, target: targetId });
-          }
-        }
+        // Add connection to new system - SUPPORTS MULTIPLE CONNECTIONS PER OUTPUT
+        state.connectionManager.addConnection(connection);
+        
+        // Add to graph for efficient cycle detection and traversal
+        state.graph.connect(source, target);
 
-        // Add new edge
-        const newEdges = [...currentEdges, { source, target }];
-
-        // Rebuild dependency maps from scratch to ensure consistency
-        const { dependencyMap: newDependencyMap, reverseDeps: newReverseDeps } = 
-          computeEngine.rebuildDependencyMaps(newEdges);
-
-        // Update state with rebuilt dependency maps
-        if (context.type === "root") {
-          state.rootDependencyMap = newDependencyMap;
-          state.rootReverseDeps = newReverseDeps;
-          
-          // Mark target node as dirty
-          if (state.rootNodeRuntime[target]) {
-            state.rootNodeRuntime[target].isDirty = true;
-          }
-        } else {
-          const subFlow = state.subFlows[context.geoNodeId!];
-          subFlow.dependencyMap = newDependencyMap;
-          subFlow.reverseDeps = newReverseDeps;
-          
-          // Mark target node as dirty
-          if (subFlow.nodeRuntime[target]) {
-            subFlow.nodeRuntime[target].isDirty = true;
-          }
-        }
-
-        // Queue recomputation if in eager mode
-        if (state.evaluationMode === "eager") {
-          recomputationQueue = [target];
+        // Mark target node as dirty
+        const targetNodeRuntime = context.type === "root"
+          ? state.rootNodeRuntime[target]
+          : state.subFlows[context.geoNodeId!]?.nodeRuntime[target];
+        
+        if (targetNodeRuntime) {
+          targetNodeRuntime.isDirty = true;
         }
       });
 
-      // Process recomputation queue outside of state mutation
-      for (const nodeId of recomputationQueue) {
-        get().recomputeFrom(nodeId, context);
+      // Use new batched recomputation system
+      if (get().evaluationMode === "eager") {
+        get().cooker.enqueue(target);
       }
 
       return { ok: true };
@@ -657,84 +564,62 @@ export const useGraphStore = create<GraphState>()(
         context.type === "root"
           ? state.rootNodeRuntime
           : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-      const dependencyMap =
-        context.type === "root"
-          ? state.rootDependencyMap
-          : state.subFlows[context.geoNodeId!]?.dependencyMap;
 
-      if (!nodeRuntime || !dependencyMap) {
+      if (!nodeRuntime) {
         return { ok: false, error: `Context not found` };
       }
 
       if (!nodeRuntime[source] || !nodeRuntime[target])
         return { ok: false, error: `Node "${source}" or "${target}" not found` };
 
-      if (!dependencyMap[source]?.includes(target))
+      // Check connection exists using new system
+      const connections = state.connectionManager.getConnectionsBetweenNodes(source, target);
+      if (connections.length === 0) {
         return { ok: false, error: `Edge from "${source}" to "${target}" does not exist` };
-
-      // ATOMIC OPERATION: All state updates and recomputation in single transaction
-      let recomputationQueue: string[] = [];
+      }
 
       set((state) => {
-        // Get current edge list for this context
-        const currentDependencyMap = context.type === "root"
-          ? state.rootDependencyMap
-          : state.subFlows[context.geoNodeId!].dependencyMap;
+        // Find and remove connection using new system
+        const connectionsToRemove = state.connectionManager.getConnectionsBetweenNodes(source, target);
+        
+        // Remove specific connection if handles provided, otherwise remove first matching
+        let connectionToRemove = connectionsToRemove[0];
+        if (sourceHandle && targetHandle) {
+          connectionToRemove = connectionsToRemove.find(conn => 
+            conn.sourceHandle === sourceHandle && conn.targetHandle === targetHandle
+          ) || connectionsToRemove[0];
+        }
 
-        // Build current edges from dependency map
-        const currentEdges: { source: string; target: string }[] = [];
-        for (const [sourceId, targets] of Object.entries(currentDependencyMap)) {
-          for (const targetId of targets) {
-            currentEdges.push({ source: sourceId, target: targetId });
+        if (connectionToRemove) {
+          // Remove from new connection system
+          state.connectionManager.removeConnection(connectionToRemove.id);
+          
+          // Remove from graph if this was the last connection between these nodes
+          const remainingConnections = state.connectionManager.getConnectionsBetweenNodes(source, target);
+          if (remainingConnections.length === 0) {
+            state.graph.disconnect(source, target);
           }
         }
 
-        // Remove the edge
-        const newEdges = currentEdges.filter(edge => !(edge.source === source && edge.target === target));
-
-        // Rebuild dependency maps from scratch to ensure consistency
-        const { dependencyMap: newDependencyMap, reverseDeps: newReverseDeps } = 
-          computeEngine.rebuildDependencyMaps(newEdges);
-
-        // Update state with rebuilt dependency maps
-        if (context.type === "root") {
-          state.rootDependencyMap = newDependencyMap;
-          state.rootReverseDeps = newReverseDeps;
-          
-          // Handle input clearing for specific handles
-          if (sourceHandle && targetHandle && state.rootNodeRuntime[target]?.inputs[targetHandle]) {
-            delete state.rootNodeRuntime[target].inputs[targetHandle];
-          } else if (state.rootNodeRuntime[target]) {
-            state.rootNodeRuntime[target].isDirty = true;
+        // Handle input clearing and mark target node as dirty
+        const targetNodeRuntime = context.type === "root"
+          ? state.rootNodeRuntime[target]
+          : state.subFlows[context.geoNodeId!]?.nodeRuntime[target];
+        
+        if (targetNodeRuntime) {
+          // Clear specific input handle if provided
+          if (sourceHandle && targetHandle && targetNodeRuntime.inputs[targetHandle]) {
+            delete targetNodeRuntime.inputs[targetHandle];
           }
-        } else {
-          const subFlow = state.subFlows[context.geoNodeId!];
-          subFlow.dependencyMap = newDependencyMap;
-          subFlow.reverseDeps = newReverseDeps;
           
-          // Handle input clearing for specific handles
-          if (sourceHandle && targetHandle && subFlow.nodeRuntime[target]?.inputs[targetHandle]) {
-            delete subFlow.nodeRuntime[target].inputs[targetHandle];
-          } else if (subFlow.nodeRuntime[target]) {
-            subFlow.nodeRuntime[target].isDirty = true;
-          }
-        }
-
-        // Queue recomputation if in eager mode
-        if (state.evaluationMode === "eager") {
-          const targetNodeRuntime = context.type === "root" 
-            ? state.rootNodeRuntime 
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-          
-          if (targetNodeRuntime?.[target]) {
-            recomputationQueue = [target];
-          }
+          // Mark target as dirty since it lost a connection
+          targetNodeRuntime.isDirty = true;
         }
       });
 
-      // Process recomputation queue outside of state mutation
-      for (const nodeId of recomputationQueue) {
-        get().recomputeFrom(nodeId, context);
+      // Use new batched recomputation system
+      if (get().evaluationMode === "eager") {
+        get().cooker.enqueue(target);
       }
 
       return { ok: true };
@@ -743,28 +628,23 @@ export const useGraphStore = create<GraphState>()(
     resetEdges: (edges: EdgeData[], context: GraphContext): Result => {
       
       set((state) => {
-        if (context.type === "root") {
-          for (const nodeId in state.rootDependencyMap) {
-            state.rootDependencyMap[nodeId] = [];
-          }
-          for (const nodeId in state.rootReverseDeps) {
-            state.rootReverseDeps[nodeId] = [];
-          }
-          for (const nodeId in state.rootNodeRuntime) {
-            state.rootNodeRuntime[nodeId].isDirty = true;
-          }
-        } else {
-          const subFlow = state.subFlows[context.geoNodeId!];
-          if (subFlow) {
-            for (const nodeId in subFlow.dependencyMap) {
-              subFlow.dependencyMap[nodeId] = [];
-            }
-            for (const nodeId in subFlow.reverseDeps) {
-              subFlow.reverseDeps[nodeId] = [];
-            }
-            for (const nodeId in subFlow.nodeRuntime) {
-              subFlow.nodeRuntime[nodeId].isDirty = true;
-            }
+        // Clear all existing connections using new system
+        const nodeRuntime = context.type === "root" 
+          ? state.rootNodeRuntime 
+          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+        
+        if (nodeRuntime) {
+          // Get all node IDs in this context
+          const nodeIds = Object.keys(nodeRuntime);
+          
+          // Remove all connections between nodes in this context
+          for (const nodeId of nodeIds) {
+            state.connectionManager.removeAllConnectionsForNode(nodeId);
+            state.graph.removeNode(nodeId);
+            // Re-add node to graph (without connections)
+            state.graph.addNode({ id: nodeId });
+            // Mark as dirty since connections changed
+            nodeRuntime[nodeId].isDirty = true;
           }
         }
       });
@@ -787,34 +667,35 @@ export const useGraphStore = create<GraphState>()(
 
     markDirty: (nodeId: string, context: GraphContext) => {
       const state = get();
-      const dependencyMap =
-        context.type === "root"
-          ? state.rootDependencyMap
-          : state.subFlows[context.geoNodeId!]?.dependencyMap;
-      const nodeRuntime =
-        context.type === "root"
-          ? state.rootNodeRuntime
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-      if (!dependencyMap || !nodeRuntime) return;
-
-      const nodesToMark = computeEngine.getDependentsRecursive(nodeId, dependencyMap);
-
-      set((state) => {
-        const targetNodeRuntime =
-          context.type === "root"
-            ? state.rootNodeRuntime
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-        if (!targetNodeRuntime) return;
-
-        if (targetNodeRuntime[nodeId]) targetNodeRuntime[nodeId].isDirty = true;
-
-        for (const id of nodesToMark) {
-          if (targetNodeRuntime[id]) {
-            targetNodeRuntime[id].isDirty = true;
+      
+      // Phase 2: Use DirtyController for proper dirty propagation
+      const targetNodeRuntime = context.type === "root"
+        ? state.rootNodeRuntime
+        : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+        
+      if (!targetNodeRuntime?.[nodeId]) {
+        console.error(`[markDirty] Node ${nodeId} not found in context`);
+        return;
+      }
+      
+      const runtime = targetNodeRuntime[nodeId];
+      if (runtime.dirtyController) {
+        // Use DirtyController for proper propagation and batching
+        runtime.dirtyController.setDirty();
+        console.log(`[markDirty] Used DirtyController to mark ${nodeId} as dirty`);
+      } else {
+        // Fallback to old system for nodes without DirtyController
+        const successors = state.graph.getAllSuccessors(nodeId);
+        const nodesToMark = [nodeId, ...successors.map(n => n.id)];
+        set((_state) => {
+          for (const id of nodesToMark) {
+            if (targetNodeRuntime[id]) {
+              targetNodeRuntime[id].isDirty = true;
+            }
           }
-        }
-      });
+        });
+        console.log(`[markDirty] Fallback: marked ${nodesToMark.length} nodes as dirty`);
+      }
     },
 
     recomputeFrom: (nodeId: string, context: GraphContext) => {
@@ -826,174 +707,24 @@ export const useGraphStore = create<GraphState>()(
         return;
       }
       
-      // Use debounced recomputation to prevent cascading calls
-      debouncedRecomputeFrom(nodeId, context, () => {
-        // Prevent infinite loops with recomputation guard
-        if (!startRecomputation(nodeId, context)) {
-          return; // Skip if already recomputing this node
-        }
-        
-        console.log(`[recomputeFrom] Starting recomputation for ${nodeId} in ${context.type} context`);
+      // NEW SYSTEM: Use Cooker for batched recomputation - ELIMINATES ALL COMPLEX LOGIC
+      state.cooker.enqueue(nodeId, {
+        type: 'compute',
+        trigger: state.graph.getNode(nodeId)
+      });
       
-      try {
-        // BATCHED RECOMPUTATION: Process all dirty nodes in correct topological order
-        const batchRecompute = (startNodeId: string) => {
-        const state = get();
-        const dependencyMap = context.type === "root"
-          ? state.rootDependencyMap
-          : state.subFlows[context.geoNodeId!]?.dependencyMap;
-        const reverseDeps = context.type === "root"
-          ? state.rootReverseDeps
-          : state.subFlows[context.geoNodeId!]?.reverseDeps;
-        const nodeRuntime = context.type === "root"
-          ? state.rootNodeRuntime
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-        if (!dependencyMap || !reverseDeps || !nodeRuntime) {
-          console.error(`[recomputeFrom] Missing context data for ${context.type} context`);
-          return;
-        }
-
-        // Get all nodes that need recomputation: the start node and all its dependents
-        const dependents = computeEngine.getDependentsRecursive(startNodeId, dependencyMap);
-        const nodesToRecompute = [startNodeId, ...dependents];
-
-        // Get evaluation order for all nodes that need recomputation
-        const allEvalOrders: string[] = [];
-        for (const id of nodesToRecompute) {
-          if (nodeRuntime[id]?.isDirty) {
-            const evalOrder = computeEngine.getEvaluationOrder(id, dependencyMap);
-            for (const evalId of evalOrder) {
-              if (!allEvalOrders.includes(evalId)) {
-                allEvalOrders.push(evalId);
-              }
-            }
-          }
-        }
-
-        // Process all nodes in a single batch with atomic state updates
-        const computationResults: Array<{
-          nodeId: string;
-          success: boolean;
-          output?: any;
-          error?: string;
-        }> = [];
-
-        // Compute all nodes (outside of state mutations)
-        for (const id of allEvalOrders) {
-          const node = nodeRuntime[id];
-          
-          if (!node || !node.isDirty) {
-            continue;
-          }
-
-          const nodeDef = nodeRegistry[node.type];
-          if (!nodeDef) {
-            console.error(`[recomputeFrom] Node definition not found for node ${id} type ${node.type}`);
-            computationResults.push({ 
-              nodeId: id, 
-              success: false, 
-              error: `Node definition not found for type ${node.type}` 
-            });
-            continue;
-          }
-
-          // FIXED: Use dependencyMap to get nodes this node depends on (input sources)
-          // reverseDeps contains nodes that depend on this node (output targets)
-          const inputSources = dependencyMap[id] || [];
-          const inputs: Record<string, any> = {};
-          
-          console.log(`[recomputeFrom] Node ${id} input sources from dependencyMap:`, inputSources);
-
-          // Get fresh node runtime for input gathering
-          const currentState = get();
-          const currentNodeRuntime = context.type === "root"
-            ? currentState.rootNodeRuntime
-            : currentState.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-          for (const sourceId of inputSources) {
-            const sourceNode = currentNodeRuntime?.[sourceId];
-            console.log(`[recomputeFrom] Processing input source ${sourceId}:`, sourceNode?.output);
-            if (sourceNode && sourceNode.output !== undefined) {
-              inputs[sourceId] = sourceNode.output;
-              console.log(`[recomputeFrom] Added input ${sourceId} to node ${id}`);
-            }
-          }
-          
-          console.log(`[recomputeFrom] Final inputs for node ${id}:`, inputs);
-
-          try {
-            const result = computeEngine.evaluateNode(id, node.params, inputs, nodeDef.compute);
-            computationResults.push({ 
-              nodeId: id, 
-              success: true, 
-              output: result 
-            });
-          } catch (err) {
-            console.error(`[recomputeFrom] Error computing node ${id}:`, err);
-            computationResults.push({ 
-              nodeId: id, 
-              success: false, 
-              error: err instanceof Error ? err.message : String(err) 
-            });
-          }
-        }
-
-        // Apply all computation results atomically (including active output updates)
-        set((state) => {
-          const targetNodeRuntime = context.type === "root"
-            ? state.rootNodeRuntime
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-          if (!targetNodeRuntime) return;
-
-          // First, apply all computation results
-          for (const result of computationResults) {
-            if (targetNodeRuntime[result.nodeId]) {
-              if (result.success) {
-                targetNodeRuntime[result.nodeId].output = result.output;
-                targetNodeRuntime[result.nodeId].isDirty = false;
-                targetNodeRuntime[result.nodeId].error = undefined;
-              } else {
-                targetNodeRuntime[result.nodeId].error = result.error;
-                targetNodeRuntime[result.nodeId].isDirty = false;
-              }
-            }
-          }
-
-          // Then, handle any nodes that should be set as active output (in the same state update)
-          // BUT ONLY if we're not currently importing (to avoid overriding restored active output)
-          if (context.type === "subflow" && context.geoNodeId && !state.isImporting) {
-            for (const result of computationResults) {
-              if (result.success && result.output?.shouldSetAsActiveOutput) {
-                const subFlow = state.subFlows[context.geoNodeId];
-                if (subFlow) {
-                  console.log(`[batchRecompute] Setting node ${result.nodeId} as active output for geoNode ${context.geoNodeId}`);
-                  subFlow.activeOutputNodeId = result.nodeId;
-                }
-              }
-            }
-          } else if (state.isImporting && context.type === "subflow") {
-            console.log(`[batchRecompute] Skipping auto-active-output during import for subflow ${context.geoNodeId} (working correctly!)`);
-          }
-        });
-      };
-
-      // Execute batched recomputation
-      batchRecompute(nodeId);
-      
-      } finally {
-        // Always release the recomputation guard
-        endRecomputation(nodeId, context);
-      }
-      }); // End debounced wrapper
+      console.log(`[recomputeFrom] Enqueued node ${nodeId} for batched recomputation in ${context.type} context`);
     },
 
     clear: () => {
+      // Clear new architecture components
+      const state = get();
+      state.graph = new CoreGraph();
+      state.connectionManager = new ConnectionManager(); 
+      state.cooker = new Cooker(state.graph);
+      
       set({
         rootNodeRuntime: {},
-        rootDependencyMap: {},
-        rootReverseDeps: {},
         subFlows: {},
       });
     },
@@ -1059,9 +790,7 @@ export const useGraphStore = create<GraphState>()(
               targetSubFlow.activeOutputNodeId = subFlow.activeOutputNodeId;
               console.log(`[importGraph] Restored active output node for subflow ${geoNodeId}:`, subFlow.activeOutputNodeId);
               
-              // Dependency maps are automatically rebuilt by addEdge() calls above
-              console.log(`[importGraph] Subflow ${geoNodeId} dependency map after edge restoration:`, targetSubFlow.dependencyMap);
-              console.log(`[importGraph] Subflow ${geoNodeId} reverse deps after edge restoration:`, targetSubFlow.reverseDeps);
+              // Connections are automatically managed by ConnectionManager and CoreGraph
             }
           });
         });
@@ -1104,21 +833,8 @@ export const useGraphStore = create<GraphState>()(
         }
       })();
       
-      // Validate that edges are properly restored before recomputation
-      console.log('[importGraph] Validating edge restoration...');
-      if (subFlows) {
-        Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
-          const restoredSubFlow = get().subFlows[geoNodeId];
-          if (restoredSubFlow) {
-            const edgeCount = Object.values(restoredSubFlow.dependencyMap).reduce((sum, deps) => sum + deps.length, 0);
-            console.log(`[importGraph] Subflow ${geoNodeId} has ${edgeCount} edges in dependency map`);
-            
-            if (edgeCount !== subFlow.edges.length) {
-              console.warn(`[importGraph] Edge count mismatch for subflow ${geoNodeId}: expected ${subFlow.edges.length}, got ${edgeCount}`);
-            }
-          }
-        });
-      }
+      // Edge validation is handled by ConnectionManager and CoreGraph
+      console.log('[importGraph] Edges restored via ConnectionManager');
 
       // Clear importing flag BEFORE triggering recomputation
       set((state) => {
@@ -1336,141 +1052,91 @@ export const useGraphStore = create<GraphState>()(
     },
 
     clearRecomputationTracking: () => {
-      recomputationGuard.clear();
-      recomputationCycleTracker.clear();
-      globalRecomputationTracker.clear();
-      console.log('[clearRecomputationTracking] Cleared all recomputation tracking including active guards');
+      // NEW SYSTEM: Clear cooker queue instead of complex tracking
+      const state = get();
+      state.cooker.clear();
+      console.log('[clearRecomputationTracking] Cleared cooker queue (new batching system)');
     },
 
-    forceResetImportedNodeTracking: (nodeIds: string[], contexts: GraphContext[]) => {
-      // Nuclear reset for imported nodes that are stuck in tracking state
-      nodeIds.forEach(nodeId => {
-        contexts.forEach(context => {
-          const key = getRecomputationKey(nodeId, context.type, context.geoNodeId);
-          recomputationGuard.delete(key);
-          recomputationCycleTracker.delete(key);
-          globalRecomputationTracker.delete(nodeId);
-        });
-      });
-      console.log(`[forceResetImportedNodeTracking] Force reset tracking for ${nodeIds.length} imported nodes`);
+    forceResetImportedNodeTracking: (nodeIds: string[], _contexts: GraphContext[]) => {
+      // NEW SYSTEM: Simply clear cooker queue - no complex tracking needed
+      const state = get();
+      state.cooker.clear();
+      console.log(`[forceResetImportedNodeTracking] Cleared cooker queue for ${nodeIds.length} imported nodes (new system)`);
     },
 
     recomputeFromSync: async (nodeId: string, context: GraphContext) => {
-      return new Promise<void>((resolve) => {
-        // Create a synchronous version for import
-        const syncRecompute = (nodeId: string, context: GraphContext) => {
-          if (!startRecomputation(nodeId, context)) {
-            resolve();
-            return;
+      // NEW SYSTEM: Use simple direct computation for sync operations
+      const state = get();
+      
+      console.log(`[recomputeFromSync] Starting synchronous recomputation for ${nodeId} in ${context.type} context`);
+      
+      // For sync operations during import, bypass the cooker and compute directly
+      const nodeRuntime = context.type === "root" 
+        ? state.rootNodeRuntime 
+        : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+        
+      if (!nodeRuntime || !nodeRuntime[nodeId]) {
+        console.error(`[recomputeFromSync] Node ${nodeId} not found in context`);
+        return;
+      }
+      
+      const node = nodeRuntime[nodeId];
+      if (!node.isDirty) {
+        console.debug(`[recomputeFromSync] Node ${nodeId} is not dirty, skipping`);
+        return;
+      }
+      
+      const nodeDef = nodeRegistry[node.type];
+      if (!nodeDef) {
+        console.error(`[recomputeFromSync] Node definition not found for type ${node.type}`);
+        return;
+      }
+      
+      // Get inputs using new connection system
+      const inputConnections = state.connectionManager.getInputConnections(nodeId);
+      const inputs: Record<string, any> = {};
+      
+      for (const connection of inputConnections) {
+        const sourceNode = nodeRuntime[connection.sourceNodeId];
+        if (sourceNode && sourceNode.output !== undefined) {
+          const inputHandle = connection.targetHandle || connection.sourceNodeId;
+          inputs[inputHandle] = sourceNode.output;
+        }
+      }
+      
+      try {
+        const result = computeEngine.evaluateNode(nodeId, node.params, inputs, nodeDef.compute);
+        
+        // Apply result directly
+        set((state) => {
+          const targetRuntime = context.type === "root"
+            ? state.rootNodeRuntime[nodeId]
+            : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+            
+          if (targetRuntime) {
+            targetRuntime.output = result;
+            targetRuntime.isDirty = false;
+            targetRuntime.error = undefined;
           }
-
-          console.log(`[recomputeFromSync] Starting synchronous recomputation for ${nodeId} in ${context.type} context`);
-
-          // Skip debouncing and execute immediately
-          const nodeRuntime = context.type === "root" 
-            ? get().rootNodeRuntime 
-            : get().subFlows[context.geoNodeId!]?.nodeRuntime;
-          const dependencyMap = context.type === "root" 
-            ? get().rootDependencyMap 
-            : get().subFlows[context.geoNodeId!]?.dependencyMap;
-          const reverseDeps = context.type === "root" 
-            ? get().rootReverseDeps 
-            : get().subFlows[context.geoNodeId!]?.reverseDeps;
-
-          if (!nodeRuntime || !dependencyMap || !reverseDeps) {
-            console.error(`[recomputeFromSync] Invalid context for ${nodeId}`);
-            resolve();
-            return;
+        });
+        
+        console.log(`[recomputeFromSync] Successfully computed node ${nodeId}`);
+        
+      } catch (err) {
+        set((state) => {
+          const targetRuntime = context.type === "root"
+            ? state.rootNodeRuntime[nodeId]
+            : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+            
+          if (targetRuntime) {
+            targetRuntime.error = err instanceof Error ? err.message : String(err);
+            targetRuntime.isDirty = false;
           }
-
-          // Execute batch recomputation directly
-          const batchRecompute = (startNodeId: string) => {
-            const allEvalOrders = computeEngine.getEvaluationOrder(startNodeId, dependencyMap);
-
-            const computationResults: Array<{
-              nodeId: string;
-              success: boolean;
-              output?: any;
-              error?: string;
-            }> = [];
-
-            // Compute all nodes
-            for (const id of allEvalOrders) {
-              const node = nodeRuntime[id];
-              if (!node || !node.isDirty) continue;
-
-              const nodeDef = nodeRegistry[node.type];
-              if (!nodeDef) {
-                computationResults.push({ nodeId: id, success: false, error: `Node definition not found for type ${node.type}` });
-                continue;
-              }
-
-              // FIXED: Use dependencyMap to get nodes this node depends on (input sources)
-              const inputSources = dependencyMap[id] || [];
-              const inputs: Record<string, any> = {};
-              
-              for (const sourceId of inputSources) {
-                const sourceNode = nodeRuntime[sourceId];
-                if (sourceNode && sourceNode.output !== undefined) {
-                  inputs[sourceId] = sourceNode.output;
-                }
-              }
-
-              try {
-                const result = computeEngine.evaluateNode(id, node.params, inputs, nodeDef.compute);
-                computationResults.push({ nodeId: id, success: true, output: result });
-              } catch (err) {
-                computationResults.push({ 
-                  nodeId: id, 
-                  success: false, 
-                  error: err instanceof Error ? err.message : String(err) 
-                });
-              }
-            }
-
-            // Apply results
-            set((state) => {
-              const targetNodeRuntime = context.type === "root"
-                ? state.rootNodeRuntime
-                : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-              if (!targetNodeRuntime) return;
-
-              for (const result of computationResults) {
-                if (targetNodeRuntime[result.nodeId]) {
-                  if (result.success) {
-                    targetNodeRuntime[result.nodeId].output = result.output;
-                    targetNodeRuntime[result.nodeId].isDirty = false;
-                    targetNodeRuntime[result.nodeId].error = undefined;
-                  } else {
-                    targetNodeRuntime[result.nodeId].error = result.error;
-                    targetNodeRuntime[result.nodeId].isDirty = false;
-                  }
-                }
-              }
-
-              // Handle active output updates for subflows
-              // BUT ONLY if we're not currently importing (to avoid overriding restored active output)
-              if (context.type === "subflow" && context.geoNodeId && !state.isImporting) {
-                for (const result of computationResults) {
-                  if (result.success && result.output?.shouldSetAsActiveOutput) {
-                    const subFlow = state.subFlows[context.geoNodeId];
-                    if (subFlow) {
-                      subFlow.activeOutputNodeId = result.nodeId;
-                    }
-                  }
-                }
-              }
-            });
-
-            resolve();
-          };
-
-          batchRecompute(nodeId);
-        };
-
-        syncRecompute(nodeId, context);
-      });
+        });
+        
+        console.error(`[recomputeFromSync] Error computing node ${nodeId}:`, err);
+      }
     },
 
     exportGraph: async (nodePositions?: Record<string, { x: number; y: number }>) => {
@@ -1483,17 +1149,26 @@ export const useGraphStore = create<GraphState>()(
         params: runtime.params,
       }));
       
-      // Convert rootDependencyMap to EdgeData format
+      // Convert ConnectionManager connections to EdgeData format
       const edges: EdgeData[] = [];
-      Object.entries(state.rootDependencyMap).forEach(([targetId, sourceIds]) => {
-        sourceIds.forEach(sourceId => {
-          edges.push({
-            id: `${sourceId}-${targetId}`,
-            source: sourceId,
-            target: targetId,
-          });
-        });
-      });
+      const rootNodeIds = Object.keys(state.rootNodeRuntime);
+      
+      for (const nodeId of rootNodeIds) {
+        const connections = state.connectionManager.getOutputConnections(nodeId);
+        
+        for (const connection of connections) {
+          // Only include connections between root context nodes
+          if (rootNodeIds.includes(connection.targetNodeId)) {
+            edges.push({
+              id: connection.id,
+              source: connection.sourceNodeId,
+              target: connection.targetNodeId,
+              sourceHandle: connection.sourceHandle,
+              targetHandle: connection.targetHandle,
+            });
+          }
+        }
+      }
       
       // Extract node runtime data (excluding output, isDirty, error for serialization)
       const nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">> = {};
@@ -1515,17 +1190,26 @@ export const useGraphStore = create<GraphState>()(
           params: runtime.params,
         }));
         
-        // Convert subflow dependencyMap to EdgeData format
+        // Convert subflow connections to EdgeData format
         const subFlowEdges: EdgeData[] = [];
-        Object.entries(subFlow.dependencyMap).forEach(([targetId, sourceIds]) => {
-          sourceIds.forEach(sourceId => {
-            subFlowEdges.push({
-              id: `${sourceId}-${targetId}`,
-              source: sourceId,
-              target: targetId,
-            });
-          });
-        });
+        const subFlowNodeIds = Object.keys(subFlow.nodeRuntime);
+        
+        for (const nodeId of subFlowNodeIds) {
+          const connections = state.connectionManager.getOutputConnections(nodeId);
+          
+          for (const connection of connections) {
+            // Only include connections between subflow nodes
+            if (subFlowNodeIds.includes(connection.targetNodeId)) {
+              subFlowEdges.push({
+                id: connection.id,
+                source: connection.sourceNodeId,
+                target: connection.targetNodeId,
+                sourceHandle: connection.sourceHandle,
+                targetHandle: connection.targetHandle,
+              });
+            }
+          }
+        }
         
         // Extract subflow node runtime data
         const subFlowNodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">> = {};
@@ -1547,8 +1231,6 @@ export const useGraphStore = create<GraphState>()(
           nodeRuntime: subFlowNodeRuntime,
           positions: subFlowPositions,
           activeOutputNodeId: subFlow.activeOutputNodeId,
-          dependencyMap: subFlow.dependencyMap,
-          reverseDeps: subFlow.reverseDeps,
         };
       });
       
@@ -1603,24 +1285,34 @@ export const useNodes = () => {
 };
 
 export const useEdges = () => {
-  const rootDependencyMap = useGraphStore((state) => state.rootDependencyMap);
+  const connectionManager = useGraphStore((state) => state.connectionManager);
+  const rootNodeRuntime = useGraphStore((state) => state.rootNodeRuntime);
 
-  // TODO: Update for context-aware edge retrieval in Phase 2
   return React.useMemo(() => {
     const edges: EdgeData[] = [];
 
-    for (const [sourceId, targets] of Object.entries(rootDependencyMap)) {
-      for (const targetId of targets) {
-        edges.push({
-          id: `${sourceId}-${targetId}`,
-          source: sourceId,
-          target: targetId,
-        });
+    // Get all connections from connection manager for root context nodes
+    const rootNodeIds = Object.keys(rootNodeRuntime);
+    
+    for (const nodeId of rootNodeIds) {
+      const connections = connectionManager.getOutputConnections(nodeId);
+      
+      for (const connection of connections) {
+        // Only include connections between nodes in root context
+        if (rootNodeIds.includes(connection.targetNodeId)) {
+          edges.push({
+            id: connection.id,
+            source: connection.sourceNodeId,
+            target: connection.targetNodeId,
+            sourceHandle: connection.sourceHandle,
+            targetHandle: connection.targetHandle,
+          });
+        }
       }
     }
 
     return edges.sort((a, b) => a.id.localeCompare(b.id));
-  }, [rootDependencyMap]);
+  }, [connectionManager, rootNodeRuntime]);
 };
 
 export const useRenderableNodes = () => {
