@@ -1,10 +1,10 @@
 .nodePill {
   position: relative;
-  width: 9rem; /* 90px */
-  height: 3rem; /* 30px */
+  width: 9rem;
+  height: 3rem;
   background-color: var(--light-node-background);
   border: none;
-  border-radius: 0.6rem; /* 6px - more subtle rounding */
+  border-radius: 0.6rem;
   transition: border-color 0.2s ease;
 }
 
@@ -17,23 +17,22 @@
   box-shadow: 0 0 0 0.2rem var(--accent-primary);
 }
 
-
 .nodeLabel {
   position: absolute;
-  left: 9.4rem; /* Position to the right of the 90px pill (9rem + 0.4rem spacing) */
+  left: 9.4rem;
   top: 0;
-  height: 3rem; /* Match pill height */
+  height: 3rem;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   font-weight: 400;
-  font-size: 1.1rem; /* ~92% of 1.2rem from BaseNodeDesign */
+  font-size: 1.1rem;
   color: var(--text-primary);
   white-space: nowrap;
-  overflow: visible; /* Allow text to extend beyond container */
+  overflow: visible;
   text-overflow: ellipsis;
-  max-width: 10rem; /* Larger max width for labels on the right */
-  z-index: 15; /* Ensure label appears above other elements */
+  max-width: 10rem;
+  z-index: 15;
 }
 
 .disabled {

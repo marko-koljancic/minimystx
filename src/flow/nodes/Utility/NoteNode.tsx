@@ -23,7 +23,6 @@ export default function NoteNode(props: NodeProps) {
   const currentColor = nodeData.note?.color || NOTE_COLORS[0];
   const colorIndex = NOTE_COLORS.indexOf(currentColor);
 
-  // Handle text editing
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
@@ -53,7 +52,6 @@ export default function NoteNode(props: NodeProps) {
     e.stopPropagation();
   }, [handleTextBlur, nodeData.note?.text]);
 
-  // Handle color cycling
   const handleColorClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const nextIndex = (colorIndex + 1) % NOTE_COLORS.length;
@@ -66,7 +64,6 @@ export default function NoteNode(props: NodeProps) {
     }, currentContext);
   }, [colorIndex, id, nodeData.note, setParams, currentContext]);
 
-  // Handle NodeResizer resize
   const handleResize = useCallback((_event: unknown, data: { width: number; height: number }) => {
     setParams(id, {
       note: {
@@ -78,7 +75,6 @@ export default function NoteNode(props: NodeProps) {
   }, [id, nodeData.note, setParams, currentContext]);
 
 
-  // Focus text area when editing starts
   useEffect(() => {
     if (isEditing && textAreaRef.current) {
       textAreaRef.current.focus();
@@ -86,7 +82,6 @@ export default function NoteNode(props: NodeProps) {
     }
   }, [isEditing]);
 
-  // Update text state when node data changes
   useEffect(() => {
     setText(nodeData.note?.text || "");
   }, [nodeData.note?.text]);

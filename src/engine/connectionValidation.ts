@@ -62,8 +62,6 @@ export const isValidConnection = (
   const { source, target, targetHandle } = connection;
   const sourceNode = nodes.find((node) => node.id === source);
   const targetNode = nodes.find((node) => node.id === target);
-  // Only check for existing target connections (inputs can only have one connection)
-  // Source connections (outputs) can have multiple connections - this is key for parametric design!
   const existingTargetConnection = edges.find(
     (edge) => edge.target === target && edge.targetHandle === targetHandle
   );
@@ -72,7 +70,6 @@ export const isValidConnection = (
   if (source === target) return false;
   if (!sourceNode || !targetNode) return false;
 
-  // Validate that both nodes are allowed in the current context
   if (currentContext && sourceNode.type && targetNode.type) {
     const sourceNodeDef = nodeRegistry[sourceNode.type as keyof typeof nodeRegistry];
     const targetNodeDef = nodeRegistry[targetNode.type as keyof typeof nodeRegistry];
@@ -86,8 +83,6 @@ export const isValidConnection = (
     }
   }
 
-  // Only prevent duplicate target connections (one input per handle)
-  // Allow multiple source connections (multiple outputs from same handle - parametric feature!)
   if (existingTargetConnection) return false;
   if (wouldCreateCycle(edges, source, target)) return false;
   return true;

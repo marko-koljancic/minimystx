@@ -1,8 +1,3 @@
-/**
- * Downloads an object as a JSON file
- * @param obj - The object to download as JSON
- * @param filename - The filename (without extension)
- */
 export function downloadObjectAsJson(obj: unknown, filename: string): void {
   try {
     const jsonString = JSON.stringify(obj, null, 2);
@@ -18,19 +13,12 @@ export function downloadObjectAsJson(obj: unknown, filename: string): void {
     link.click();
     document.body.removeChild(link);
 
-    // Clean up the URL object
     URL.revokeObjectURL(url);
 
-    console.info(`Project saved as ${filename}.json`);
   } catch (error) {
-    console.error("Failed to download file:", error);
   }
 }
 
-/**
- * Opens a file picker and returns the parsed JSON content
- * @returns Promise that resolves to parsed JSON object or null if cancelled
- */
 export function selectJsonFile(): Promise<unknown | null> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
@@ -46,12 +34,8 @@ export function selectJsonFile(): Promise<unknown | null> {
         return;
       }
 
-      // Check file size (20 MB limit)
-      const maxSize = 20 * 1024 * 1024; // 20 MB in bytes
+      const maxSize = 20 * 1024 * 1024;
       if (file.size > maxSize) {
-        console.error(
-          `File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Maximum size is 20MB.`
-        );
         resolve(null);
         return;
       }
@@ -61,7 +45,6 @@ export function selectJsonFile(): Promise<unknown | null> {
         const parsed = JSON.parse(text);
         resolve(parsed);
       } catch (error) {
-        console.error("Invalid JSON file:", error);
         resolve(null);
       }
     });
@@ -76,20 +59,10 @@ export function selectJsonFile(): Promise<unknown | null> {
   });
 }
 
-/**
- * Sanitizes a filename by removing invalid characters
- * @param input - The input string to sanitize
- * @returns Sanitized filename string
- */
 export function sanitizeFilename(input: string): string {
-  // Remove invalid filename characters: / \ : * ? " < > |
   return input.replace(/[/\\:*?"<>|]/g, "").trim();
 }
 
-/**
- * Generates a default project filename with current date
- * @returns Default filename string
- */
 export function getDefaultFilename(): string {
   const now = new Date();
   const year = now.getFullYear();

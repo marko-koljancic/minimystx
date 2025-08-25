@@ -16,11 +16,7 @@ export default function LightNodeBaseDesign({
 
   return (
     <>
-      <div
-        className={`${styles.nodeLabel} ${isDisabled ? styles.disabled : ""}`}
-      >
-        {label}
-      </div>
+      <div className={`${styles.nodeLabel} ${isDisabled ? styles.disabled : ""}`}>{label}</div>
       <div
         className={`
           ${styles.nodePill} 

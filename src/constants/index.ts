@@ -80,19 +80,6 @@ type FlowNodeTypes =
 
 export const initialEdges: Edge[] = [];
 
-export const initialNodes: Node<FlowNodeTypes>[] = [
-  // {
-  //   id: "default-ambient-light",
-  //   type: "ambientLightNode",
-  //   position: { x: 50, y: 50 },
-  //   data: {} as AmbientLightNodeData,
-  // },
-  // {
-  //   id: "default-directional-light",
-  //   type: "directionalLightNode",
-  //   position: { x: 50, y: 200 },
-  //   data: {} as DirectionalLightNodeData,
-  // },
-];
+export const initialNodes: Node<FlowNodeTypes>[] = [];
 
 export const GRAPH_SCHEMA = 1;

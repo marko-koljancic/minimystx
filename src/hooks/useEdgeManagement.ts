@@ -4,7 +4,6 @@ import { v4 as uuid } from "uuid";
 import { isValidConnection } from "../engine/connectionValidation";
 import { useGraphStore } from "../engine/graphStore";
 import { useCurrentContext } from "../store/uiStore";
-// import { toast } from "../utils/toast";
 
 export function useEdgeManagement(
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>,
@@ -36,7 +35,6 @@ export function useEdgeManagement(
         );
 
         if (!result.ok) {
-          console.error("[EDGE SYNC] Failed to add edge to graph store:", result.error);
         }
       }
     },
@@ -45,12 +43,10 @@ export function useEdgeManagement(
 
   const onReconnect = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
-      // Validate the new connection before proceeding
       if (!isValidConnection(newConnection, nodes, edges, currentContext)) {
         return;
       }
 
-      // Remove the old edge from graph store
       const oldRemoveResult = removeEdge(
         oldEdge.source,
         oldEdge.target,
@@ -60,11 +56,9 @@ export function useEdgeManagement(
       );
 
       if (!oldRemoveResult.ok) {
-        console.error("[EDGE RECONNECT] Failed to remove old edge:", oldRemoveResult.error);
         return;
       }
 
-      // Add the new edge to graph store
       if (newConnection.source && newConnection.target) {
         const addResult = addEdge(
           newConnection.source,
@@ -75,8 +69,7 @@ export function useEdgeManagement(
         );
 
         if (!addResult.ok) {
-          console.error("[EDGE RECONNECT] Failed to add new edge:", addResult.error);
-          // Try to restore the old edge if adding new one failed
+
           addEdge(
             oldEdge.source,
             oldEdge.target,
@@ -88,7 +81,6 @@ export function useEdgeManagement(
         }
       }
 
-      // Update the React Flow edges state
       setEdges((eds) => {
         return eds.map((e) => {
           if (e.id === oldEdge.id) {

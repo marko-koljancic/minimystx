@@ -43,7 +43,6 @@ export const VectorInput: React.FC<VectorInputProps> = ({
   const lastValidValues = useRef({ ...value });
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // Create individual precision drag hooks for each component (hooks must be called unconditionally)
   const xPrecisionDrag = useMiddleMousePrecisionDrag(
     value.x || 0,
     (newValue) => {
@@ -100,7 +99,6 @@ export const VectorInput: React.FC<VectorInputProps> = ({
     }
   );
 
-  // Map components to their respective precision drag hooks
   const precisionDragHooks: Record<string, ReturnType<typeof useMiddleMousePrecisionDrag>> = {
     x: xPrecisionDrag,
     y: yPrecisionDrag,
@@ -108,10 +106,8 @@ export const VectorInput: React.FC<VectorInputProps> = ({
     w: wPrecisionDrag,
   };
 
-  // Check if any component is being dragged
   const isAnyDragging = components.some((comp) => precisionDragHooks[comp]?.state.isDragging);
 
-  // Update input values when prop changes (external update)
   useEffect(() => {
     if (!focusedComponent && !isAnyDragging) {
       const newInputValues: Record<string, string> = {};
@@ -128,33 +124,27 @@ export const VectorInput: React.FC<VectorInputProps> = ({
     (component: string, textValue: string) => {
       const numValue = parseFloat(textValue);
 
-      // Create temporary vector to validate
       const tempVector = { ...lastValidValues.current };
       tempVector[component as keyof typeof tempVector] = numValue;
 
       const validation = validateParameterValue(tempVector, metadata);
 
       if (validation.valid) {
-        // Update the valid value
         lastValidValues.current[component as keyof typeof lastValidValues.current] = numValue;
 
-        // Clear error for this component
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors[component];
           return newErrors;
         });
 
-        // Update input value to cleaned number
         setInputValues((prev) => ({
           ...prev,
           [component]: numValue.toString(),
         }));
 
-        // Commit the entire vector
         onChange(lastValidValues.current);
       } else {
-        // Set error for this component
         setErrors((prev) => ({
           ...prev,
           [component]: validation.error || "Invalid value",
@@ -172,11 +162,10 @@ export const VectorInput: React.FC<VectorInputProps> = ({
   };
 
   const handleKeyDown = (component: string, e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Let precision drag hook handle escape during drag, block other keys
     if (precisionDragHooks[component]?.state.isDragging) {
       precisionDragHooks[component].bind.onKeyDown(e);
       if (e.key !== "Escape") {
-        e.preventDefault(); // Block all keys except escape during drag
+        e.preventDefault();
       }
       return;
     }
@@ -216,12 +205,11 @@ export const VectorInput: React.FC<VectorInputProps> = ({
     setFocusedComponent(component);
   };
 
-  // Combine input classes with precision drag styling for a component
   const getInputClasses = (component: string) => {
     const classes = [
       styles.inputField,
       styles.vectorInput,
-      styles.numericDrag, // Always apply tabular numerals
+      styles.numericDrag,
       errors[component] ? styles.error : "",
       precisionDragHooks[component]?.state.isDragging ? styles.precisionDragActive : "",
     ]
@@ -230,13 +218,11 @@ export const VectorInput: React.FC<VectorInputProps> = ({
     return classes;
   };
 
-  // Get display value for a component (precision mode or normal)
   const getDisplayValue = (component: string) => {
     const hook = precisionDragHooks[component];
     return hook?.state.isDragging ? hook.getDisplayValue() : inputValues[component];
   };
 
-  // Get the currently active precision drag hook (if any)
   const activeDragComponent = components.find((comp) => precisionDragHooks[comp]?.state.isDragging);
   const activePrecisionDrag = activeDragComponent ? precisionDragHooks[activeDragComponent] : null;
 

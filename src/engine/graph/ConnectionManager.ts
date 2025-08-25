@@ -10,18 +10,15 @@ export interface Connection {
 export class ConnectionManager {
   private connections: Map<string, Connection> = new Map();
   private inputConnections: Map<string, Connection[]> = new Map();
-  // This Map structure SOLVES the one-to-many issue: outputIndex -> Map of connections by ID
   private outputConnections: Map<string, Map<string, Connection[]>> = new Map();
   
   addConnection(connection: Connection): void {
     this.connections.set(connection.id, connection);
     
-    // Update input connections
     const inputConns = this.inputConnections.get(connection.targetNodeId) || [];
     inputConns.push(connection);
     this.inputConnections.set(connection.targetNodeId, inputConns);
     
-    // Update output connections (handle-based) - SOLVES ONE-TO-MANY ISSUE
     const sourceHandle = connection.sourceHandle || 'default';
     let outputMap = this.outputConnections.get(connection.sourceNodeId);
     if (!outputMap) {
@@ -38,18 +35,14 @@ export class ConnectionManager {
     const connection = this.connections.get(connectionId);
     if (!connection) return;
     
-    // Remove from main index
     this.connections.delete(connectionId);
     
-    // Remove from input connections
     this.removeFromInputConnections(connection);
     
-    // Remove from output connections
     this.removeFromOutputConnections(connection);
   }
   
   removeAllConnectionsForNode(nodeId: string): void {
-    // Get all connections involving this node
     const connectionsToRemove: string[] = [];
     
     for (const [connectionId, connection] of this.connections.entries()) {
@@ -58,13 +51,11 @@ export class ConnectionManager {
       }
     }
     
-    // Remove each connection
     for (const connectionId of connectionsToRemove) {
       this.removeConnection(connectionId);
     }
   }
   
-  // SOLVES ONE-TO-MANY ISSUE: Multiple connections per output
   getOutputConnections(nodeId: string, outputHandle?: string): Connection[] {
     const outputMap = this.outputConnections.get(nodeId);
     if (!outputMap) return [];
@@ -73,7 +64,6 @@ export class ConnectionManager {
       return outputMap.get(outputHandle) || [];
     }
     
-    // Return all connections from all handles
     const allConnections: Connection[] = [];
     outputMap.forEach(connections => allConnections.push(...connections));
     return allConnections;
@@ -105,12 +95,10 @@ export class ConnectionManager {
   }
   
   canConnect(sourceId: string, targetId: string, sourceHandle?: string, targetHandle?: string): { canConnect: boolean; reason?: string } {
-    // Prevent self-connections
     if (sourceId === targetId) {
       return { canConnect: false, reason: 'Cannot connect node to itself' };
     }
     
-    // Check for duplicate connections (optional - can be disabled for multi-connections)
     const existingConnection = this.hasConnection(sourceId, targetId, sourceHandle, targetHandle);
     if (existingConnection) {
       return { canConnect: false, reason: 'Connection already exists' };
@@ -119,7 +107,6 @@ export class ConnectionManager {
     return { canConnect: true };
   }
   
-  // Generate unique connection ID
   generateConnectionId(): string {
     return `conn_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
@@ -131,7 +118,6 @@ export class ConnectionManager {
       if (index !== -1) {
         inputConns.splice(index, 1);
         
-        // Clean up empty array
         if (inputConns.length === 0) {
           this.inputConnections.delete(connection.targetNodeId);
         }
@@ -150,7 +136,6 @@ export class ConnectionManager {
         if (index !== -1) {
           handleConnections.splice(index, 1);
           
-          // Clean up empty arrays and maps
           if (handleConnections.length === 0) {
             outputMap.delete(sourceHandle);
             if (outputMap.size === 0) {
@@ -162,7 +147,6 @@ export class ConnectionManager {
     }
   }
   
-  // Connection validation for complex scenarios
   validateConnection(connection: Connection): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     
@@ -188,7 +172,6 @@ export class ConnectionManager {
     };
   }
   
-  // Statistics and debugging
   getStats(): {
     totalConnections: number;
     nodesWithInputs: number;
@@ -226,7 +209,6 @@ export class ConnectionManager {
     };
   }
   
-  // Get all connected node pairs (useful for graph algorithms)
   getConnectionPairs(): Array<{ source: string; target: string }> {
     return Array.from(this.connections.values()).map(conn => ({
       source: conn.sourceNodeId,
@@ -234,7 +216,6 @@ export class ConnectionManager {
     }));
   }
   
-  // Clone connection (useful for graph operations)
   cloneConnection(connectionId: string, newId?: string): Connection | undefined {
     const original = this.connections.get(connectionId);
     if (!original) return undefined;

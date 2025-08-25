@@ -23,7 +23,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
   onChange,
   disabled = false,
 }) => {
-  // Check for special display modes based on metadata
   if (metadata.displayMode === "description") {
     return (
       <div
@@ -96,7 +95,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
       );
 
     case "string":
-      // Handle name field differently - full width
       if (metadata.displayMode === "name") {
         return (
           <StringInput

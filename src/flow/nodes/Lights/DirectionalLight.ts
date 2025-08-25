@@ -31,21 +31,18 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
 ) => {
   const light = new ThreeDirectionalLight(data.light.color, data.light.intensity);
 
-  // Set position
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
 
-  // Set target position (internal Object3D target)
   light.target.position.set(
     data.transform.target.x,
     data.transform.target.y,
     data.transform.target.z
   );
 
-  // Configure shadows
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
     const mapSize = parseInt(data.shadow.mapSize);
@@ -54,7 +51,6 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
     light.shadow.bias = data.shadow.bias;
     light.shadow.normalBias = data.shadow.normalBias;
 
-    // Configure orthographic shadow camera
     light.shadow.camera.near = data.shadow.cameraNear;
     light.shadow.camera.far = data.shadow.cameraFar;
     light.shadow.camera.left = data.shadow.cameraLeft;
@@ -63,15 +59,12 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
     light.shadow.camera.bottom = data.shadow.cameraBottom;
   }
 
-  // Set visibility
   light.visible = data.rendering.visible;
 
-  // Create a group to contain both light and helper
   const lightGroup = new Group();
   lightGroup.add(light);
-  lightGroup.add(light.target); // Add target to the group
+  lightGroup.add(light.target);
 
-  // Add helper if enabled
   if (data.rendering.showHelper) {
     const helper = new DirectionalLightHelper(light, data.rendering.helperSize, data.light.color);
     lightGroup.add(helper);
@@ -181,7 +174,6 @@ export const directionalLightNodeParams: NodeParams = {
 };
 
 export const directionalLightNodeCompute = (params: Record<string, unknown>) => {
-  // Validate shadow camera near/far constraint
   const shadowParams = params.shadow as DirectionalLightShadowProps;
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);

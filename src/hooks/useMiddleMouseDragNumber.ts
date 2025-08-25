@@ -37,7 +37,6 @@ export function useMiddleMouseDragNumber(
   const rafIdRef = useRef<number | null>(null);
   const inputElementRef = useRef<HTMLElement | null>(null);
 
-  // Clamp value to min/max constraints
   const clampValue = useCallback(
     (val: number) => {
       let clamped = val;
@@ -48,7 +47,6 @@ export function useMiddleMouseDragNumber(
     [min, max]
   );
 
-  // Handle mouse movement during drag
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!state.isDragging) return;
@@ -59,7 +57,7 @@ export function useMiddleMouseDragNumber(
 
       rafIdRef.current = requestAnimationFrame(() => {
         const deltaX = e.clientX - startXRef.current;
-        // Left decreases (negative deltaX), right increases (positive deltaX)
+
         const deltaValue = deltaX * state.selectedPrecision;
         const newValue = clampValue(state.originalValue + deltaValue);
 
@@ -70,7 +68,6 @@ export function useMiddleMouseDragNumber(
     [state.isDragging, state.originalValue, state.selectedPrecision, clampValue, setValue]
   );
 
-  // Handle mouse up to commit changes
   const handleMouseUp = useCallback(
     (e: MouseEvent) => {
       if (!state.isDragging || e.button !== 1) return;
@@ -84,7 +81,6 @@ export function useMiddleMouseDragNumber(
 
       onCommit?.(state.currentValue);
 
-      // Remove event listeners
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
 
@@ -93,20 +89,17 @@ export function useMiddleMouseDragNumber(
         rafIdRef.current = null;
       }
 
-      // Remove body class
       document.body.classList.remove("numdrag-lock");
     },
     [state.isDragging, state.currentValue, onCommit, handleMouseMove]
   );
 
-  // Handle escape key to cancel drag
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (state.isDragging && e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
 
-        // Revert to original value
         setValue(state.originalValue);
         setState((prev) => ({
           ...prev,
@@ -117,7 +110,6 @@ export function useMiddleMouseDragNumber(
 
         onCancel?.(state.originalValue);
 
-        // Remove event listeners
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
 
@@ -126,33 +118,28 @@ export function useMiddleMouseDragNumber(
           rafIdRef.current = null;
         }
 
-        // Remove body class
         document.body.classList.remove("numdrag-lock");
       }
     },
     [state.isDragging, state.originalValue, setValue, onCancel, handleMouseMove, handleMouseUp]
   );
 
-  // Handle precision selection
   const handlePrecisionSelect = useCallback((precision: number) => {
     setState((prev) => ({ ...prev, selectedPrecision: precision }));
   }, []);
 
-  // Handle mouse down to start drag
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 1) return; // Only middle mouse button
+      if (e.button !== 1) return;
 
       e.preventDefault();
       e.stopPropagation();
 
-      // Store reference to the input element
       inputElementRef.current = e.currentTarget as HTMLElement;
 
-      // Calculate selector position (to the left of the input)
       const rect = inputElementRef.current.getBoundingClientRect();
       const selectorPosition = {
-        x: rect.left - 80, // Position to the left
+        x: rect.left - 80,
         y: rect.top,
       };
 
@@ -166,17 +153,14 @@ export function useMiddleMouseDragNumber(
         selectorPosition,
       }));
 
-      // Add global drag lock
       document.body.classList.add("numdrag-lock");
 
-      // Add window event listeners for drag
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
     [value, handleMouseMove, handleMouseUp]
   );
 
-  // Update original value when external value changes (but not during drag)
   useEffect(() => {
     if (!state.isDragging) {
       setState((prev) => ({
@@ -187,7 +171,6 @@ export function useMiddleMouseDragNumber(
     }
   }, [value, state.isDragging]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (rafIdRef.current) {

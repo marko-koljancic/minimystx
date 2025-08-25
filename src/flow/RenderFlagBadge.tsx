@@ -35,20 +35,16 @@ export default function RenderFlagBadge({
     [nodeId, render, setParams, currentContext]
   );
 
-  // Determine if this is a sub-flow context
   const isSubFlowContext = currentContext.type === "subflow";
-  
-  // Check node types by dimensions  
-  // const isGeoNode = nodeWidth === 48 && nodeHeight === 48; // Square GeoNodes
-  const isLightNode = nodeWidth === 90 && nodeHeight === 30; // Rectangular LightNodes
-  const isGeometryNode = nodeWidth === 90 && nodeHeight === 30 && !isLightNode; // Legacy geometry nodes
-  
-  // Adjust positioning for different node types to prevent overlap
+
+  const isLightNode = nodeWidth === 90 && nodeHeight === 30;
+  const isGeometryNode = nodeWidth === 90 && nodeHeight === 30 && !isLightNode;
+
   const badgeLeft = isLightNode
-    ? `${-2.5}rem` // Position left of LightNodes to avoid overlap with pill
-    : isGeometryNode 
-    ? `${-2.5}rem` // Position left of geometry nodes but not too far
-    : `${(nodeWidth / 2 - 8) / 10 - 4}rem`; // Original positioning for GeoNodes
+    ? `${-2.5}rem`
+    : isGeometryNode
+    ? `${-2.5}rem`
+    : `${(nodeWidth / 2 - 8) / 10 - 4}rem`;
 
   return (
     <>
@@ -56,10 +52,10 @@ export default function RenderFlagBadge({
         <div
           className={styles.renderHalo}
           style={{
-            width: `${(nodeWidth + 16) / 10}rem`, // 8px padding on each side
-            height: `${(nodeHeight + 16) / 10}rem`, // 8px padding on each side
-            left: `${-8 / 10}rem`, // Center with 8px padding
-            top: `${-8 / 10}rem`, // Center with 8px padding
+            width: `${(nodeWidth + 16) / 10}rem`,
+            height: `${(nodeHeight + 16) / 10}rem`,
+            left: `${-8 / 10}rem`,
+            top: `${-8 / 10}rem`,
           }}
         />
       )}

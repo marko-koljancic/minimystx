@@ -36,7 +36,6 @@ export const useFlowGraphSync = () => {
             break;
 
           default:
-            console.warn("Unhandled node change type:", change.type);
         }
       });
     },
@@ -78,14 +77,12 @@ export const useFlowGraphSync = () => {
           case "remove":
             if ("id" in change) results.push({ success: true, edgeId: change.id });
             break;
-            
+
           case "select":
-            // Selection changes don't require graph updates, just UI state
             results.push({ success: true, edgeId: (change as any).id });
             break;
 
           default:
-            console.warn("Unhandled edge change type:", change.type);
         }
       });
 

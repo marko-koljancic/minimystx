@@ -120,8 +120,6 @@ export function useKeyboardShortcuts({ context, enabled = true, onDeleteSelected
             setOrthographicCamera(true);
           } else if (context === "flow" && onAutoLayoutCycle) {
             event.preventDefault();
-            // L = cycle layout on selected nodes (or all if none selected)
-            // Shift+L = force cycle layout on all nodes
             onAutoLayoutCycle(isShiftPressed);
           }
           break;

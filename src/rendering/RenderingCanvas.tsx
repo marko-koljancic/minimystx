@@ -18,12 +18,9 @@ export default function RenderingCanvas() {
       }
     };
 
-    // Listen to window resize events
     window.addEventListener("resize", handleResize);
 
-    // Use ResizeObserver to detect when the container size changes
     const resizeObserver = new ResizeObserver(() => {
-      // Use requestAnimationFrame to ensure the layout has been updated
       requestAnimationFrame(() => {
         handleResize();
       });

@@ -23,7 +23,6 @@ export const StringInput: React.FC<StringInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const lastValidValue = useRef(value);
 
-  // Update input value when prop changes (external update)
   useEffect(() => {
     if (!hasFocus) {
       setInputValue(value);

@@ -71,15 +71,12 @@ export function getEvaluationOrder(
 export function evaluateNode(id: string, params: any, inputs: any, compute: any): any {
   try {
     if (typeof compute === "function") {
-      // Pass nodeId as context to compute functions that need it (like geoNode)
       const context = { nodeId: id };
       const result = compute(params, inputs, context);
       return result;
     }
-    console.warn(`[evaluateNode] Node ${id} has no compute function`);
     return null;
   } catch (error) {
-    console.error(`[evaluateNode] Error evaluating node ${id}:`, error);
     return null;
   }
 }
@@ -97,10 +94,6 @@ export function findRootNodes(reverseDeps: Record<string, string[]>): string[] {
   return Array.from(allNodes).filter((node) => !hasIncomingEdges.has(node));
 }
 
-/**
- * Rebuilds dependency maps from edge list to ensure consistency
- * This eliminates corruption from incremental updates
- */
 export function rebuildDependencyMaps(edges: { source: string; target: string }[]): {
   dependencyMap: Record<string, string[]>;
   reverseDeps: Record<string, string[]>;
@@ -108,31 +101,24 @@ export function rebuildDependencyMaps(edges: { source: string; target: string }[
   const dependencyMap: Record<string, string[]> = {};
   const reverseDeps: Record<string, string[]> = {};
 
-  // Collect all unique node IDs
   const allNodes = new Set<string>();
   for (const edge of edges) {
     allNodes.add(edge.source);
     allNodes.add(edge.target);
   }
 
-  // Initialize empty arrays for all nodes
   for (const nodeId of allNodes) {
     dependencyMap[nodeId] = [];
     reverseDeps[nodeId] = [];
   }
 
-  // Populate dependency maps from edges
   for (const edge of edges) {
     const { source, target } = edge;
     
-    // dependencyMap[target] contains nodes that target depends on (sources)
-    // For edge A→B: B depends on A, so dependencyMap[B] contains A
     if (!dependencyMap[target].includes(source)) {
       dependencyMap[target].push(source);
     }
     
-    // reverseDeps[source] contains nodes that depend on source (targets)
-    // For edge A→B: B depends on A, so reverseDeps[A] contains B
     if (!reverseDeps[source].includes(target)) {
       reverseDeps[source].push(target);
     }

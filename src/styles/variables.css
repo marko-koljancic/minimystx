@@ -1,25 +1,17 @@
-/* CSS Variables for theming 
-   These variables are injected into :root and accessible throughout the app
-*/
-
 :root,
 body,
 body.dark-theme {
-  /* Dark theme variables (default) */
   --background-primary: #000000;
   --background-secondary: #181818;
   --background-tertiary: #272727;
   --background-quaternary: #2d2d2d;
 
-  /* Node specific colors */
   --node-background: #e5e7eb;
 
-  /* Geometry node specific colors */
   --geometry-node-background: #e3e4e6;
   --geometry-node-border: rgba(255, 255, 255, 0.15);
   --geometry-node-border-hover: rgba(255, 255, 255, 0.25);
 
-  /* Light node specific colors */
   --light-node-background: #f8e7b0;
   --light-node-border: rgba(255, 255, 255, 0.15);
   --light-node-border-hover: rgba(255, 255, 255, 0.25);
@@ -36,7 +28,6 @@ body.dark-theme {
   --text-quaternary: #999999;
   --text-highlight: #ffffff;
 
-  /* Accent colors */
   --accent-primary: #007acc;
   --accent-secondary: #0098ff;
   --accent-tertiary: #003e66;
@@ -44,7 +35,6 @@ body.dark-theme {
   --accent-green: #5ec269;
   --accent-yellow: #f7df1e;
 
-  /* Edge colors - Dark theme */
   --edge-color: #4ba3e3;
   --connection-line-default: #e5e7eb;
   --connection-line-valid: #55dd99;
@@ -67,12 +57,10 @@ body.dark-theme {
 
   --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 
-  /* Error states */
   --error-border: #ff4444;
   --error-background: rgba(255, 68, 68, 0.1);
   --error-text: #ff6666;
 
-  /* Input states */
   --input-background: var(--background-quaternary);
   --input-border: var(--border-secondary);
   --input-border-focus: var(--accent-primary);
@@ -89,12 +77,10 @@ body.light-theme {
 
   --node-background: #f8f8f8;
 
-  /* Geometry node specific colors - same in light theme */
   --geometry-node-background: #e3e4e6;
   --geometry-node-border: rgba(0, 0, 0, 0.15);
   --geometry-node-border-hover: rgba(0, 0, 0, 0.25);
 
-  /* Light node specific colors - same in light theme */
   --light-node-background: #f8e7b0;
   --light-node-border: rgba(0, 0, 0, 0.15);
   --light-node-border-hover: rgba(0, 0, 0, 0.25);
@@ -123,7 +109,6 @@ body.light-theme {
   --connection-line-valid: #55dd99;
   --connection-line-invalid: #ff6060;
 
-  /* Light theme error states */
   --error-border: #cc0000;
   --error-background: rgba(204, 0, 0, 0.05);
   --error-text: #cc0000;

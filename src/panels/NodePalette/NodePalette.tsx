@@ -31,7 +31,6 @@ export default function NodePalette() {
   const closePalette = useClosePalette();
   const palettePosition = usePalettePosition();
 
-  // Keyboard navigation state
   const selectedCategoryIndex = useSelectedCategoryIndex();
   const selectedNodeIndex = useSelectedNodeIndex();
   const searchQuery = usePaletteSearchQuery();
@@ -43,14 +42,11 @@ export default function NodePalette() {
   const resetNavigation = useResetPaletteNavigation();
   const currentContext = useCurrentContext();
 
-  // Mouse hover state (for backwards compatibility)
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [isHoveringNodes, setIsHoveringNodes] = useState(false);
 
-  // Focus management
   const paletteRef = useRef<HTMLDivElement>(null);
 
-  // Compute categories and nodes based on search and current context
   const allCategories = useMemo(
     () => getAvailableCategoriesForContext(currentContext.type),
     [currentContext.type]
@@ -75,7 +71,6 @@ export default function NodePalette() {
     };
   }, [searchQuery, allCategories, currentContext.type]);
 
-  // Get current active category and nodes
   const activeCategory = keyboardMode ? categories[selectedCategoryIndex] || null : hoveredCategory;
   const currentNodes = useMemo(() => {
     return searchQuery.trim()
@@ -92,7 +87,6 @@ export default function NodePalette() {
     }
   }, [isPinned, closePalette, resetNavigation]);
 
-  // Keyboard event handling
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!isOpen) return;
@@ -108,10 +102,8 @@ export default function NodePalette() {
           e.preventDefault();
           setKeyboardMode(true);
           if (searchQuery.trim() || !categories.length) {
-            // Search mode or no categories - navigate nodes
             setSelectedNodeIndex(Math.max(0, selectedNodeIndex - 1));
           } else {
-            // Category mode - navigate categories
             setSelectedCategoryIndex(Math.max(0, selectedCategoryIndex - 1));
           }
           break;
@@ -120,10 +112,8 @@ export default function NodePalette() {
           e.preventDefault();
           setKeyboardMode(true);
           if (searchQuery.trim() || !categories.length) {
-            // Search mode or no categories - navigate nodes
             setSelectedNodeIndex(Math.min(currentNodes.length - 1, selectedNodeIndex + 1));
           } else {
-            // Category mode - navigate categories
             setSelectedCategoryIndex(Math.min(categories.length - 1, selectedCategoryIndex + 1));
           }
           break;
@@ -132,7 +122,7 @@ export default function NodePalette() {
           e.preventDefault();
           if (!searchQuery.trim() && categories.length > 0) {
             setKeyboardMode(true);
-            setSelectedNodeIndex(0); // Focus first node in selected category
+            setSelectedNodeIndex(0);
           }
           break;
 
@@ -140,7 +130,7 @@ export default function NodePalette() {
           e.preventDefault();
           if (!searchQuery.trim() && categories.length > 0) {
             setKeyboardMode(true);
-            setSelectedNodeIndex(0); // Reset node selection
+            setSelectedNodeIndex(0);
           }
           break;
 
@@ -149,7 +139,6 @@ export default function NodePalette() {
           if (currentNodes.length > 0) {
             const selectedNode = currentNodes[selectedNodeIndex];
             if (selectedNode) {
-              // Create node at cursor position
               const event = new CustomEvent("minimystx:createNode", {
                 detail: {
                   nodeType: selectedNode.type,
@@ -180,12 +169,10 @@ export default function NodePalette() {
     ]
   );
 
-  // Reset navigation when context changes
   useEffect(() => {
     resetNavigation();
   }, [currentContext, resetNavigation]);
 
-  // Handle search input changes
   const handleSearchChange = useCallback(
     (value: string) => {
       setSearchQuery(value);
@@ -196,14 +183,12 @@ export default function NodePalette() {
     [setSearchQuery, setSelectedCategoryIndex, setSelectedNodeIndex, setKeyboardMode]
   );
 
-  // Reset navigation when palette opens
   useEffect(() => {
     if (isOpen) {
       resetNavigation();
     }
   }, [isOpen, resetNavigation]);
 
-  // Focus management - focus the invisible search input
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -226,12 +211,10 @@ export default function NodePalette() {
       aria-label="Node Palette"
       aria-describedby="palette-description"
     >
-      {/* Hidden description for screen readers */}
       <div id="palette-description" className={styles.srOnly}>
         Type to search, use arrow keys to navigate, Enter to create node, Escape to close
       </div>
 
-      {/* Invisible search input - user can start typing immediately */}
       <SearchInput
         ref={searchInputRef}
         value={searchQuery}
@@ -241,13 +224,11 @@ export default function NodePalette() {
         autoFocus={true}
       />
 
-      {/* Live region for announcing search results */}
       <div aria-live="polite" aria-atomic="true" className={styles.srOnly}>
         {searchQuery.trim() && `${currentNodes.length} nodes found`}
       </div>
 
       <div className={styles.paletteBody}>
-        {/* Categories Column - hidden during search */}
         {!searchQuery.trim() && categories.length > 0 && (
           <div className={styles.categoriesColumn} role="listbox" aria-label="Node categories">
             {categories.map((category, index) => (
@@ -288,7 +269,6 @@ export default function NodePalette() {
           </div>
         )}
 
-        {/* Nodes Column */}
         {(activeCategory || searchQuery.trim()) && currentNodes.length > 0 && (
           <div
             className={styles.nodesColumn}

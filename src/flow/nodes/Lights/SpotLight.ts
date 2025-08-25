@@ -33,21 +33,18 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
     data.light.decay
   );
 
-  // Set position
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
 
-  // Set target position (internal Object3D target)
   light.target.position.set(
     data.transform.target.x,
     data.transform.target.y,
     data.transform.target.z
   );
 
-  // Configure shadows
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
     const mapSize = parseInt(data.shadow.mapSize);
@@ -56,20 +53,16 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
     light.shadow.bias = data.shadow.bias;
     light.shadow.normalBias = data.shadow.normalBias;
 
-    // Configure perspective shadow camera
     light.shadow.camera.near = data.shadow.cameraNear;
     light.shadow.camera.far = data.shadow.cameraFar;
   }
 
-  // Set visibility
   light.visible = data.rendering.visible;
 
-  // Create a group to contain both light and helper
   const lightGroup = new Group();
   lightGroup.add(light);
-  lightGroup.add(light.target); // Add target to the group
+  lightGroup.add(light.target);
 
-  // Add helper if enabled
   if (data.rendering.showHelper) {
     const helper = new SpotLightHelper(light, data.light.color);
     lightGroup.add(helper);
@@ -173,21 +166,17 @@ export const spotLightNodeParams: NodeParams = {
 };
 
 export const spotLightNodeCompute = (params: Record<string, unknown>) => {
-  // Validate shadow camera near/far constraint
   const shadowParams = params.shadow as SpotLightShadowProps;
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
   }
 
-  // Validate spot angle constraints
   const lightParams = params.light as SpotLightProps;
   if (lightParams?.angle) {
     if (lightParams.angle <= 0) {
-      console.error("SpotLight angle must be greater than 0");
-      lightParams.angle = 0.017; // ~1 degree
+      lightParams.angle = 0.017;
     }
     if (lightParams.angle > Math.PI / 2) {
-      console.error("SpotLight angle must be less than or equal to π/2");
       lightParams.angle = Math.PI / 2;
     }
   }

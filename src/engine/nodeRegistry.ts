@@ -198,20 +198,17 @@ export const getAvailableCategories = (): string[] => {
   return Array.from(categories).sort();
 };
 
-// Fuzzy search scoring function
 const calculateFuzzyScore = (query: string, target: string): number => {
-  if (query === target) return 1000; // Exact match gets highest score
+  if (query === target) return 1000;
 
   const queryLower = query.toLowerCase();
   const targetLower = target.toLowerCase();
 
   if (targetLower.includes(queryLower)) {
-    // Substring match - score based on position (earlier is better)
     const index = targetLower.indexOf(queryLower);
     return 500 - index;
   }
 
-  // Character matching for fuzzy search
   let score = 0;
   let queryIndex = 0;
   let consecutiveMatches = 0;
@@ -220,7 +217,7 @@ const calculateFuzzyScore = (query: string, target: string): number => {
     if (targetLower[i] === queryLower[queryIndex]) {
       score += 10;
       if (consecutiveMatches > 0) {
-        score += consecutiveMatches * 5; // Bonus for consecutive matches
+        score += consecutiveMatches * 5;
       }
       consecutiveMatches++;
       queryIndex++;
@@ -229,7 +226,6 @@ const calculateFuzzyScore = (query: string, target: string): number => {
     }
   }
 
-  // Penalty for unmatched characters
   const unmatchedChars = queryLower.length - queryIndex;
   score -= unmatchedChars * 20;
 
@@ -239,11 +235,10 @@ const calculateFuzzyScore = (query: string, target: string): number => {
 export const searchNodes = (query: string, maxResults: number = 100): NodeDefinition[] => {
   if (!query.trim()) return getAllNodeDefinitions();
 
-  // Score each node based on fuzzy matching
   const scoredNodes = Object.values(nodeRegistry).map((node) => {
     const displayNameScore = calculateFuzzyScore(query, node.displayName);
     const typeScore = calculateFuzzyScore(query, node.type);
-    const categoryScore = calculateFuzzyScore(query, node.category) * 0.3; // Lower weight for category
+    const categoryScore = calculateFuzzyScore(query, node.category) * 0.3;
 
     const maxScore = Math.max(displayNameScore, typeScore, categoryScore);
 
@@ -253,7 +248,6 @@ export const searchNodes = (query: string, maxResults: number = 100): NodeDefini
     };
   });
 
-  // Filter out nodes with zero score and sort by score (descending)
   return scoredNodes
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score)
@@ -261,7 +255,6 @@ export const searchNodes = (query: string, maxResults: number = 100): NodeDefini
     .map(({ node }) => node);
 };
 
-// New helper function for getting filtered nodes by category with search
 export const getFilteredNodesByCategory = (
   searchQuery: string
 ): Record<string, NodeDefinition[]> => {
@@ -282,7 +275,6 @@ export const getFilteredNodesByCategory = (
   return filteredCategories;
 };
 
-// Context-aware versions of registry functions
 export const getNodesByCategoryForContext = (
   contextType: "root" | "subflow"
 ): Record<string, NodeDefinition[]> => {
@@ -317,13 +309,12 @@ export const searchNodesForContext = (
     return Object.values(nodeRegistry).filter((node) => node.allowedContexts.includes(contextType));
   }
 
-  // Score each node based on fuzzy matching, but only for nodes in the current context
   const scoredNodes = Object.values(nodeRegistry)
     .filter((node) => node.allowedContexts.includes(contextType))
     .map((node) => {
       const displayNameScore = calculateFuzzyScore(query, node.displayName);
       const typeScore = calculateFuzzyScore(query, node.type);
-      const categoryScore = calculateFuzzyScore(query, node.category) * 0.3; // Lower weight for category
+      const categoryScore = calculateFuzzyScore(query, node.category) * 0.3;
 
       const maxScore = Math.max(displayNameScore, typeScore, categoryScore);
 
@@ -333,7 +324,6 @@ export const searchNodesForContext = (
       };
     });
 
-  // Filter out nodes with zero score and sort by score (descending)
   return scoredNodes
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score)

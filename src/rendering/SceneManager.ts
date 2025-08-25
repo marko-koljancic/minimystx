@@ -32,7 +32,6 @@ export class SceneManager {
         position: [this.camera.position.x, this.camera.position.y, this.camera.position.z],
         target: [this.controls.target.x, this.controls.target.y, this.controls.target.z],
       };
-      // Store the data in the event for retrieval
       (event as unknown as { cameraData?: typeof cameraData }).cameraData = cameraData;
     }
   };
@@ -74,7 +73,6 @@ export class SceneManager {
     this.setupEventListeners();
     this.startRenderLoop();
 
-    // Ensure background and grid visibility are set correctly after store hydration
     setTimeout(() => {
       this.updateSceneBackground();
       const { showGridInRenderView } = useUIStore.getState();
@@ -102,12 +100,10 @@ export class SceneManager {
     const height = canvas.clientHeight || 600;
     const aspect = width / height;
 
-    // Initialize perspective camera
     this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
     this.camera.position.set(5, 2, 5);
     this.camera.lookAt(0, 0, 0);
 
-    // Initialize orthographic camera
     const frustumSize = 10;
     this.orthographicCamera = new THREE.OrthographicCamera(
       (-frustumSize * aspect) / 2,
@@ -139,12 +135,10 @@ export class SceneManager {
   }
 
   private initializeGrid() {
-    // Legacy single grid (kept for compatibility)
     this.gridHelper = new THREE.GridHelper(20, 20);
     this.updateGridColors();
     this.scene.add(this.gridHelper);
 
-    // Create three separate grid planes
     this.initializeGridPlanes();
 
     const { showGridInRenderView } = useUIStore.getState();
@@ -155,27 +149,23 @@ export class SceneManager {
     const gridSize = 20;
     const divisions = 20;
 
-    // XY plane (for Front/Back views)
     this.xyGrid = new THREE.GridHelper(gridSize, divisions);
-    this.xyGrid.rotateX(Math.PI / 2); // Rotate to XY plane
+    this.xyGrid.rotateX(Math.PI / 2);
     this.updateGridPlaneColors(this.xyGrid);
-    this.xyGrid.visible = false; // Start hidden
+    this.xyGrid.visible = false;
     this.scene.add(this.xyGrid);
 
-    // XZ plane (for Top/Bottom views) - default horizontal plane
     this.xzGrid = new THREE.GridHelper(gridSize, divisions);
     this.updateGridPlaneColors(this.xzGrid);
-    this.xzGrid.visible = false; // Start hidden
+    this.xzGrid.visible = false;
     this.scene.add(this.xzGrid);
 
-    // YZ plane (for Left/Right views)
     this.yzGrid = new THREE.GridHelper(gridSize, divisions);
-    this.yzGrid.rotateZ(Math.PI / 2); // Rotate to YZ plane
+    this.yzGrid.rotateZ(Math.PI / 2);
     this.updateGridPlaneColors(this.yzGrid);
-    this.yzGrid.visible = false; // Start hidden
+    this.yzGrid.visible = false;
     this.scene.add(this.yzGrid);
 
-    // Initially show only the default XZ grid based on store state
     this.showGridPlane("xz");
   }
 
@@ -190,7 +180,6 @@ export class SceneManager {
   private initializeAxisGizmo() {
     this.axisGizmo = new THREE.Group();
 
-    // Create materials for constant line thickness
     const xMaterial = new THREE.LineBasicMaterial({
       color: 0xff0000,
       linewidth: 2,
@@ -207,8 +196,6 @@ export class SceneManager {
       transparent: false,
     });
 
-    // Create line geometries without arrows
-    // X-axis (red)
     const xGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(1, 0, 0),
@@ -216,7 +203,6 @@ export class SceneManager {
     const xLine = new THREE.Line(xGeometry, xMaterial);
     this.axisGizmo.add(xLine);
 
-    // Y-axis (green)
     const yGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, 1, 0),
@@ -224,7 +210,6 @@ export class SceneManager {
     const yLine = new THREE.Line(yGeometry, yMaterial);
     this.axisGizmo.add(yLine);
 
-    // Z-axis (blue)
     const zGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, 0, 1),
@@ -247,26 +232,21 @@ export class SceneManager {
     if (!this.controls) return;
 
     if (this.isOrthographic) {
-      // In orthographic mode, allow full rotation
       this.controls.minPolarAngle = 0;
       this.controls.maxPolarAngle = Math.PI;
     } else {
-      // In perspective mode, allow looking up/down but prevent full flipping
-      // This allows viewing from above and below while preventing disorienting camera flips
-      this.controls.minPolarAngle = 0.1; // Slight margin from straight up
-      this.controls.maxPolarAngle = Math.PI - 0.1; // Slight margin from straight down
+      this.controls.minPolarAngle = 0.1;
+      this.controls.maxPolarAngle = Math.PI - 0.1;
     }
   }
 
   private updateGridColors() {
     if (!this.gridHelper) return;
     this.gridHelper.material.color.setHex(0xe8e8e8);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.gridHelper.material as any).color2?.setHex(0xdddddd);
     this.gridHelper.material.opacity = 0.3;
     this.gridHelper.material.transparent = true;
 
-    // Update colors for all grid planes
     this.updateGridPlaneColors(this.xyGrid);
     this.updateGridPlaneColors(this.xzGrid);
     this.updateGridPlaneColors(this.yzGrid);
@@ -275,7 +255,6 @@ export class SceneManager {
   private updateGridPlaneColors(grid: THREE.GridHelper | null) {
     if (!grid) return;
     grid.material.color.setHex(0xe8e8e8);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (grid.material as any).color2?.setHex(0xdddddd);
     grid.material.opacity = 0.3;
     grid.material.transparent = true;
@@ -287,13 +266,11 @@ export class SceneManager {
     this.currentGridPlane = plane;
     const { showGridInRenderView } = useUIStore.getState();
 
-    // Hide all grids
     if (this.gridHelper) this.gridHelper.visible = false;
     if (this.xyGrid) this.xyGrid.visible = false;
     if (this.xzGrid) this.xzGrid.visible = false;
     if (this.yzGrid) this.yzGrid.visible = false;
 
-    // Show only the appropriate grid if grid display is enabled
     if (showGridInRenderView) {
       switch (plane) {
         case "xy":
@@ -315,15 +292,15 @@ export class SceneManager {
     switch (view) {
       case "top":
       case "bottom":
-        return "xz"; // Looking along Y axis, see XZ plane
+        return "xz";
       case "front":
-        return "xy"; // Looking along +Z axis, see XY plane
+        return "xy";
       case "left":
-        return "yz"; // Looking along -X axis, see YZ plane
+        return "yz";
       case "right":
-        return "yz"; // Looking along +X axis, see YZ plane
+        return "yz";
       default:
-        return "xz"; // Default to XZ plane for perspective
+        return "xz";
     }
   }
 
@@ -337,7 +314,6 @@ export class SceneManager {
   }
 
   private subscribeToUIStore() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.uiStoreUnsubscribe = useUIStore.subscribe((state, prevState: any) => {
       if (state.showGridInRenderView !== prevState?.showGridInRenderView) {
         this.updateGridVisibility(state.showGridInRenderView);
@@ -356,12 +332,10 @@ export class SceneManager {
   }
 
   private updateGridVisibility(visible: boolean) {
-    // Update legacy grid
     if (this.gridHelper) {
-      this.gridHelper.visible = false; // Always hide legacy grid now
+      this.gridHelper.visible = false;
     }
 
-    // Update current grid plane visibility
     if (visible) {
       switch (this.currentGridPlane) {
         case "xy":
@@ -375,7 +349,6 @@ export class SceneManager {
           break;
       }
     } else {
-      // Hide all grids
       if (this.xyGrid) this.xyGrid.visible = false;
       if (this.xzGrid) this.xzGrid.visible = false;
       if (this.yzGrid) this.yzGrid.visible = false;
@@ -398,12 +371,9 @@ export class SceneManager {
         if (wireframe) {
           if (!this.originalMaterials.has(object))
             this.originalMaterials.set(object, object.material);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if ("wireframe" in object.material) (object.material as any).wireframe = true;
         } else {
-          // Restore wireframe state
           if ("wireframe" in object.material) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (object.material as any).wireframe = false;
           }
         }
@@ -417,23 +387,18 @@ export class SceneManager {
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         if (xRay) {
-          // Cache original material if not already cached
           if (!this.originalMaterials.has(object)) {
             this.originalMaterials.set(object, object.material);
           }
-          // Apply X-Ray material (respecting wireframe state)
           const wireframeState = useUIStore.getState().wireframe;
           this.xRayMaterial!.wireframe = wireframeState;
           object.material = this.xRayMaterial!;
         } else {
-          // Restore original material
           const originalMaterial = this.originalMaterials.get(object);
           if (originalMaterial) {
             object.material = originalMaterial;
-            // Reapply wireframe state if needed
             const wireframeState = useUIStore.getState().wireframe;
             if ("wireframe" in object.material) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (object.material as any).wireframe = wireframeState;
             }
           }
@@ -454,22 +419,18 @@ export class SceneManager {
     const camera = this.getCurrentCamera();
 
     if (this.isOrthographic) {
-      // In orthographic view, extend axes to screen edges
       const orthoCamera = camera as THREE.OrthographicCamera;
       const left = orthoCamera.left / orthoCamera.zoom;
       const right = orthoCamera.right / orthoCamera.zoom;
       const top = orthoCamera.top / orthoCamera.zoom;
       const bottom = orthoCamera.bottom / orthoCamera.zoom;
 
-      // Get the maximum extent in each direction
       const maxExtentX = Math.max(Math.abs(left), Math.abs(right));
       const maxExtentY = Math.max(Math.abs(top), Math.abs(bottom));
-      const maxExtentZ = maxExtentX; // Use same as X for Z axis
+      const maxExtentZ = maxExtentX;
 
-      // Update line geometries to extend to edges
       const children = this.axisGizmo.children as THREE.Line[];
       if (children.length >= 3) {
-        // X-axis
         const xGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(-maxExtentX, 0, 0),
           new THREE.Vector3(maxExtentX, 0, 0),
@@ -477,7 +438,6 @@ export class SceneManager {
         children[0].geometry.dispose();
         children[0].geometry = xGeometry;
 
-        // Y-axis
         const yGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, -maxExtentY, 0),
           new THREE.Vector3(0, maxExtentY, 0),
@@ -485,7 +445,6 @@ export class SceneManager {
         children[1].geometry.dispose();
         children[1].geometry = yGeometry;
 
-        // Z-axis
         const zGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, 0, -maxExtentZ),
           new THREE.Vector3(0, 0, maxExtentZ),
@@ -494,11 +453,9 @@ export class SceneManager {
         children[2].geometry = zGeometry;
       }
     } else {
-      // In perspective view, keep small central axes
       const axisLength = 1.5;
       const children = this.axisGizmo.children as THREE.Line[];
       if (children.length >= 3) {
-        // X-axis
         const xGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, 0, 0),
           new THREE.Vector3(axisLength, 0, 0),
@@ -506,7 +463,6 @@ export class SceneManager {
         children[0].geometry.dispose();
         children[0].geometry = xGeometry;
 
-        // Y-axis
         const yGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, 0, 0),
           new THREE.Vector3(0, axisLength, 0),
@@ -514,7 +470,6 @@ export class SceneManager {
         children[1].geometry.dispose();
         children[1].geometry = yGeometry;
 
-        // Z-axis
         const zGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, 0, 0),
           new THREE.Vector3(0, 0, axisLength),
@@ -533,17 +488,12 @@ export class SceneManager {
     const target = this.controls.target.clone();
 
     if (isOrthographic) {
-      // Switching TO orthographic: preserve current view
       newCamera.position.copy(currentCamera.position);
       newCamera.up.copy(currentCamera.up);
       newCamera.lookAt(target);
     } else {
-      // Switching TO perspective: reset to canonical 3D view
-      // Reset to a standard perspective orientation to avoid gimbal lock issues
-      newCamera.up.set(0, 1, 0); // Standard up vector
+      newCamera.up.set(0, 1, 0);
 
-      // Position camera at a reasonable distance in a 3D perspective view
-      // Use a diagonal view that's commonly used in 3D modeling apps
       const distance = Math.max(currentCamera.position.distanceTo(target), 10);
       newCamera.position.set(
         target.x + distance * 0.7,
@@ -553,7 +503,6 @@ export class SceneManager {
       newCamera.lookAt(target);
     }
 
-    // Update controls to use new camera
     this.controls.object = newCamera;
     this.controls.update();
 
@@ -561,7 +510,6 @@ export class SceneManager {
     this.updateCameraControls();
     this.updateAxisGizmo();
 
-    // In perspective mode, switch to default XZ grid
     if (!isOrthographic) {
       this.showGridPlane("xz");
     }
@@ -573,38 +521,36 @@ export class SceneManager {
     const currentTarget = this.controls.target.clone();
     const camera = this.getCurrentCamera();
     const distance = camera.position.distanceTo(currentTarget);
-    const standardDistance = Math.max(distance, 10); // Use minimum of 10 units
+    const standardDistance = Math.max(distance, 10);
 
     switch (view) {
       case "top":
         camera.position.set(currentTarget.x, currentTarget.y + standardDistance, currentTarget.z);
-        camera.up.set(0, 0, -1); // Z points down in top view
+        camera.up.set(0, 0, -1);
         break;
       case "front":
         camera.position.set(currentTarget.x, currentTarget.y, currentTarget.z + standardDistance);
-        camera.up.set(0, 1, 0); // Y points up
+        camera.up.set(0, 1, 0);
         break;
       case "left":
         camera.position.set(currentTarget.x - standardDistance, currentTarget.y, currentTarget.z);
-        camera.up.set(0, 1, 0); // Y points up
+        camera.up.set(0, 1, 0);
         break;
       case "right":
         camera.position.set(currentTarget.x + standardDistance, currentTarget.y, currentTarget.z);
-        camera.up.set(0, 1, 0); // Y points up
+        camera.up.set(0, 1, 0);
         break;
       case "bottom":
         camera.position.set(currentTarget.x, currentTarget.y - standardDistance, currentTarget.z);
-        camera.up.set(0, 0, 1); // Z points up in bottom view
+        camera.up.set(0, 0, 1);
         break;
     }
 
-    // Ensure camera is looking at the target
     camera.lookAt(currentTarget);
 
     this.controls.update();
     this.updateAxisGizmo();
 
-    // Switch to appropriate grid plane for this orthographic view
     const gridPlane = this.getGridPlaneForView(view);
     this.showGridPlane(gridPlane);
   }
@@ -648,9 +594,8 @@ export class SceneManager {
     const camera = this.getCurrentCamera();
 
     if (this.isOrthographic) {
-      // For orthographic camera, adjust the zoom instead of distance
       const orthoCamera = camera as THREE.OrthographicCamera;
-      const padding = 1.2; // 20% padding
+      const padding = 1.2;
       const newZoom = Math.min(
         Math.abs(orthoCamera.right - orthoCamera.left) / (size.x * padding),
         Math.abs(orthoCamera.top - orthoCamera.bottom) / (size.y * padding)
@@ -658,11 +603,9 @@ export class SceneManager {
       orthoCamera.zoom = newZoom;
       orthoCamera.updateProjectionMatrix();
 
-      // Move camera to look at center
       const direction = camera.position.clone().sub(center).normalize();
-      camera.position.copy(center).add(direction.multiplyScalar(10)); // Fixed distance for ortho
+      camera.position.copy(center).add(direction.multiplyScalar(10));
     } else {
-      // For perspective camera, calculate distance
       const perspCamera = camera as THREE.PerspectiveCamera;
       const distance = maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(perspCamera.fov) / 2));
       const direction = camera.position.clone().sub(center).normalize();
@@ -674,84 +617,61 @@ export class SceneManager {
   }
 
   private subscribeToStore() {
-    // Subscribe to the hierarchical rendering system
     this.storeUnsubscribe = useGraphStore.subscribe(() => {
       this.updateSceneFromRenderableObjects();
     });
   }
 
   private updateSceneFromRenderableObjects() {
-    // Get the hierarchical renderable objects directly from store state
     const state = useGraphStore.getState();
     const renderableObjects: any[] = [];
-    console.log("[SceneManager] Updating scene from renderable objects. State:", state);
 
-
-    // Process root-level nodes
     for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
-
-      // Skip nodes with errors, but render previous output for dirty nodes
       if (runtime.error) {
-        console.warn(`[SceneManager] Skipping node ${nodeId} due to error:`, runtime.error);
         continue;
       }
-      
-      // For dirty nodes, render the previous output if available
+
       if (runtime.isDirty) {
-        // Continue processing to use cached output instead of skipping
       }
 
       if (runtime.type === "geoNode") {
-        // Handle GeoNode: compute sub-flow and apply transforms
         const geoNodeVisible = runtime.params?.rendering?.visible !== false;
         if (!geoNodeVisible) continue;
 
         const subFlow = state.subFlows[nodeId];
         if (!subFlow || !subFlow.activeOutputNodeId) continue;
 
-        // Get the active output node from sub-flow
         const outputNodeRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
         if (!outputNodeRuntime) {
-          console.debug(`[SceneManager] No output node runtime for ${subFlow.activeOutputNodeId} in subflow ${nodeId}`);
           continue;
         }
-        
+
         if (outputNodeRuntime.error) {
-          console.debug(`[SceneManager] Output node ${subFlow.activeOutputNodeId} has error, skipping render:`, outputNodeRuntime.error);
           continue;
         }
-        
-        // Allow rendering of cached output even if node is dirty (for smooth updates)
+
         if (!outputNodeRuntime.output) {
-          console.debug(`[SceneManager] Output node ${subFlow.activeOutputNodeId} has no output (may still be computing)`);
           continue;
         }
-        
-        // Skip if output is not a valid object structure
+
         if (!outputNodeRuntime.output || typeof outputNodeRuntime.output !== "object") {
-          console.debug(`[SceneManager] Output node ${subFlow.activeOutputNodeId} has invalid output type:`, typeof outputNodeRuntime.output);
           continue;
         }
-        
-        // For dirty output nodes, use cached output if available
+
         if (outputNodeRuntime.isDirty) {
         }
 
-        // Check if the output node is marked as visible (render flag)
         const outputNodeVisible = outputNodeRuntime.params?.rendering?.visible === true;
         if (!outputNodeVisible) continue;
 
         const subFlowOutput = outputNodeRuntime.output;
 
-        // Handle both direct Object3D and { object: Object3D } formats
         let object3D = null;
         if (subFlowOutput && typeof subFlowOutput === "object") {
           if ("isObject3D" in subFlowOutput && subFlowOutput.isObject3D) {
-            // Direct Object3D - validate it's actually a Three.js object
             if (typeof subFlowOutput.clone === "function") {
               object3D = subFlowOutput;
             } else {
-              console.debug(`[SceneManager] Invalid Object3D detected (missing clone method) for node ${subFlow.activeOutputNodeId}`);
             }
           } else if (
             "object" in subFlowOutput &&
@@ -760,32 +680,24 @@ export class SceneManager {
             "isObject3D" in subFlowOutput.object &&
             subFlowOutput.object.isObject3D
           ) {
-            // Wrapped in { object: Object3D } format - validate it's actually a Three.js object
             if (typeof subFlowOutput.object.clone === "function") {
               object3D = subFlowOutput.object;
             } else {
-              console.debug(`[SceneManager] Invalid Object3D detected (missing clone method) for node ${subFlow.activeOutputNodeId}`);
             }
           } else {
-            console.debug(`[SceneManager] Unknown output format for node ${subFlow.activeOutputNodeId}:`, Object.keys(subFlowOutput));
           }
         }
 
         if (object3D) {
-          // Clone the object to avoid modifying the original
           let clonedOutput;
           try {
             clonedOutput = object3D.clone();
           } catch (error) {
-            console.warn(`[SceneManager] Failed to clone Object3D for node ${subFlow.activeOutputNodeId}:`, error);
-            continue; // Skip this object if cloning fails
+            continue;
           }
 
-          // Apply GeoNode transforms ADDITIVELY on top of sub-flow transforms
           const transform = runtime.params?.transform;
           if (transform) {
-            
-            // ADD GeoNode position to existing sub-flow position (don't overwrite)
             if (transform.position) {
               clonedOutput.position.set(
                 clonedOutput.position.x + (transform.position.x || 0),
@@ -793,8 +705,7 @@ export class SceneManager {
                 clonedOutput.position.z + (transform.position.z || 0)
               );
             }
-            
-            // ADD GeoNode rotation to existing sub-flow rotation (don't overwrite)
+
             if (transform.rotation) {
               clonedOutput.rotation.set(
                 clonedOutput.rotation.x + (transform.rotation.x || 0),
@@ -802,8 +713,7 @@ export class SceneManager {
                 clonedOutput.rotation.z + (transform.rotation.z || 0)
               );
             }
-            
-            // MULTIPLY GeoNode scale with existing sub-flow scale (don't overwrite)
+
             if (transform.scale) {
               const scaleFactor = transform.scaleFactor || 1;
               clonedOutput.scale.set(
@@ -812,22 +722,18 @@ export class SceneManager {
                 clonedOutput.scale.z * (transform.scale.z || 1) * scaleFactor
               );
             }
-            
           }
 
           renderableObjects.push(clonedOutput);
         }
       } else {
-        // Handle regular root-level nodes (like lights)
         const renderingVisible = runtime.params?.rendering?.visible !== false;
         if (!renderingVisible) continue;
 
         const output = runtime.output;
-        // Handle both direct Object3D and { object: Object3D } formats for root nodes too
         let rootObject3D = null;
         if (output && typeof output === "object") {
           if ("isObject3D" in output) {
-            // Direct Object3D (typical for lights)
             rootObject3D = output;
           } else if (
             "object" in output &&
@@ -835,7 +741,6 @@ export class SceneManager {
             typeof output.object === "object" &&
             "isObject3D" in output.object
           ) {
-            // Wrapped in { object: Object3D } format
             rootObject3D = output.object;
           }
         }
@@ -846,7 +751,6 @@ export class SceneManager {
       }
     }
 
-    // Clear all current objects from scene
     for (const [, object] of this.nodeObjects) {
       this.scene.remove(object);
       if (object instanceof THREE.Mesh) {
@@ -856,21 +760,14 @@ export class SceneManager {
     }
     this.nodeObjects.clear();
 
-    // Add all renderable objects to scene
-    console.log("[SceneManager] Adding", renderableObjects.length, "renderable objects to scene:", renderableObjects);
     renderableObjects.forEach((object3D, index) => {
-      console.log("[SceneManager] Processing renderable object", index, ":", object3D);
       if (object3D && typeof object3D === "object" && "isObject3D" in object3D) {
-        // Generate a unique ID for tracking (use object UUID or index-based ID)
         const objectId = object3D.uuid || `renderable_${index}`;
         this.scene.add(object3D);
         this.nodeObjects.set(objectId, object3D);
-        console.log("[SceneManager] Added object to scene with ID:", objectId);
       } else {
-        console.log("[SceneManager] Skipping invalid object:", object3D);
       }
     });
-    
   }
 
   private startRenderLoop() {
@@ -887,16 +784,13 @@ export class SceneManager {
     const canvas = this.renderer.domElement;
     const container = canvas.parentElement;
 
-    // Use container dimensions if available, fallback to canvas dimensions
     const width = container ? container.clientWidth : canvas.clientWidth;
     const height = container ? container.clientHeight : canvas.clientHeight;
     const aspect = width / height;
 
-    // Update perspective camera
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
 
-    // Update orthographic camera
     const frustumSize = 10;
     this.orthographicCamera.left = (-frustumSize * aspect) / 2;
     this.orthographicCamera.right = (frustumSize * aspect) / 2;
@@ -927,7 +821,6 @@ export class SceneManager {
       this.gridHelper = null;
     }
 
-    // Clean up grid planes
     if (this.xyGrid) {
       this.scene.remove(this.xyGrid);
       this.xyGrid.dispose();

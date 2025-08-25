@@ -30,7 +30,6 @@ export function PromptModal({
   };
 
   useEffect(() => {
-    // Focus the input when modal opens
     if (inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();

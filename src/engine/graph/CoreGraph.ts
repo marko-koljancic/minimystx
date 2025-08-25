@@ -9,8 +9,6 @@ interface GraphNodeData {
 export interface GraphNode {
   id: string;
   [key: string]: unknown;
-  
-  // Optional methods for enhanced node lifecycle
   isDirty?(): boolean;
   cook?(): Promise<void> | void;
   dirtyController?: import('./DirtyController').DirtyController;
@@ -37,7 +35,6 @@ export class CoreGraph {
     const nodeData = this.nodes.get(nodeId);
     if (!nodeData) return;
     
-    // Remove all connections involving this node
     const allConnectedIds = new Set([...nodeData.predecessorIds, ...nodeData.successorIds]);
     for (const connectedId of allConnectedIds) {
       this.disconnect(nodeId, connectedId);
@@ -48,12 +45,10 @@ export class CoreGraph {
   }
   
   connect(sourceId: string, targetId: string): boolean {
-    // Prevent self-connections
-    if (sourceId === targetId) {
+      if (sourceId === targetId) {
       return false;
     }
     
-    // Check for cycle before adding connection
     if (this.wouldCreateCycle(sourceId, targetId)) {
       return false;
     }
@@ -65,11 +60,9 @@ export class CoreGraph {
       return false;
     }
     
-    // Add bidirectional relationships
     sourceData.successorIds.add(targetId);
     targetData.predecessorIds.add(sourceId);
     
-    // Invalidate caches for affected nodes and their dependencies
     this.invalidateCache(sourceId);
     this.invalidateCache(targetId);
     
@@ -84,23 +77,18 @@ export class CoreGraph {
       return;
     }
     
-    // Remove bidirectional relationships
     sourceData.successorIds.delete(targetId);
     targetData.predecessorIds.delete(sourceId);
     
-    // Invalidate caches
     this.invalidateCache(sourceId);
     this.invalidateCache(targetId);
   }
   
-  // Efficient cycle detection using cached relationships
   wouldCreateCycle(sourceId: string, targetId: string): boolean {
-    // If target has successors that include source, it would create a cycle
     const targetSuccessors = this.getAllSuccessors(targetId);
     return targetSuccessors.some(node => node.id === sourceId);
   }
   
-  // Cached traversal methods - O(1) after first computation
   getAllPredecessors(nodeId: string): GraphNode[] {
     const nodeData = this.nodes.get(nodeId);
     if (!nodeData) return [];
@@ -152,7 +140,6 @@ export class CoreGraph {
     return Array.from(this.nodeObjects.values());
   }
   
-  // Topological sort for dependency-ordered processing
   topologicalSort(nodeIds?: string[]): string[] {
     const nodesToSort = nodeIds || Array.from(this.nodeObjects.keys());
     const visited = new Set<string>();
@@ -164,7 +151,6 @@ export class CoreGraph {
       
       const nodeData = this.nodes.get(nodeId);
       if (nodeData) {
-        // Visit all predecessors first
         for (const predecessorId of nodeData.predecessorIds) {
           if (nodesToSort.includes(predecessorId)) {
             visit(predecessorId);
@@ -251,7 +237,6 @@ export class CoreGraph {
       if (nodeData) {
         nodeData.cacheDirty = true;
         
-        // Invalidate all successors and predecessors
         for (const successorId of nodeData.successorIds) {
           invalidate(successorId);
         }
@@ -264,7 +249,6 @@ export class CoreGraph {
     invalidate(nodeId);
   }
   
-  // Debug and introspection methods
   getStats(): {
     nodeCount: number;
     connectionCount: number;
@@ -290,7 +274,6 @@ export class CoreGraph {
   validateGraph(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     
-    // Check for orphaned connections
     for (const [nodeId, nodeData] of this.nodes.entries()) {
       for (const successorId of nodeData.successorIds) {
         const successorData = this.nodes.get(successorId);

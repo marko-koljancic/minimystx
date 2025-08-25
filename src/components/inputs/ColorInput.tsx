@@ -74,18 +74,14 @@ export const ColorInput: React.FC<ColorInputProps> = ({
     commitValue(newValue);
   };
 
-  // Convert various color formats to a displayable hex color for the swatch
   const getSwatchColor = () => {
     try {
-      // If it's already a hex color, use it
       if (/^#[0-9A-F]{6}$/i.test(value)) {
         return value;
       }
-      // If it's a 3-digit hex, expand it
       if (/^#[0-9A-F]{3}$/i.test(value)) {
         return "#" + value[1] + value[1] + value[2] + value[2] + value[3] + value[3];
       }
-      // For named colors or other formats, return the value and let CSS handle it
       return value;
     } catch {
       return "#ffffff";

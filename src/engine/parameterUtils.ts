@@ -59,11 +59,9 @@ export const validateParameterValue = (
       return { valid: true };
 
     case "color":
-      // Basic color validation - should be hex color or valid CSS color
       if (typeof value !== "string") {
         return { valid: false, error: "Color must be a string" };
       }
-      // Allow hex colors (#rgb, #rrggbb) or CSS color names
       if (!/^#([0-9A-F]{3}){1,2}$/i.test(value) && !/^[a-zA-Z]+$/.test(value)) {
         return { valid: false, error: "Must be a valid color (hex or name)" };
       }
@@ -97,8 +95,7 @@ export const validateParameterValue = (
       return { valid: true };
 
     case "file":
-      // File validation - accept File objects, SerializableObjFile objects, or null
-      if (value === null || value === undefined) {
+        if (value === null || value === undefined) {
         return { valid: true };
       }
 
@@ -106,7 +103,6 @@ export const validateParameterValue = (
         return { valid: true };
       }
 
-      // Check if it looks like a SerializableObjFile
       if (typeof value === "object" && value !== null) {
         const objFile = value as any;
         if (
@@ -184,20 +180,15 @@ export const validateAndNormalizeParams = (
     for (const [key, metadata] of Object.entries(categoryDef)) {
       const currentValue = params[category]?.[key];
 
-      // Use default if current value is undefined, null, or invalid
       if (currentValue === undefined || currentValue === null) {
         validated[category][key] = metadata.default;
         continue;
       }
 
-      // Validate the value based on type
       const validation = validateParameterValue(currentValue, metadata);
       if (validation.valid) {
         validated[category][key] = currentValue;
       } else {
-        console.warn(
-          `Parameter ${category}.${key} failed validation: ${validation.error}. Using default value.`
-        );
         validated[category][key] = metadata.default;
       }
     }

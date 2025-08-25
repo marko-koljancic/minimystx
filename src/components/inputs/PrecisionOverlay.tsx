@@ -20,13 +20,11 @@ export const PrecisionOverlay: React.FC<PrecisionOverlayProps> = ({
     if (precision >= 1) {
       return precision.toString();
     } else {
-      // Format small decimals without unnecessary trailing zeros in display
       return precision.toString();
     }
   };
 
-  // Calculate overlay position to center it
-  const overlayHeight = precisionList.length * 28; // 28px per row
+  const overlayHeight = precisionList.length * 28;
   const overlayWidth = 80;
   const overlayStyle = {
     left: position.x - overlayWidth / 2,
@@ -36,17 +34,16 @@ export const PrecisionOverlay: React.FC<PrecisionOverlayProps> = ({
   return (
     <div className={styles.precisionOverlay} style={overlayStyle}>
       {precisionList.map((precision, index) => {
-        // Calculate opacity based on distance from selected
         const distance = Math.abs(index - selectedIndex);
         let opacity: number;
         if (distance === 0) {
-          opacity = 1.0; // Selected
+          opacity = 1.0;
         } else if (distance === 1) {
-          opacity = 0.7; // Adjacent
+          opacity = 0.7;
         } else if (distance === 2) {
-          opacity = 0.5; // Second neighbor
+          opacity = 0.5;
         } else {
-          opacity = 0.35; // Far neighbors
+          opacity = 0.35;
         }
 
         return (

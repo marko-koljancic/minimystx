@@ -25,14 +25,12 @@ export const FloatInput: React.FC<FloatInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const lastValidValue = useRef(value);
 
-  // Initialize precision drag functionality
   const precisionDrag = useMiddleMousePrecisionDrag(value, onChange, {
     min: metadata.min,
     max: metadata.max,
     sensitivity: 0.5,
   });
 
-  // Update input value when prop changes (external update)
   useEffect(() => {
     if (!hasFocus && !precisionDrag.state.isDragging) {
       setInputValue(value.toString());
@@ -66,11 +64,10 @@ export const FloatInput: React.FC<FloatInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Let precision drag handle escape during drag, block other keys
     if (precisionDrag.state.isDragging) {
       precisionDrag.bind.onKeyDown(e);
       if (e.key !== "Escape") {
-        e.preventDefault(); // Block all keys except escape during drag
+        e.preventDefault();
       }
       return;
     }
@@ -99,11 +96,9 @@ export const FloatInput: React.FC<FloatInputProps> = ({
     setHasFocus(true);
   };
 
-  // Slider handling
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const numValue = parseFloat(e.target.value);
     setInputValue(numValue.toString());
-    // For sliders, we commit immediately
     const validation = validateParameterValue(numValue, metadata);
     if (validation.valid) {
       onChange(numValue);
@@ -115,11 +110,10 @@ export const FloatInput: React.FC<FloatInputProps> = ({
 
   const hasSlider = metadata.min !== undefined && metadata.max !== undefined;
 
-  // Combine input classes with precision drag styling
   const getInputClasses = (baseClasses: string) => {
     const classes = [
       baseClasses,
-      styles.numericDrag, // Always apply tabular numerals
+      styles.numericDrag,
       hasError ? styles.error : "",
       precisionDrag.state.isDragging ? styles.precisionDragActive : "",
     ]
@@ -128,7 +122,6 @@ export const FloatInput: React.FC<FloatInputProps> = ({
     return classes;
   };
 
-  // Get display value - precision mode or normal input value
   const displayValue = precisionDrag.state.isDragging
     ? precisionDrag.getDisplayValue()
     : inputValue;

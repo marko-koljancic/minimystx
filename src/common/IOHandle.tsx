@@ -59,15 +59,14 @@ export default function IOHandle({ ...props }: IOHandleProps) {
 
     if (isInput) {
       return {
-        top: `${handleTopPos - tooltipOffset - 20}px`, // Above the handle
-        left: `${handleLeftPos - handleRadius}px`, // Left-aligned with handle edge
+        top: `${handleTopPos - tooltipOffset - 20}px`,
+        left: `${handleLeftPos - handleRadius}px`,
         zIndex: 1000,
       };
     } else {
-      // Output handles are at bottom of node - show tooltip below the handle
       return {
-        bottom: `${handleBottomPos - tooltipOffset - 20}px`, // Below the handle
-        left: `${handleLeftPos - handleRadius}px`, // Left-aligned with handle edge
+        bottom: `${handleBottomPos - tooltipOffset - 20}px`,
+        left: `${handleLeftPos - handleRadius}px`,
         zIndex: 1000,
       };
     }

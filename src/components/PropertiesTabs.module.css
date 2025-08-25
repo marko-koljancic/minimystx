@@ -27,13 +27,13 @@
 .tabButton {
   background: none;
   border: none;
-  padding: 6px 12px; /* Reduced padding */
+  padding: 6px 12px;
   cursor: pointer;
   color: var(--text-secondary);
-  font-size: 1.1rem; /* Slightly smaller font */
+  font-size: 1.1rem;
   transition: var(--theme-transition);
   border-bottom: 2px solid transparent;
-  min-width: 60px; /* Reduced min-width */
+  min-width: 60px;
   height: 100%;
   display: flex;
   align-items: center;
@@ -51,7 +51,6 @@
   background-color: var(--background-secondary);
 }
 
-/* Tab Content */
 .tabContent {
   flex: 1;
   padding: var(--spacing-md);
@@ -63,9 +62,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 0; /* Simplified padding */
+  padding: 8px 0;
   border-bottom: 1px solid var(--border-tertiary);
-  min-height: 28px; /* Reduced height */
+  min-height: 28px;
 }
 
 .paramRow:last-child {
@@ -74,13 +73,12 @@
 
 .paramLabel {
   color: var(--text-primary);
-  font-size: 1.1rem; /* Slightly smaller font */
-  font-weight: 400; /* Lighter weight */
+  font-size: 1.1rem;
+  font-weight: 400;
   flex: 1;
   margin-right: var(--spacing-md);
 }
 
-/* Input Styles */
 .numberInput,
 .textInput {
   background-color: var(--background-quaternary);
@@ -111,7 +109,6 @@
   cursor: pointer;
 }
 
-/* Object Input (for position, rotation, scale) */
 .objectInput {
   display: flex;
   gap: var(--spacing-sm);
@@ -141,17 +138,16 @@
   font-size: 1rem;
 }
 
-/* File Input Styles - Minimalistic */
 .fileInput {
   display: flex;
   flex-direction: column;
-  gap: 6px; /* Reduced gap */
-  min-width: 180px; /* Smaller min-width */
+  gap: 6px;
+  min-width: 180px;
 }
 
 .fileInputRow {
   display: flex;
-  gap: 6px; /* Reduced gap */
+  gap: 6px;
   align-items: center;
 }
 
@@ -159,12 +155,12 @@
   background-color: var(--accent-primary);
   color: white;
   border: none;
-  border-radius: 3px; /* Smaller radius */
-  padding: 4px 8px; /* Reduced padding */
-  font-size: 1rem; /* Smaller font */
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 1rem;
   cursor: pointer;
   transition: var(--theme-transition);
-  font-weight: 400; /* Normal weight */
+  font-weight: 400;
 }
 
 .fileButton:hover {
@@ -175,9 +171,9 @@
   background-color: var(--background-quaternary);
   color: var(--text-secondary);
   border: 1px solid var(--border-secondary);
-  border-radius: 3px; /* Smaller radius */
-  padding: 4px 8px; /* Reduced padding */
-  font-size: 0.9rem; /* Smaller font */
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: var(--theme-transition);
 }
@@ -189,17 +185,17 @@
 
 .fileName {
   color: var(--text-primary);
-  font-size: 0.9rem; /* Smaller font */
-  padding: 4px 6px; /* Reduced padding */
+  font-size: 0.9rem;
+  padding: 4px 6px;
   background-color: var(--background-quaternary);
-  border-radius: 2px; /* Smaller radius */
+  border-radius: 2px;
   border: 1px solid var(--border-secondary);
-  font-family: monospace; /* Monospace for filename */
+  font-family: monospace;
 }
 
 .noFileSelected {
   color: var(--text-tertiary);
-  font-size: 0.9rem; /* Smaller font */
+  font-size: 0.9rem;
   font-style: italic;
-  padding: 4px 6px; /* Reduced padding */
+  padding: 4px 6px;
 }

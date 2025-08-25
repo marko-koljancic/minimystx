@@ -20,14 +20,12 @@ export class DirtyController {
     this.isDirtyFlag = true;
     this.dirtyTimestamp = performance.now();
     
-    // Queue hooks instead of immediate execution
     this.queuePostDirtyHooks(trigger);
     this.propagateDirtyToSuccessors(trigger);
   }
   
   private queuePostDirtyHooks(trigger?: GraphNode): void {
     if (this.postDirtyHooks.size > 0) {
-      // Add to cooker queue for batched processing
       this.cooker.enqueue(this.node.id, {
         type: 'hooks',
         hooks: Array.from(this.postDirtyHooks.values()),
@@ -37,19 +35,17 @@ export class DirtyController {
   }
   
   private propagateDirtyToSuccessors(trigger?: GraphNode): void {
-    // Block cooker during propagation to batch all updates
     this.cooker.block();
     
     try {
       const successors = this.getSuccessors(this.node.id);
       for (const successor of successors) {
-        // Access successor's dirty controller if available
         if ('dirtyController' in successor && successor.dirtyController instanceof DirtyController) {
           successor.dirtyController.setDirty(trigger || this.node);
         }
       }
     } finally {
-      this.cooker.unblock(); // Triggers batch processing
+      this.cooker.unblock();
     }
   }
   
@@ -86,7 +82,6 @@ export class DirtyController {
     return this.postDirtyHooks.size > 0;
   }
   
-  // Debug and introspection methods
   getStats(): {
     isDirty: boolean;
     dirtyTimestamp?: number;

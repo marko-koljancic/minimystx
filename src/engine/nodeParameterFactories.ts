@@ -1,16 +1,7 @@
-/**
- * Reusable parameter factory functions to eliminate boilerplate across node definitions
- * These factories provide consistent parameter structures across all node types
- */
 
 import { createParameterMetadata } from "./parameterUtils";
 import type { CategoryParams } from "./graphStore";
 
-/**
- * Creates standard general parameters used by all nodes
- * @param defaultName - Default name for the node (e.g., "Box 1", "Sphere 1")
- * @param defaultDescription - Default description for the node
- */
 export function createGeneralParams(
   defaultName: string,
   defaultDescription: string
@@ -27,10 +18,6 @@ export function createGeneralParams(
   };
 }
 
-/**
- * Creates standard transform parameters used by most nodes
- * Includes position, rotation, scale, and scale factor
- */
 export function createTransformParams(): CategoryParams {
   return {
     position: createParameterMetadata(
@@ -66,10 +53,6 @@ export function createTransformParams(): CategoryParams {
   };
 }
 
-/**
- * Creates standard rendering parameters used by geometry nodes
- * Includes color, visibility, and shadow settings
- */
 export function createRenderingParams(): CategoryParams {
   return {
     color: createParameterMetadata("color", "#ffffff", {
@@ -87,10 +70,6 @@ export function createRenderingParams(): CategoryParams {
   };
 }
 
-/**
- * Creates transform parameters for light nodes (position only)
- * Light nodes typically only need position, not full transform
- */
 export function createLightTransformParams(
   defaultPosition: { x: number; y: number; z: number } = { x: 0, y: 5, z: 0 }
 ): CategoryParams {
@@ -101,10 +80,6 @@ export function createLightTransformParams(
   };
 }
 
-/**
- * Creates basic rendering parameters for light nodes
- * Includes enabled state and helper visibility
- */
 export function createLightRenderingParams(): CategoryParams {
   return {
     enabled: createParameterMetadata("boolean", true, {
@@ -116,10 +91,6 @@ export function createLightRenderingParams(): CategoryParams {
   };
 }
 
-/**
- * Creates minimal rendering parameters for sub-flow geometry nodes
- * Only includes visibility flag for render out selection
- */
 export function createSubflowRenderingParams(): CategoryParams {
   return {
     visible: createParameterMetadata("boolean", false, {

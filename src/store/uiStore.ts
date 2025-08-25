@@ -28,16 +28,12 @@ interface UIState {
   focusedCanvas: FocusedCanvas;
   isOrthographicCamera: boolean;
   showAxisGizmo: boolean;
-  // Keyboard navigation state for TAB Node Palette
   selectedCategoryIndex: number;
   selectedNodeIndex: number;
   paletteSearchQuery: string;
   keyboardNavigationMode: boolean;
-  // Context management for sub-flow navigation
   currentContext: GraphContext;
-  // Viewport state per context
   viewportStates: Record<string, { x: number; y: number; zoom: number }>;
-  // Node positions per context
   nodePositions: Record<string, Record<string, { x: number; y: number }>>;
 }
 
@@ -73,20 +69,16 @@ interface UIActions {
   toggleCameraMode: () => void;
   toggleAxisGizmo: () => void;
   setCameraView: (view: "top" | "front" | "left" | "right" | "bottom") => void;
-  // Keyboard navigation actions for TAB Node Palette
   setSelectedCategoryIndex: (index: number) => void;
   setSelectedNodeIndex: (index: number) => void;
   setPaletteSearchQuery: (query: string) => void;
   setKeyboardNavigationMode: (mode: boolean) => void;
   resetPaletteNavigation: () => void;
-  // Context management actions
   setCurrentContext: (context: GraphContext) => void;
   navigateToRoot: () => void;
   navigateToSubFlow: (geoNodeId: string) => void;
-  // Viewport state management
   saveViewportState: (contextKey: string, viewport: { x: number; y: number; zoom: number }) => void;
   getViewportState: (contextKey: string) => { x: number; y: number; zoom: number } | null;
-  // Node position management
   saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => void;
   getNodePositions: (contextKey: string) => Record<string, { x: number; y: number }> | null;
 }
@@ -130,16 +122,12 @@ export const useUIStore = create<UIStore>()(
       focusedCanvas: null,
       isOrthographicCamera: false,
       showAxisGizmo: true,
-      // Keyboard navigation state defaults
       selectedCategoryIndex: 0,
       selectedNodeIndex: 0,
       paletteSearchQuery: "",
       keyboardNavigationMode: false,
-      // Context management defaults
       currentContext: { type: "root" },
-      // Viewport states per context
       viewportStates: {},
-      // Node positions per context
       nodePositions: {},
 
       setTheme: (theme: Theme) => {
@@ -240,7 +228,6 @@ export const useUIStore = create<UIStore>()(
         window.dispatchEvent(new CustomEvent("minimystx:setCameraView", { detail: { view } }));
       },
 
-      // Keyboard navigation actions implementation
       setSelectedCategoryIndex: (index: number) => set({ selectedCategoryIndex: index }),
       setSelectedNodeIndex: (index: number) => set({ selectedNodeIndex: index }),
       setPaletteSearchQuery: (query: string) => set({ paletteSearchQuery: query }),
@@ -253,10 +240,8 @@ export const useUIStore = create<UIStore>()(
           keyboardNavigationMode: false,
         }),
 
-      // Context management actions implementation
       setCurrentContext: (context: GraphContext) => {
         set((state) => ({
-          // Clear selection when switching contexts
           ...state,
           selectedNodeId: null,
           currentContext: context,
@@ -271,7 +256,6 @@ export const useUIStore = create<UIStore>()(
         get().setCurrentContext({ type: "subflow", geoNodeId });
       },
 
-      // Viewport state management actions
       saveViewportState: (contextKey: string, viewport: { x: number; y: number; zoom: number }) => {
         set((state) => ({
           ...state,
@@ -287,7 +271,6 @@ export const useUIStore = create<UIStore>()(
         return state.viewportStates[contextKey] || null;
       },
 
-      // Node position management actions
       saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => {
         set((state) => ({
           ...state,
@@ -374,7 +357,6 @@ export const useToggleCameraMode = () => useUIStore((state) => state.toggleCamer
 export const useToggleAxisGizmo = () => useUIStore((state) => state.toggleAxisGizmo);
 export const useSetCameraView = () => useUIStore((state) => state.setCameraView);
 
-// Keyboard navigation hooks for TAB Node Palette
 export const useSelectedCategoryIndex = () => useUIStore((state) => state.selectedCategoryIndex);
 export const useSelectedNodeIndex = () => useUIStore((state) => state.selectedNodeIndex);
 export const usePaletteSearchQuery = () => useUIStore((state) => state.paletteSearchQuery);
@@ -387,21 +369,17 @@ export const useSetKeyboardNavigationMode = () =>
   useUIStore((state) => state.setKeyboardNavigationMode);
 export const useResetPaletteNavigation = () => useUIStore((state) => state.resetPaletteNavigation);
 
-// Context management hooks
 export const useCurrentContext = () => useUIStore((state) => state.currentContext);
 export const useSetCurrentContext = () => useUIStore((state) => state.setCurrentContext);
 export const useNavigateToRoot = () => useUIStore((state) => state.navigateToRoot);
 export const useNavigateToSubFlow = () => useUIStore((state) => state.navigateToSubFlow);
 
-// Viewport state management hooks
 export const useSaveViewportState = () => useUIStore((state) => state.saveViewportState);
 export const useGetViewportState = () => useUIStore((state) => state.getViewportState);
 
-// Node position management hooks
 export const useSaveNodePositions = () => useUIStore((state) => state.saveNodePositions);
 export const useGetNodePositions = () => useUIStore((state) => state.getNodePositions);
 
-// Helper function to generate context keys for viewport storage
 export const getContextKey = (context: GraphContext): string => {
   return context.type === "root" ? "root" : `subflow-${context.geoNodeId}`;
 };

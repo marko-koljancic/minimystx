@@ -11,12 +11,10 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createLightTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
 
-// Initialize RectAreaLight uniforms library once
 let rectAreaLibInitialized = false;
 if (!rectAreaLibInitialized) {
   RectAreaLightUniformsLib.init();
   rectAreaLibInitialized = true;
-  console.info("RectAreaLightUniformsLib initialized");
 }
 
 export interface RectAreaLightNodeData extends Record<string, unknown> {
@@ -38,27 +36,22 @@ export const processor: NodeProcessor<RectAreaLightNodeData, { object: Object3D 
     data.light.height
   );
 
-  // Set position
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
 
-  // Set visibility
   light.visible = data.rendering.visible;
 
-  // Create a group to contain both light and helper
   const lightGroup = new Group();
   lightGroup.add(light);
 
-  // Add helper if enabled
   if (data.rendering.showHelper) {
     const helper = new RectAreaLightHelper(light);
     lightGroup.add(helper);
   }
 
-  console.info(`RectAreaLight created: ${data.general.name || "Unnamed"}`);
 
   return { object: lightGroup };
 };
@@ -104,21 +97,17 @@ export const rectAreaLightNodeParams: NodeParams = {
 };
 
 export const rectAreaLightNodeCompute = (params: Record<string, unknown>) => {
-  // Validate constraints
   const lightParams = params.light as RectAreaLightProps;
   if (lightParams) {
     if (lightParams.intensity < 0) {
-      console.warn("RectAreaLight intensity cannot be negative, clamping to 0");
       lightParams.intensity = 0;
     }
 
     if (lightParams.width <= 0) {
-      console.warn("RectAreaLight width must be greater than 0, setting to 0.1");
       lightParams.width = 0.1;
     }
 
     if (lightParams.height <= 0) {
-      console.warn("RectAreaLight height must be greater than 0, setting to 0.1");
       lightParams.height = 0.1;
     }
   }

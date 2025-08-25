@@ -8,7 +8,7 @@
   font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", "Consolas", monospace;
   font-variant-numeric: tabular-nums;
   user-select: none;
-  pointer-events: none; /* Prevent interference with mouse tracking */
+  pointer-events: none;
   backdrop-filter: blur(4px);
   width: 80px;
 }

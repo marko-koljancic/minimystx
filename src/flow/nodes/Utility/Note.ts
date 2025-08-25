@@ -13,23 +13,21 @@ export interface NoteNodeData extends Record<string, unknown> {
   };
 }
 
-// Pastel color palette
 export const NOTE_COLORS = [
-  "#FDE68A", // yellow
-  "#A7F3D0", // green
-  "#BFDBFE", // blue
-  "#FBCFE8", // pink
-  "#FDE2E2", // red
-  "#D1FAE5", // emerald
-  "#EDE9FE", // purple
-  "#FFE4E6", // rose
-  "#E9D5FF", // violet
+  "#FDE68A",
+  "#A7F3D0",
+  "#BFDBFE",
+  "#FBCFE8",
+  "#FDE2E2",
+  "#D1FAE5",
+  "#EDE9FE",
+  "#FFE4E6",
+  "#E9D5FF",
 ];
 
 export const processor: NodeProcessor<NoteNodeData, void> = (
   _data: NoteNodeData
 ): void => {
-  // Note nodes don't produce any output - they're purely visual annotations
   return undefined;
 };
 
@@ -56,7 +54,6 @@ export const noteNodeParams: NodeParams = {
 };
 
 export const noteNodeCompute = (params: Record<string, unknown>) => {
-  // Convert params to structured data with proper fallbacks
   const generalParams = params.general as Record<string, unknown> || {};
   const noteParams = params.note as Record<string, unknown> || {};
   

@@ -2,9 +2,6 @@ import { useMemo } from "react";
 import { useGraphStore } from "../engine/graphStore";
 import { useCurrentContext } from "../store/uiStore";
 
-/**
- * Context-aware hook that returns nodes for the current context (root or sub-flow)
- */
 export const useContextNodes = () => {
   const currentContext = useCurrentContext();
   const { rootNodeRuntime, subFlows } = useGraphStore();
@@ -31,9 +28,6 @@ export const useContextNodes = () => {
   }, [currentContext, rootNodeRuntime, subFlows]);
 };
 
-/**
- * Context-aware hook that returns edges for the current context (root or sub-flow)
- */
 export const useContextEdges = () => {
   const currentContext = useCurrentContext();
   const { connectionManager, rootNodeRuntime, subFlows } = useGraphStore();
@@ -52,12 +46,10 @@ export const useContextEdges = () => {
       return [];
     }
 
-    // Get all connections from ConnectionManager for nodes in this context
     for (const nodeId of contextNodeIds) {
       const connections = connectionManager.getOutputConnections(nodeId);
-      
+
       for (const connection of connections) {
-        // Only include connections between nodes in the same context
         if (contextNodeIds.includes(connection.targetNodeId)) {
           edges.push({
             id: connection.id,
@@ -70,13 +62,7 @@ export const useContextEdges = () => {
         }
       }
     }
-    
+
     return edges;
-  }, [
-    currentContext.type,
-    currentContext.geoNodeId,
-    connectionManager,
-    rootNodeRuntime,
-    subFlows
-  ]);
+  }, [currentContext.type, currentContext.geoNodeId, connectionManager, rootNodeRuntime, subFlows]);
 };

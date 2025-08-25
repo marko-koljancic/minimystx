@@ -9,7 +9,6 @@ export const Breadcrumb: React.FC = () => {
   const { rootNodeRuntime } = useGraphStore();
 
   const handleNavigateToRoot = () => {
-    // Trigger custom event to save viewport before navigation
     const saveViewportEvent = new CustomEvent("minimystx:saveCurrentViewport");
     window.dispatchEvent(saveViewportEvent);
 
@@ -17,7 +16,7 @@ export const Breadcrumb: React.FC = () => {
   };
 
   if (currentContext.type === "root") {
-    return null; // Hide breadcrumbs in root context
+    return null;
   }
 
   const geoNodeId = currentContext.geoNodeId;

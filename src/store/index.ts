@@ -12,7 +12,6 @@ export {
   useClosePalette,
   useTogglePalettePinned,
   useSetPalettePosition,
-  // Keyboard navigation hooks for TAB Node Palette
   useSelectedCategoryIndex,
   useSelectedNodeIndex,
   usePaletteSearchQuery,
@@ -22,7 +21,6 @@ export {
   useSetPaletteSearchQuery,
   useSetKeyboardNavigationMode,
   useResetPaletteNavigation,
-  // Context management hooks
   useCurrentContext,
   useSetCurrentContext,
   useNavigateToRoot,

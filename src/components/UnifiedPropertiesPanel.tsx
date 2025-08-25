@@ -15,7 +15,6 @@ export default function UnifiedPropertiesPanel() {
   const currentContext = useCurrentContext();
   const { rootNodeRuntime, subFlows, setParams } = useGraphStore();
 
-  // Get the appropriate node runtime based on current context
   const getNodeRuntime = () => {
     if (currentContext.type === "root") {
       return rootNodeRuntime;
@@ -31,7 +30,6 @@ export default function UnifiedPropertiesPanel() {
     if (selectedNodeId) {
       const nodeData = rootNodeRuntime[selectedNodeId];
       if (nodeData) {
-        // Auto-switch to first available tab
         const availableTabs = getAvailableTabs(nodeData.params);
         if (availableTabs.length > 0 && !availableTabs.includes(activeTab)) {
           setActiveTab(availableTabs[0]);
@@ -40,12 +38,11 @@ export default function UnifiedPropertiesPanel() {
     }
   }, [selectedNodeId, nodeRuntime, activeTab, rootNodeRuntime]);
 
-  // Handle multi-selection case
   if (selectedNodeIds.length > 1) {
     return (
       <div className={styles.emptyState}>
         <div>{selectedNodeIds.length} nodes selected</div>
-        <div style={{ fontSize: '0.9em', opacity: 0.7, marginTop: '0.5em' }}>
+        <div style={{ fontSize: "0.9em", opacity: 0.7, marginTop: "0.5em" }}>
           Multi-node editing not supported. Select a single node to edit its properties.
         </div>
       </div>
@@ -71,14 +68,11 @@ export default function UnifiedPropertiesPanel() {
     return <div className={styles.emptyState}>No parameters available</div>;
   }
 
-  // Ensure current tab is valid
   const currentTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
 
   const handleParamChange = (category: string, paramKey: string, value: unknown) => {
-    // Special handling for certain parameter types
     let processedValue = value;
 
-    // Handle rotation conversion (degrees to radians) if needed
     if (
       category === "transform" &&
       paramKey === "rotation" &&
@@ -114,10 +108,8 @@ export default function UnifiedPropertiesPanel() {
       return <div className={styles.emptyState}>No parameter metadata found</div>;
     }
 
-    // Check if shadows should be enabled (for shadow tab visibility)
     const shadowsEnabled = nodeData.params.light?.castShadow === true;
 
-    // Special handling for shadow tab - only show if castShadow is enabled
     if (currentTab === "shadow" && !shadowsEnabled) {
       return (
         <div className={styles.emptyState}>
@@ -132,10 +124,9 @@ export default function UnifiedPropertiesPanel() {
           {Object.entries(categoryParams).map(([key, value]) => {
             const metadata = categoryMetadata[key];
             if (!metadata) {
-              return null; // Skip parameters without metadata
+              return null;
             }
 
-            // Special handling for transform rotation display (radians to degrees)
             let displayValue = value;
             if (
               currentTab === "transform" &&
@@ -207,7 +198,6 @@ function getTabDisplayName(tab: TabType): string {
 function getAvailableTabs(params: Record<string, any>): TabType[] {
   const availableTabs: TabType[] = [];
 
-  // Check which categories have parameters
   if (params.general && Object.keys(params.general).length > 0) availableTabs.push("general");
   if (params.transform && Object.keys(params.transform).length > 0) availableTabs.push("transform");
   if (params.geometry && Object.keys(params.geometry).length > 0) availableTabs.push("geometry");

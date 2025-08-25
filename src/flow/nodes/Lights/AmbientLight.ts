@@ -23,17 +23,14 @@ export const processor: NodeProcessor<AmbientLightNodeData, { object: Object3D }
 ) => {
   const light = new ThreeAmbientLight(data.light.color, data.light.intensity);
 
-  // Set position (for consistency, though ambient lights don't have specific position)
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
 
-  // Set visibility
   light.visible = data.rendering.visible;
 
-  // Create a group to contain the light
   const lightGroup = new Group();
   lightGroup.add(light);
 

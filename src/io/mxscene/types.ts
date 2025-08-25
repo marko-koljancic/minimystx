@@ -1,28 +1,24 @@
-/**
- * TypeScript interfaces for .mxscene portable project bundle format
- */
-
 export interface ManifestJson {
   schemaVersion: string;
   engineVersion: string;
-  createdAt: string; // ISO8601 timestamp
+  createdAt: string;
   assets: AssetManifestEntry[];
 }
 
 export interface AssetManifestEntry {
-  id: string; // SHA-256 hex hash
-  name: string; // Original filename
-  mime: string; // MIME type
-  size: number; // File size in bytes
-  hash: string; // "sha256:<hex>"
-  source: "embedded"; // Always "embedded" for .mxscene
-  originalPath?: string; // Optional hint for original path
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  hash: string;
+  source: "embedded";
+  originalPath?: string;
 }
 
 export interface SceneJson {
   schemaVersion: string;
   engineVersion: string;
-  units: string; // e.g., "meters"
+  units: string;
   graph: GraphData;
   camera: CameraData;
   renderer: RendererData;
@@ -36,7 +32,6 @@ export interface GraphData {
   edges: EdgeData[];
   nodeRuntime: Record<string, NodeRuntimeData>;
   positions: Record<string, { x: number; y: number }>;
-  // Hierarchical graph data
   subFlows: Record<string, SubFlowData>;
 }
 
@@ -91,34 +86,39 @@ export interface UIData {
 }
 
 export interface SceneAssetEntry {
-  id: string; // SHA-256 hex hash (matches ManifestJson.assets[].id)
-  role: string; // e.g., "model", "texture", "material"
-  importSettings?: Record<string, unknown>; // Per-asset import settings
+  id: string;
+  role: string;
+  importSettings?: Record<string, unknown>;
 }
 
 export interface ProjectMetadata {
   name: string;
   description: string;
-  projectId: string; // UUID
-  created?: string; // ISO8601
-  modified?: string; // ISO8601
+  projectId: string;
+  created?: string;
+  modified?: string;
 }
 
-// Asset discovery system types
 export interface AssetReference {
-  hash: string; // SHA-256 hex
+  hash: string;
   originalName: string;
   originalPath?: string;
   mime: string;
   size: number;
   data: ArrayBuffer;
-  role: string; // "model", "texture", etc.
+  role: string;
   importSettings?: Record<string, unknown>;
 }
 
-// Progress tracking types
 export interface ProgressUpdate {
-  phase: "collecting" | "hashing" | "packaging" | "writing" | "reading" | "extracting" | "validating";
+  phase:
+    | "collecting"
+    | "hashing"
+    | "packaging"
+    | "writing"
+    | "reading"
+    | "extracting"
+    | "validating";
   currentAsset?: string;
   assetIndex?: number;
   totalAssets?: number;
@@ -128,46 +128,44 @@ export interface ProgressUpdate {
   message: string;
 }
 
-// Error types
 export class MxSceneError extends Error {
   constructor(message: string, public code: string) {
     super(message);
-    this.name = 'MxSceneError';
+    this.name = "MxSceneError";
   }
 }
 
 export class IntegrityError extends MxSceneError {
   constructor(message: string, public expectedHash: string, public actualHash: string) {
-    super(message, 'INTEGRITY_ERROR');
-    this.name = 'IntegrityError';
+    super(message, "INTEGRITY_ERROR");
+    this.name = "IntegrityError";
   }
 }
 
 export class SchemaError extends MxSceneError {
   constructor(message: string, public foundVersion: string, public supportedVersion: string) {
-    super(message, 'SCHEMA_ERROR');
-    this.name = 'SchemaError';
+    super(message, "SCHEMA_ERROR");
+    this.name = "SchemaError";
   }
 }
 
 export class ZipError extends MxSceneError {
   constructor(message: string) {
-    super(message, 'ZIP_ERROR');
-    this.name = 'ZipError';
+    super(message, "ZIP_ERROR");
+    this.name = "ZipError";
   }
 }
 
 export class OpfsError extends MxSceneError {
   constructor(message: string) {
-    super(message, 'OPFS_ERROR');
-    this.name = 'OpfsError';
+    super(message, "OPFS_ERROR");
+    this.name = "OpfsError";
   }
 }
 
-// Worker message types
 export interface WorkerMessage {
   id: string;
-  type: 'export' | 'import' | 'progress' | 'success' | 'error';
+  type: "export" | "import" | "progress" | "success" | "error";
   data?: unknown;
   error?: {
     message: string;
@@ -187,7 +185,6 @@ export interface ImportRequest {
   fileName: string;
 }
 
-// ZIP abstraction types
 export interface ZipWriter {
   addFile(pathInZip: string, data: Uint8Array): Promise<void>;
   addText(pathInZip: string, text: string): Promise<void>;
@@ -201,7 +198,6 @@ export interface ZipReader {
   has(pathInZip: string): Promise<boolean>;
 }
 
-// Asset cache interface
 export interface AssetCache {
   has(hash: string): Promise<boolean>;
   get(hash: string): Promise<ArrayBuffer | null>;
@@ -210,7 +206,6 @@ export interface AssetCache {
   size?(): Promise<number>;
 }
 
-// Export/Import result types
 export interface ExportResult {
   blob: Blob;
   fileName: string;
@@ -221,6 +216,6 @@ export interface ExportResult {
 export interface ImportResult {
   scene: SceneJson;
   manifest: ManifestJson;
-  loadedAssets: string[]; // List of asset IDs (hashes)
-  warnings?: string[]; // Non-fatal issues during import
+  loadedAssets: string[];
+  warnings?: string[];
 }

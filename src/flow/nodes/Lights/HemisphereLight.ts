@@ -32,27 +32,22 @@ export const processor: NodeProcessor<HemisphereLightNodeData, { object: Object3
     data.light.intensity
   );
 
-  // Set position (for consistency and potential future use)
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
 
-  // Set visibility
   light.visible = data.rendering.visible;
 
-  // Create a group to contain both light and helper
   const lightGroup = new Group();
   lightGroup.add(light);
 
-  // Add helper if enabled
   if (data.rendering.showHelper) {
     const helper = new HemisphereLightHelper(light, data.rendering.helperSize);
     lightGroup.add(helper);
   }
 
-  console.info(`HemisphereLight created: ${data.general.name || "Unnamed"}`);
 
   return { object: lightGroup };
 };
@@ -93,17 +88,13 @@ export const hemisphereLightNodeParams: NodeParams = {
 };
 
 export const hemisphereLightNodeCompute = (params: Record<string, unknown>) => {
-  // Validate intensity constraint
   const lightParams = params.light as HemisphereLightProps;
   if (lightParams && lightParams.intensity < 0) {
-    console.warn("HemisphereLight intensity cannot be negative, clamping to 0");
     lightParams.intensity = 0;
   }
 
-  // Validate helper size constraint
   const renderingParams = params.rendering as HemisphereLightRenderingProps;
   if (renderingParams && renderingParams.helperSize <= 0) {
-    console.warn("HemisphereLight helper size must be greater than 0, setting to 1");
     renderingParams.helperSize = 1;
   }
 

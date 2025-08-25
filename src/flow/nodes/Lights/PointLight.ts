@@ -30,14 +30,12 @@ export const processor: NodeProcessor<PointLightNodeData, { object: Object3D }> 
     data.light.decay
   );
 
-  // Set position
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
 
-  // Configure shadows
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
     light.shadow.mapSize.width = data.shadow.mapSizeWidth;
@@ -47,18 +45,14 @@ export const processor: NodeProcessor<PointLightNodeData, { object: Object3D }> 
     light.shadow.camera.near = data.shadow.cameraNear;
     light.shadow.camera.far = data.shadow.cameraFar;
 
-    // Warn for non-power-of-two shadow map sizes
     validateShadowMapSize(data.shadow.mapSizeWidth, data.shadow.mapSizeHeight, "PointLight");
   }
 
-  // Set visibility
   light.visible = data.rendering.visible;
 
-  // Create a group to contain both light and helper
   const lightGroup = new Group();
   lightGroup.add(light);
 
-  // Add helper if enabled
   if (data.rendering.showHelper) {
     const helper = new PointLightHelper(light, 0.5, data.light.color);
     lightGroup.add(helper);
@@ -149,10 +143,8 @@ export const pointLightNodeParams: NodeParams = {
 };
 
 export const pointLightNodeCompute = (params: Record<string, unknown>) => {
-  // Type assertions for the structured parameters
   const shadowParams = params.shadow as ShadowProps;
 
-  // Validate and fix shadow camera constraints
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
   }

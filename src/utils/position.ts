@@ -43,7 +43,6 @@ export function getRelativePositionStyles(
         marginLeft: `${offset}px`,
       };
     default:
-      // Default to bottom position
       return {
         top: "100%",
         left: "50%",
