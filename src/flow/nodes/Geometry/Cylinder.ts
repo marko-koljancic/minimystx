@@ -5,7 +5,7 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
 import {
   createGeneralParams,
-  createSubflowRenderingParams,
+  createRenderingParams,
 } from "../../../engine/nodeParameterFactories";
 
 export interface CylinderNodeData extends BaseGeometryData, Record<string, unknown> {
@@ -59,7 +59,7 @@ export const cylinderNodeParams: NodeParams = {
       step: 0.1,
     }),
   },
-  rendering: createSubflowRenderingParams(),
+  rendering: createRenderingParams(),
 };
 
 export const cylinderNodeCompute = (params: Record<string, any>) => {

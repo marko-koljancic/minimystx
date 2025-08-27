@@ -25,8 +25,8 @@ export function createGeometryMesh<T extends BaseGeometryData>(
   mesh.rotation.set(0, 0, 0);
   mesh.scale.set(1, 1, 1);
 
-  mesh.castShadow = false;
-  mesh.receiveShadow = false;
+  mesh.castShadow = data.rendering.castShadow ?? false;
+  mesh.receiveShadow = data.rendering.receiveShadow ?? false;
 
   return { object: mesh, geometry };
 }

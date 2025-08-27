@@ -5,7 +5,7 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
 import {
   createGeneralParams,
-  createSubflowRenderingParams,
+  createRenderingParams,
 } from "../../../engine/nodeParameterFactories";
 
 export interface TorusKnotNodeData extends BaseGeometryData, Record<string, unknown> {
@@ -57,7 +57,7 @@ export const torusKnotNodeParams: NodeParams = {
     p: createParameterMetadata("number", 2, { displayName: "P Value", min: 1, max: 10, step: 1 }),
     q: createParameterMetadata("number", 3, { displayName: "Q Value", min: 1, max: 10, step: 1 }),
   },
-  rendering: createSubflowRenderingParams(),
+  rendering: createRenderingParams(),
 };
 
 export const torusKnotNodeCompute = (params: Record<string, any>) => {

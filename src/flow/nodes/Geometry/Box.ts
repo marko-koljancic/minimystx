@@ -5,7 +5,7 @@ import type { NodeParams } from "../../../engine/graphStore";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import {
   createGeneralParams,
-  createSubflowRenderingParams,
+  createRenderingParams,
 } from "../../../engine/nodeParameterFactories";
 
 export interface BoxNodeData extends BaseGeometryData, Record<string, unknown> {
@@ -52,7 +52,7 @@ export const boxNodeParams: NodeParams = {
       step: 0.1,
     }),
   },
-  rendering: createSubflowRenderingParams(),
+  rendering: createRenderingParams(),
 };
 
 export const boxNodeCompute = (params: Record<string, any>) => {

@@ -5,7 +5,7 @@ import { createParameterMetadata, extractDefaultValues } from "../../../engine/p
 import type { NodeParams } from "../../../engine/graphStore";
 import {
   createGeneralParams,
-  createSubflowRenderingParams,
+  createRenderingParams,
 } from "../../../engine/nodeParameterFactories";
 import { getAssetCache } from "../../../io/mxscene/opfs-cache";
 import { hashBytesSHA256 } from "../../../io/mxscene/crypto";
@@ -250,7 +250,7 @@ export const importObjNodeParams: NodeParams = {
     }),
     centerToOrigin: createParameterMetadata("boolean", false, { displayName: "Center to Origin" }),
   },
-  rendering: createSubflowRenderingParams(),
+  rendering: createRenderingParams(),
 };
 
 export const importObjNodeCompute = (params: Record<string, unknown>, inputs?: unknown, context?: { nodeId?: string }) => {

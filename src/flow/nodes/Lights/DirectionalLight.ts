@@ -99,7 +99,7 @@ export const directionalLightNodeParams: NodeParams = {
   },
   light: {
     color: createParameterMetadata("color", "#ffffff", { displayName: "Color" }),
-    intensity: createParameterMetadata("number", 1.0, {
+    intensity: createParameterMetadata("number", 1.5, {
       displayName: "Intensity",
       min: 0,
       max: 10,
@@ -108,11 +108,11 @@ export const directionalLightNodeParams: NodeParams = {
     castShadow: createParameterMetadata("boolean", true, { displayName: "Cast Shadow" }),
   },
   shadow: {
-    mapSize: createParameterMetadata("enum", "1024", {
+    mapSize: createParameterMetadata("enum", "2048", {
       displayName: "Shadow Map Size",
       enumValues: ["512", "1024", "2048"],
     }),
-    bias: createParameterMetadata("number", 0, {
+    bias: createParameterMetadata("number", 0.001, {
       displayName: "Shadow Bias",
       min: -0.01,
       max: 0.01,
@@ -124,37 +124,37 @@ export const directionalLightNodeParams: NodeParams = {
       max: 1,
       step: 0.001,
     }),
-    cameraNear: createParameterMetadata("number", 0.5, {
+    cameraNear: createParameterMetadata("number", 0.1, {
       displayName: "Shadow Near",
       min: 0.01,
       max: 50,
       step: 0.01,
     }),
-    cameraFar: createParameterMetadata("number", 500, {
+    cameraFar: createParameterMetadata("number", 50, {
       displayName: "Shadow Far",
       min: 1,
       max: 2000,
       step: 1,
     }),
-    cameraLeft: createParameterMetadata("number", -50, {
+    cameraLeft: createParameterMetadata("number", -4, {
       displayName: "Shadow Left",
       min: -500,
       max: 500,
       step: 1,
     }),
-    cameraRight: createParameterMetadata("number", 50, {
+    cameraRight: createParameterMetadata("number", 4, {
       displayName: "Shadow Right",
       min: -500,
       max: 500,
       step: 1,
     }),
-    cameraTop: createParameterMetadata("number", 50, {
+    cameraTop: createParameterMetadata("number", 4, {
       displayName: "Shadow Top",
       min: -500,
       max: 500,
       step: 1,
     }),
-    cameraBottom: createParameterMetadata("number", -50, {
+    cameraBottom: createParameterMetadata("number", -4, {
       displayName: "Shadow Bottom",
       min: -500,
       max: 500,

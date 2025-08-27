@@ -78,7 +78,7 @@ export const pointLightNodeParams: NodeParams = {
   },
   light: {
     color: createParameterMetadata("color", "#ffffff", { displayName: "Color" }),
-    intensity: createParameterMetadata("number", 1, {
+    intensity: createParameterMetadata("number", 1.5, {
       displayName: "Intensity",
       min: 0,
       max: 100,
@@ -96,7 +96,7 @@ export const pointLightNodeParams: NodeParams = {
       max: 10,
       step: 0.1,
     }),
-    castShadow: createParameterMetadata("boolean", false, { displayName: "Cast Shadow" }),
+    castShadow: createParameterMetadata("boolean", true, { displayName: "Cast Shadow" }),
   },
   shadow: {
     mapSizeWidth: createParameterMetadata("number", 1024, {
@@ -111,7 +111,7 @@ export const pointLightNodeParams: NodeParams = {
       max: 4096,
       step: 1,
     }),
-    bias: createParameterMetadata("number", 0, {
+    bias: createParameterMetadata("number", -0.0001, {
       displayName: "Shadow Bias",
       min: -0.01,
       max: 0.01,

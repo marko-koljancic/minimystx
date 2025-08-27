@@ -97,7 +97,7 @@ export const spotLightNodeParams: NodeParams = {
   },
   light: {
     color: createParameterMetadata("color", "#ffffff", { displayName: "Color" }),
-    intensity: createParameterMetadata("number", 1.0, {
+    intensity: createParameterMetadata("number", 1.5, {
       displayName: "Intensity",
       min: 0,
       max: 10,
@@ -127,14 +127,14 @@ export const spotLightNodeParams: NodeParams = {
       max: 4,
       step: 0.1,
     }),
-    castShadow: createParameterMetadata("boolean", false, { displayName: "Cast Shadow" }),
+    castShadow: createParameterMetadata("boolean", true, { displayName: "Cast Shadow" }),
   },
   shadow: {
     mapSize: createParameterMetadata("enum", "1024", {
       displayName: "Shadow Map Size",
       enumValues: ["512", "1024", "2048"],
     }),
-    bias: createParameterMetadata("number", 0, {
+    bias: createParameterMetadata("number", -0.0001, {
       displayName: "Shadow Bias",
       min: -0.01,
       max: 0.01,

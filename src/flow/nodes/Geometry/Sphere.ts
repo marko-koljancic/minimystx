@@ -5,7 +5,7 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
 import {
   createGeneralParams,
-  createSubflowRenderingParams,
+  createRenderingParams,
 } from "../../../engine/nodeParameterFactories";
 
 export interface SphereNodeData extends BaseGeometryData, Record<string, unknown> {
@@ -39,7 +39,7 @@ export const sphereNodeParams: NodeParams = {
       step: 0.1,
     }),
   },
-  rendering: createSubflowRenderingParams(),
+  rendering: createRenderingParams(),
 };
 
 export const sphereNodeCompute = (params: Record<string, any>) => {

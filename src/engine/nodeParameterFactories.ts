@@ -61,10 +61,10 @@ export function createRenderingParams(): CategoryParams {
     visible: createParameterMetadata("boolean", true, {
       displayName: "Visible",
     }),
-    castShadow: createParameterMetadata("boolean", false, {
+    castShadow: createParameterMetadata("boolean", true, {
       displayName: "Cast Shadow",
     }),
-    receiveShadow: createParameterMetadata("boolean", false, {
+    receiveShadow: createParameterMetadata("boolean", true, {
       displayName: "Receive Shadow",
     }),
   };

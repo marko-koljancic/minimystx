@@ -5,7 +5,7 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
 import {
   createGeneralParams,
-  createSubflowRenderingParams,
+  createRenderingParams,
 } from "../../../engine/nodeParameterFactories";
 
 export interface PlaneNodeData extends BaseGeometryData, Record<string, unknown> {
@@ -50,7 +50,7 @@ export const planeNodeParams: NodeParams = {
       step: 0.1,
     }),
   },
-  rendering: createSubflowRenderingParams(),
+  rendering: createRenderingParams(),
 };
 
 export const planeNodeCompute = (params: Record<string, any>) => {
