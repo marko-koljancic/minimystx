@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./PromptModal.module.css";
 
 interface PromptModalProps {
@@ -20,14 +20,14 @@ export function PromptModal({
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const trimmedValue = value.trim();
     if (trimmedValue) {
       onSave(trimmedValue);
     } else {
       onCancel();
     }
-  };
+  }, [value, onSave, onCancel]);
 
   useEffect(() => {
     if (inputRef.current) {

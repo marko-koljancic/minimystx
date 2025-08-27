@@ -102,11 +102,11 @@ export class OpfsAssetCache implements AssetCache {
 
     if (this.isOpfsSupported && this.assetsDir) {
       try {
-        const entries = this.assetsDir.entries();
-        for await (const [name] of entries) {
+        for await (const [name] of (this.assetsDir as any)) {
           try {
             await this.assetsDir.removeEntry(name);
           } catch (error) {
+            // Ignore errors when removing individual entries during cleanup
           }
         }
       } catch (error) {
@@ -124,8 +124,7 @@ export class OpfsAssetCache implements AssetCache {
       try {
         let count = 0;
 
-        const entries = this.assetsDir.entries();
-        for await (const _ of entries) {
+        for await (const _ of (this.assetsDir as any)) {
           count++;
         }
         return count;
@@ -186,8 +185,7 @@ export class OpfsAssetCache implements AssetCache {
 
     if (this.isOpfsSupported && this.assetsDir) {
       try {
-        const entries = this.assetsDir.entries();
-        for await (const [name] of entries) {
+        for await (const [name] of (this.assetsDir as any)) {
           assets.push(name);
         }
       } catch (error) {

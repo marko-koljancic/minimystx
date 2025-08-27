@@ -37,7 +37,7 @@ export default function ImportObjNode(props: NodeProps) {
           markDirty(id, currentContext);
           recomputeFrom(id, currentContext);
         })
-        .catch((error) => {
+        .catch((_error) => {
         });
     } else if (!currentFile) {
       lastFileRef.current = null;

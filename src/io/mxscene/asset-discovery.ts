@@ -36,7 +36,7 @@ const assetProviderRegistry = new AssetProviderRegistry();
 
 class ImportObjAssetProvider implements AssetProvider {
   async getAssetReferences(
-    nodeId: string,
+    _nodeId: string,
     _nodeType: string,
     params: Record<string, unknown>
   ): Promise<AssetReference[]> {
@@ -152,7 +152,7 @@ export async function discoverAssets(graphData: {
   }
 
   if (graphData.subFlows) {
-    for (const [geoNodeId, subFlow] of Object.entries(graphData.subFlows)) {
+    for (const [, subFlow] of Object.entries(graphData.subFlows)) {
       for (const node of subFlow.nodes) {
         const provider = assetProviderRegistry.get(node.type);
         if (provider && node.params) {

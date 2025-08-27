@@ -213,7 +213,9 @@ export async function getCurrentSceneData(): Promise<SceneJson> {
       if (eventData.nodePositions) {
         rootPositions = eventData.nodePositions;
       }
-    } catch (e) {}
+    } catch (e) {
+      // Ignore errors when dispatching layout event
+    }
   }
 
   const { exportGraphWithMeta } = await import("../../engine/graphStore");

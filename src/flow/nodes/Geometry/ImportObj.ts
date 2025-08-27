@@ -229,7 +229,7 @@ export const processor: NodeProcessor<
       } catch (error) {
       }
     } else {
-      const inputObj = input?.object;
+      // const _inputObj = input?.object;
     }
   }
 

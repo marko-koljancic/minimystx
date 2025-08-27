@@ -96,7 +96,7 @@ export default function Header() {
             message: progress.message,
           });
         },
-        onError: (error) => {
+        onError: (_error) => {
           setExportProgress(null);
           setIsExporting(false);
         },
@@ -132,7 +132,7 @@ export default function Header() {
             message: progress.message,
           });
         },
-        onError: (error) => {
+        onError: (_error) => {
           setImportProgress(null);
           setIsImporting(false);
         },
@@ -177,7 +177,7 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    initializeMxScene().catch((error) => {
+    initializeMxScene().catch((_error) => {
     });
   }, []);
 

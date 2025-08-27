@@ -243,7 +243,8 @@ export class SceneManager {
   private updateGridColors() {
     if (!this.gridHelper) return;
     this.gridHelper.material.color.setHex(0xe8e8e8);
-    (this.gridHelper.material as any).color2?.setHex(0xdddddd);
+    const material = this.gridHelper.material as THREE.LineBasicMaterial & { color2?: THREE.Color };
+    material.color2?.setHex(0xdddddd);
     this.gridHelper.material.opacity = 0.3;
     this.gridHelper.material.transparent = true;
 
@@ -255,7 +256,8 @@ export class SceneManager {
   private updateGridPlaneColors(grid: THREE.GridHelper | null) {
     if (!grid) return;
     grid.material.color.setHex(0xe8e8e8);
-    (grid.material as any).color2?.setHex(0xdddddd);
+    const material = grid.material as THREE.LineBasicMaterial & { color2?: THREE.Color };
+    material.color2?.setHex(0xdddddd);
     grid.material.opacity = 0.3;
     grid.material.transparent = true;
   }
@@ -314,7 +316,7 @@ export class SceneManager {
   }
 
   private subscribeToUIStore() {
-    this.uiStoreUnsubscribe = useUIStore.subscribe((state, prevState: any) => {
+    this.uiStoreUnsubscribe = useUIStore.subscribe((state, prevState) => {
       if (state.showGridInRenderView !== prevState?.showGridInRenderView) {
         this.updateGridVisibility(state.showGridInRenderView);
       }
@@ -371,10 +373,12 @@ export class SceneManager {
         if (wireframe) {
           if (!this.originalMaterials.has(object))
             this.originalMaterials.set(object, object.material);
-          if ("wireframe" in object.material) (object.material as any).wireframe = true;
+          if ("wireframe" in object.material) {
+            (object.material as THREE.Material & { wireframe: boolean }).wireframe = true;
+          }
         } else {
           if ("wireframe" in object.material) {
-            (object.material as any).wireframe = false;
+            (object.material as THREE.Material & { wireframe: boolean }).wireframe = false;
           }
         }
       }
@@ -399,7 +403,7 @@ export class SceneManager {
             object.material = originalMaterial;
             const wireframeState = useUIStore.getState().wireframe;
             if ("wireframe" in object.material) {
-              (object.material as any).wireframe = wireframeState;
+              (object.material as THREE.Material & { wireframe: boolean }).wireframe = wireframeState;
             }
           }
         }
@@ -624,7 +628,7 @@ export class SceneManager {
 
   private updateSceneFromRenderableObjects() {
     const state = useGraphStore.getState();
-    const renderableObjects: any[] = [];
+    const renderableObjects: THREE.Object3D[] = [];
 
     for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
       if (runtime.error) {
@@ -632,6 +636,7 @@ export class SceneManager {
       }
 
       if (runtime.isDirty) {
+        // Skip dirty nodes during rendering
       }
 
       if (runtime.type === "geoNode") {
@@ -659,6 +664,7 @@ export class SceneManager {
         }
 
         if (outputNodeRuntime.isDirty) {
+          // Skip dirty output nodes
         }
 
         const outputNodeVisible = outputNodeRuntime.params?.rendering?.visible === true;
@@ -672,6 +678,7 @@ export class SceneManager {
             if (typeof subFlowOutput.clone === "function") {
               object3D = subFlowOutput;
             } else {
+              // Object3D cannot be cloned, skip
             }
           } else if (
             "object" in subFlowOutput &&
@@ -683,8 +690,10 @@ export class SceneManager {
             if (typeof subFlowOutput.object.clone === "function") {
               object3D = subFlowOutput.object;
             } else {
+              // Subflow object cannot be cloned, skip
             }
           } else {
+            // Subflow output is not a valid Object3D
           }
         }
 
@@ -766,6 +775,7 @@ export class SceneManager {
         this.scene.add(object3D);
         this.nodeObjects.set(objectId, object3D);
       } else {
+        // Invalid object3D, skip rendering
       }
     });
   }

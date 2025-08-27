@@ -338,7 +338,7 @@ export default function FlowCanvas() {
 
   useEffect(() => {
     const handleApplyLayout = (event: CustomEvent) => {
-      const { nodes: layoutedNodes, algorithm, selectedOnly, selectedCount } = event.detail;
+      const { nodes: layoutedNodes, algorithm: _algorithm, selectedOnly, selectedCount: _selectedCount } = event.detail;
 
       if (!layoutedNodes || layoutedNodes.length === 0) {
         return;
@@ -363,9 +363,10 @@ export default function FlowCanvas() {
         }, 100);
       }
 
-      const message = selectedOnly
-        ? `Applied ${algorithm} layout to ${selectedCount} selected nodes`
-        : `Applied ${algorithm} layout to ${layoutedNodes.length} nodes`;
+      // Message logging disabled
+      // const message = selectedOnly
+      //   ? `Applied ${algorithm} layout to ${selectedCount} selected nodes`
+      //   : `Applied ${algorithm} layout to ${layoutedNodes.length} nodes`;
     };
 
     window.addEventListener("minimystx:applyLayout", handleApplyLayout as EventListener);

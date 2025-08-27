@@ -422,7 +422,7 @@ function updateNodeRuntimeWithRestoredAssets(
     }
   });
   
-  Object.entries(restoredSubFlows).forEach(([geoNodeId, subFlow]) => {
+  Object.entries(restoredSubFlows).forEach(([, subFlow]) => {
     subFlow.nodes.forEach((node: any) => {
       if (node.type === 'importObjNode' && subFlow.nodeRuntime[node.id]) {
         subFlow.nodeRuntime[node.id] = {

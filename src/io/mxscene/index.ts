@@ -77,8 +77,8 @@ export const ENGINE_VERSION = "0.1.0";
 
 export async function initializeMxScene(): Promise<void> {
   try {
-    const assetCache = getAssetCache();
-    const stats = await assetCache.getStats();
+    // const assetCache = getAssetCache();
+    // const _stats = await assetCache.getStats();
 
   } catch (error) {
   }

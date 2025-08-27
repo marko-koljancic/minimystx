@@ -282,7 +282,7 @@ export const useGraphStore = create<GraphState>()(
           };
         }
 
-        if (context.type === "subflow" && !overrideParams?.rendering?.hasOwnProperty("visible")) {
+        if (context.type === "subflow" && !Object.prototype.hasOwnProperty.call(overrideParams?.rendering, "visible")) {
           if (mergedParams.rendering) {
             mergedParams.rendering.visible = false;
           }
@@ -626,7 +626,7 @@ export const useGraphStore = create<GraphState>()(
       }
     },
 
-    recomputeFrom: (nodeId: string, context: GraphContext) => {
+    recomputeFrom: (nodeId: string, _context: GraphContext) => {
       const state = get();
       
       if (state.isImporting) {
@@ -863,7 +863,7 @@ export const useGraphStore = create<GraphState>()(
       
       let hasIssues = false;
       
-      for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
+      for (const [, runtime] of Object.entries(state.rootNodeRuntime)) {
         if (runtime.isDirty) {
           hasIssues = true;
         } else if (!runtime.output && runtime.type !== 'noteNode') {
@@ -874,8 +874,8 @@ export const useGraphStore = create<GraphState>()(
         }
       }
       
-      for (const [geoNodeId, subFlow] of Object.entries(state.subFlows)) {
-        for (const [nodeId, runtime] of Object.entries(subFlow.nodeRuntime)) {
+      for (const [, subFlow] of Object.entries(state.subFlows)) {
+        for (const [, runtime] of Object.entries(subFlow.nodeRuntime)) {
           if (runtime.isDirty) {
             hasIssues = true;
           } else if (!runtime.output && runtime.type !== 'noteNode') {
@@ -904,7 +904,7 @@ export const useGraphStore = create<GraphState>()(
       state.cooker.clear();
     },
 
-    forceResetImportedNodeTracking: (nodeIds: string[], _contexts: GraphContext[]) => {
+    forceResetImportedNodeTracking: (_nodeIds: string[], _contexts: GraphContext[]) => {
       const state = get();
       state.cooker.clear();
     },
