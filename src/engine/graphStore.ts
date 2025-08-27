@@ -282,7 +282,7 @@ export const useGraphStore = create<GraphState>()(
           };
         }
 
-        if (context.type === "subflow" && !Object.prototype.hasOwnProperty.call(overrideParams?.rendering, "visible")) {
+        if (context.type === "subflow" && !overrideParams?.rendering?.hasOwnProperty("visible")) {
           if (mergedParams.rendering) {
             mergedParams.rendering.visible = false;
           }
