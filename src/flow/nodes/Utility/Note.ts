@@ -40,12 +40,12 @@ export const noteNodeParams: NodeParams = {
     color: createParameterMetadata("string", NOTE_COLORS[0], {
       displayName: "Color",
     }),
-    width: createParameterMetadata("number", 120, {
+    width: createParameterMetadata("number", 160, {
       displayName: "Width",
       min: 120,
       max: 800,
     }),
-    height: createParameterMetadata("number", 60, {
+    height: createParameterMetadata("number", 80, {
       displayName: "Height", 
       min: 60,
       max: 600,
@@ -65,8 +65,8 @@ export const noteNodeCompute = (params: Record<string, unknown>) => {
     note: {
       text: (noteParams.text as string) || "",
       color: (noteParams.color as string) || NOTE_COLORS[0],
-      width: (noteParams.width as number) || 120,
-      height: (noteParams.height as number) || 60,
+      width: (noteParams.width as number) || 160,
+      height: (noteParams.height as number) || 80,
     },
   };
   

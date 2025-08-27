@@ -133,7 +133,7 @@ export default function NoteNode(props: NodeProps) {
         className={styles.colorSwitcher}
         onClick={handleColorClick}
         title="Change note color"
-        data-noDrag
+        data-nodrag
       />
 
     </div>
