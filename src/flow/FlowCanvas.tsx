@@ -338,7 +338,12 @@ export default function FlowCanvas() {
 
   useEffect(() => {
     const handleApplyLayout = (event: CustomEvent) => {
-      const { nodes: layoutedNodes, algorithm: _algorithm, selectedOnly, selectedCount: _selectedCount } = event.detail;
+      const {
+        nodes: layoutedNodes,
+        algorithm: _algorithm,
+        selectedOnly,
+        selectedCount: _selectedCount,
+      } = event.detail;
 
       if (!layoutedNodes || layoutedNodes.length === 0) {
         return;
@@ -463,8 +468,7 @@ export default function FlowCanvas() {
         };
 
         syncNodeChanges([{ type: "add", item: newNode }]);
-      } catch (error) {
-      }
+      } catch (error) {}
     },
     [syncNodeChanges, reactFlowInstance]
   );
@@ -589,11 +593,11 @@ export default function FlowCanvas() {
         const contextKey = getContextKey(currentContext);
         const savedViewport = getViewportState(contextKey);
         const savedPositions = getNodePositions(contextKey);
-        
+
         if (savedViewport) {
           reactFlowInstance.setViewport(savedViewport, { duration: 0 });
         }
-        
+
         if (savedPositions) {
           setNodes((currentNodes) =>
             currentNodes.map((node) => {
@@ -612,13 +616,28 @@ export default function FlowCanvas() {
     };
 
     window.addEventListener("minimystx:saveCurrentViewport", handleSaveCurrentViewport);
-    window.addEventListener("minimystx:restoreViewportAfterMaximize", handleRestoreViewportAfterMaximize);
+    window.addEventListener(
+      "minimystx:restoreViewportAfterMaximize",
+      handleRestoreViewportAfterMaximize
+    );
 
     return () => {
       window.removeEventListener("minimystx:saveCurrentViewport", handleSaveCurrentViewport);
-      window.removeEventListener("minimystx:restoreViewportAfterMaximize", handleRestoreViewportAfterMaximize);
+      window.removeEventListener(
+        "minimystx:restoreViewportAfterMaximize",
+        handleRestoreViewportAfterMaximize
+      );
     };
-  }, [reactFlowInstance, currentContext, saveViewportState, nodes, saveNodePositions, getViewportState, getNodePositions, setNodes]);
+  }, [
+    reactFlowInstance,
+    currentContext,
+    saveViewportState,
+    nodes,
+    saveNodePositions,
+    getViewportState,
+    getNodePositions,
+    setNodes,
+  ]);
 
   return (
     <div
@@ -654,6 +673,7 @@ export default function FlowCanvas() {
         selectionKeyCode="Shift"
         panOnDrag={[1, 2]}
         selectNodesOnDrag={false}
+        proOptions={{ hideAttribution: true }}
       >
         <FlowBackground />
         <FlowControls />
