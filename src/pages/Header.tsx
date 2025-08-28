@@ -335,7 +335,6 @@ export default function Header() {
         onClick: () => {},
         isDivider: true,
       },
-
       {
         label: "Reset to Defaults",
         onClick: resetToDefaults,

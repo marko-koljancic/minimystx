@@ -1,0 +1,86 @@
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--background-tertiary);
+  border: 0.1rem solid var(--border-primary);
+  border-radius: 0.4rem;
+  padding: 2.4rem;
+  min-width: 32rem;
+  max-width: 64rem;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 0.8rem 2.4rem rgba(0, 0, 0, 0.3);
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  margin: 0 0 1.6rem 0;
+  font-weight: 500;
+}
+
+.imageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2.4rem;
+  border: 1px solid var(--border-secondary);
+  border-radius: 0.2rem;
+  background-color: var(--background-quaternary);
+  padding: 1.2rem;
+}
+
+.preview {
+  max-width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+  border: 1px solid var(--border-tertiary);
+  border-radius: 0.2rem;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.2rem;
+}
+
+.downloadButton,
+.closeButton {
+  padding: 0.8rem 1.6rem;
+  border-radius: 0.2rem;
+  font-size: 1.3rem;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.downloadButton {
+  background-color: var(--accent-primary);
+  color: var(--text-on-accent);
+}
+
+.downloadButton:hover:not(:disabled) {
+  background-color: var(--accent-secondary);
+}
+
+.closeButton {
+  background-color: var(--background-quaternary);
+  color: var(--text-secondary);
+  border: 0.1rem solid var(--border-secondary);
+}
+
+.closeButton:hover {
+  background-color: var(--background-secondary);
+}

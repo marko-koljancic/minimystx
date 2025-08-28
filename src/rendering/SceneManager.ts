@@ -813,6 +813,93 @@ export class SceneManager {
     this.updateAxisGizmo();
   }
 
+  public captureScreenshot(multiplier: number = 2): string {
+    if (!this.renderer || !this.scene) {
+      throw new Error("Renderer or scene not initialized");
+    }
+
+    const canvas = this.renderer.domElement;
+    const originalWidth = canvas.width;
+    const originalHeight = canvas.height;
+
+    let targetWidth = originalWidth * multiplier;
+    let targetHeight = originalHeight * multiplier;
+
+    // Clamp dimensions to max 4096px
+    const maxDimension = 4096;
+    if (targetWidth > maxDimension || targetHeight > maxDimension) {
+      const scale = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
+      targetWidth = Math.floor(targetWidth * scale);
+      targetHeight = Math.floor(targetHeight * scale);
+    }
+
+    // Create temporary canvas for high-res capture
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = targetWidth;
+    tempCanvas.height = targetHeight;
+
+    const tempRenderer = new THREE.WebGLRenderer({
+      canvas: tempCanvas,
+      antialias: true,
+      preserveDrawingBuffer: true,
+    });
+
+    tempRenderer.setSize(targetWidth, targetHeight);
+    tempRenderer.setPixelRatio(1); // Use pixel ratio 1 for temp renderer
+    tempRenderer.shadowMap.enabled = this.renderer.shadowMap.enabled;
+    tempRenderer.shadowMap.type = this.renderer.shadowMap.type;
+
+    // Copy scene background
+    const clearColor = new THREE.Color();
+    this.renderer.getClearColor(clearColor);
+    tempRenderer.setClearColor(clearColor, this.renderer.getClearAlpha());
+
+    // Update camera aspect ratio for temp render
+    const camera = this.getCurrentCamera();
+    const originalAspect =
+      camera instanceof THREE.PerspectiveCamera
+        ? camera.aspect
+        : (camera as THREE.OrthographicCamera).right / (camera as THREE.OrthographicCamera).top;
+
+    const newAspect = targetWidth / targetHeight;
+
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.aspect = newAspect;
+      camera.updateProjectionMatrix();
+    } else {
+      const orthoCamera = camera as THREE.OrthographicCamera;
+      const currentHeight = orthoCamera.top - orthoCamera.bottom;
+      const currentWidth = currentHeight * newAspect;
+      orthoCamera.left = -currentWidth / 2;
+      orthoCamera.right = currentWidth / 2;
+      orthoCamera.updateProjectionMatrix();
+    }
+
+    // Render to temp canvas
+    tempRenderer.render(this.scene, camera);
+
+    // Get data URL
+    const dataURL = tempCanvas.toDataURL("image/png");
+
+    // Restore original camera settings
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.aspect = originalAspect;
+      camera.updateProjectionMatrix();
+    } else {
+      const orthoCamera = camera as THREE.OrthographicCamera;
+      const currentHeight = orthoCamera.top - orthoCamera.bottom;
+      const currentWidth = currentHeight * originalAspect;
+      orthoCamera.left = -currentWidth / 2;
+      orthoCamera.right = currentWidth / 2;
+      orthoCamera.updateProjectionMatrix();
+    }
+
+    // Cleanup temp renderer
+    tempRenderer.dispose();
+
+    return dataURL;
+  }
+
   public dispose() {
     if (this.animationId !== null) cancelAnimationFrame(this.animationId);
 

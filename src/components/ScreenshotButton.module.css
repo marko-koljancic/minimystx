@@ -1,0 +1,30 @@
+.screenshotButton {
+  position: absolute;
+  top: 8px;
+  right: 48px; /* 8px gap + 32px MaximizeToggleButton + 8px margin */
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  z-index: 1000;
+  color: var(--text-secondary);
+  transition: opacity 0.2s ease;
+}
+
+.screenshotButton:hover {
+  color: var(--text-primary);
+}
+
+.screenshotButton:focus {
+  outline: 2px solid var(--input-border-focus);
+  outline-offset: 2px;
+}
+
+.screenshotButton:active {
+  transform: scale(0.95);
+}

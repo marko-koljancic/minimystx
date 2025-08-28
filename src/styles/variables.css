@@ -27,6 +27,7 @@ body.dark-theme {
   --text-tertiary: #aaaaaa;
   --text-quaternary: #999999;
   --text-highlight: #ffffff;
+  --text-on-accent: rgba(255, 255, 255, 0.92);
 
   --accent-primary: #4a90e2;
   --accent-secondary: #0098ff;
@@ -96,6 +97,7 @@ body.light-theme {
   --text-tertiary: #777777;
   --text-quaternary: #999999;
   --text-highlight: #000000;
+  --text-on-accent: #111111;
 
   --accent-primary: #0078d4;
   --accent-secondary: #0098ff;
