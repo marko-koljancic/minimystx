@@ -14,7 +14,9 @@
 .leftPane {
   overflow: hidden;
   background-color: var(--background-secondary);
-  border: 0.1rem solid var(--border-primary);
+  border-top: 0.1rem solid var(--border-primary);
+  border-bottom: 0.1rem solid var(--border-primary);
+  border-left: 0.1rem solid var(--border-primary);
   position: relative;
 }
 
@@ -24,7 +26,6 @@
   cursor: col-resize;
   position: relative;
   z-index: 10;
-  border-left: 0.1rem solid var(--border-secondary);
   transition: background-color 0.15s ease;
 }
 
@@ -49,7 +50,9 @@
 .rightPane {
   overflow: hidden;
   background-color: var(--background-tertiary);
-  border: 0.1rem solid var(--border-primary);
+  border-top: 0.1rem solid var(--border-primary);
+  border-bottom: 0.1rem solid var(--border-primary);
+  border-right: 0.1rem solid var(--border-primary);
 }
 
 .rightPaneContent {
