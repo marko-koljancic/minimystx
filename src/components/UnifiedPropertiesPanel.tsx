@@ -173,7 +173,7 @@ export default function UnifiedPropertiesPanel() {
             className={`${styles.tabButton} ${currentTab === tab ? styles.active : ""}`}
             onClick={() => setActiveTab(tab)}
           >
-            {getTabDisplayName(tab)}
+            {getTabDisplayName(tab, nodeData.type)}
           </button>
         ))}
       </div>
@@ -182,10 +182,12 @@ export default function UnifiedPropertiesPanel() {
   );
 }
 
-function getTabDisplayName(tab: TabType): string {
+function getTabDisplayName(tab: TabType, nodeType?: string): string {
   switch (tab) {
     case "object":
-      return "OBJ Model";
+      if (nodeType === "importObjNode") return "OBJ Model";
+      if (nodeType === "importGltfNode") return "glTF Model";
+      return "Model";
     case "light":
       return "Light";
     case "shadow":

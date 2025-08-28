@@ -8,6 +8,7 @@ import { coneNodeParams, coneNodeCompute } from "../flow/nodes/Geometry/Cone";
 import { torusNodeParams, torusNodeCompute } from "../flow/nodes/Geometry/Torus";
 import { torusKnotNodeParams, torusKnotNodeCompute } from "../flow/nodes/Geometry/TorusKnot";
 import { importObjNodeParams, importObjNodeCompute } from "../flow/nodes/Geometry/ImportObj";
+import { importGltfNodeParams, importGltfNodeCompute } from "../flow/nodes/Geometry/ImportGltf";
 import { pointLightNodeParams, pointLightNodeCompute } from "../flow/nodes/Lights/PointLight";
 import { ambientLightNodeParams, ambientLightNodeCompute } from "../flow/nodes/Lights/AmbientLight";
 import {
@@ -114,6 +115,14 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: importObjNodeParams,
     compute: importObjNodeCompute,
+  },
+  importGltfNode: {
+    type: "importGltfNode",
+    category: "Import",
+    displayName: "Import glTF",
+    allowedContexts: ["subflow"],
+    params: importGltfNodeParams,
+    compute: importGltfNodeCompute,
   },
   pointLightNode: {
     type: "pointLightNode",

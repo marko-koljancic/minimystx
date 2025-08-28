@@ -8,6 +8,7 @@ import TorusNode from "../flow/nodes/Geometry/TorusNode.tsx";
 import TorusKnotNode from "../flow/nodes/Geometry/TorusKnotNode.tsx";
 import TransformNode from "../flow/nodes/Utility/TransformNode.tsx";
 import ImportObjNode from "../flow/nodes/Geometry/ImportObjNode.tsx";
+import ImportGltfNode from "../flow/nodes/Geometry/ImportGltfNode.tsx";
 import PointLightNode from "../flow/nodes/Lights/PointLightNode.tsx";
 import AmbientLightNode from "../flow/nodes/Lights/AmbientLightNode.tsx";
 import DirectionalLightNode from "../flow/nodes/Lights/DirectionalLightNode.tsx";
@@ -25,6 +26,7 @@ import { TorusNodeData } from "../flow/nodes/Geometry/Torus";
 import { TorusKnotNodeData } from "../flow/nodes/Geometry/TorusKnot";
 import { TransformNodeData } from "../flow/nodes/Utility/Transform";
 import { ImportObjNodeData } from "../flow/nodes/Geometry/ImportObj";
+import { ImportGltfNodeData } from "../flow/nodes/Geometry/ImportGltf";
 import { PointLightNodeData } from "../flow/nodes/Lights/PointLight";
 import { AmbientLightNodeData } from "../flow/nodes/Lights/AmbientLight";
 import { DirectionalLightNodeData } from "../flow/nodes/Lights/DirectionalLight";
@@ -45,6 +47,7 @@ export const nodeTypes = {
   torusKnotNode: TorusKnotNode,
   transformNode: TransformNode,
   importObjNode: ImportObjNode,
+  importGltfNode: ImportGltfNode,
   pointLightNode: PointLightNode,
   ambientLightNode: AmbientLightNode,
   directionalLightNode: DirectionalLightNode,
@@ -69,6 +72,7 @@ type FlowNodeTypes =
   | TorusKnotNodeData
   | TransformNodeData
   | ImportObjNodeData
+  | ImportGltfNodeData
   | PointLightNodeData
   | AmbientLightNodeData
   | DirectionalLightNodeData
