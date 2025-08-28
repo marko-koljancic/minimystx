@@ -86,9 +86,7 @@ const DesignLayout = ({ leftTop, right, children }: DesignLayoutProps) => {
         </div>
         {!isRendererMaximized && (
           <>
-            <div className={styles.verticalResizer} onMouseDown={handleVerticalDragStart}>
-              <div className={`${styles.resizerHandle} ${styles.verticalResizerHandle}`} />
-            </div>
+            <div className={styles.verticalResizer} onMouseDown={handleVerticalDragStart} />
             <div className={styles.rightPane} style={{ width: `${100 - leftPaneWidth}%` }}>
               <div className={styles.rightPaneContent}>
                 <div className={styles.flowArea}>{right}</div>
