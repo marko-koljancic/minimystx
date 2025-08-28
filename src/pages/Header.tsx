@@ -20,11 +20,6 @@ import {
 
 export default function Header() {
   const {
-    showGridInFlowCanvas,
-    showGridInRenderView,
-    showMinimap,
-    showFlowControls,
-    connectionLineStyle,
     wireframe,
     xRay,
     focusedCanvas,
@@ -32,9 +27,6 @@ export default function Header() {
     showAxisGizmo,
     toggleGridInFlowCanvas,
     toggleGridInRenderView,
-    toggleMinimap,
-    toggleFlowControls,
-    cycleConnectionLineStyle,
     toggleWireframe,
     toggleXRay,
     toggleAxisGizmo,
@@ -144,6 +136,7 @@ export default function Header() {
         setImportProgress({ percentage: 100, message: "Project loaded successfully!" });
 
         if (result.warnings && result.warnings.length > 0) {
+          console.warn("Import warnings:", result.warnings);
         }
 
         setTimeout(() => {
@@ -160,7 +153,9 @@ export default function Header() {
 
       if (error instanceof Error) {
         if (error.message.includes("Unsupported")) {
+          console.error("Unsupported file format:", error.message);
         } else if (error.message.includes("integrity")) {
+          console.error("File integrity error:", error.message);
         }
       }
     }
@@ -177,7 +172,8 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    initializeMxScene().catch((_error) => {
+    initializeMxScene().catch((error) => {
+      console.error("Failed to initialize MxScene:", error);
     });
   }, []);
 
@@ -229,12 +225,12 @@ export default function Header() {
 
   const fileDropdownItems = [
     {
-      label: isExporting ? "Exporting..." : "Save (.mxscene)… (Ctrl+Shift+S)",
+      label: isExporting ? "Exporting..." : "Save… (Ctrl+Shift+S)",
       onClick: isExporting ? () => {} : handleSave,
       testId: "file-save",
     },
     {
-      label: isImporting ? "Importing..." : "Open (.mxscene)… (Ctrl+O)",
+      label: isImporting ? "Importing..." : "Open… (Ctrl+O)",
       onClick: isImporting ? () => {} : handleOpen,
       testId: "file-open",
     },
@@ -242,174 +238,90 @@ export default function Header() {
 
   const viewDropdownItems = useMemo(
     () => [
-      ...(focusedCanvas === "render"
-        ? [
-            {
-              label: `${showGridInRenderView ? "Hide" : "Show"} Grid (G)`,
-              onClick: toggleGridInRenderView,
-            },
-            {
-              label: `Wireframe: ${wireframe ? "On" : "Off"} (W)`,
-              onClick: toggleWireframe,
-            },
-            {
-              label: `X-Ray: ${xRay ? "On" : "Off"} (X)`,
-              onClick: toggleXRay,
-            },
-            {
-              label: `Axis Gizmo: ${showAxisGizmo ? "On" : "Off"} (A)`,
-              onClick: toggleAxisGizmo,
-            },
-            {
-              label: `Camera: ${isOrthographicCamera ? "Orthographic" : "Perspective"} (P/O)`,
-              onClick: () => setOrthographicCamera(!isOrthographicCamera),
-            },
-            {
-              label: "",
-              onClick: () => {},
-              isDivider: true,
-            },
-            {
-              label: "Top View (T)",
-              onClick: () => {
-                setCameraView("top");
-                setOrthographicCamera(true);
-              },
-            },
-            {
-              label: "Front View (F)",
-              onClick: () => {
-                setCameraView("front");
-                setOrthographicCamera(true);
-              },
-            },
-            {
-              label: "Left View (L)",
-              onClick: () => {
-                setCameraView("left");
-                setOrthographicCamera(true);
-              },
-            },
-            {
-              label: "Right View (R)",
-              onClick: () => {
-                setCameraView("right");
-                setOrthographicCamera(true);
-              },
-            },
-            {
-              label: "Bottom View (B)",
-              onClick: () => {
-                setCameraView("bottom");
-                setOrthographicCamera(true);
-              },
-            },
-            {
-              label: "",
-              onClick: () => {},
-              isDivider: true,
-            },
-            {
-              label: "Fit View (Shift+F)",
-              onClick: fitView,
-            },
-          ]
-        : []),
-
-      ...(focusedCanvas === "flow"
-        ? [
-            {
-              label: `${showGridInFlowCanvas ? "Hide" : "Show"} Grid (G)`,
-              onClick: toggleGridInFlowCanvas,
-            },
-            {
-              label: `Minimap: ${showMinimap ? "On" : "Off"} (M)`,
-              onClick: toggleMinimap,
-            },
-            {
-              label: `Flow Controls: ${showFlowControls ? "On" : "Off"} (C)`,
-              onClick: toggleFlowControls,
-            },
-            {
-              label: `Connection Style: ${
-                connectionLineStyle.charAt(0).toUpperCase() + connectionLineStyle.slice(1)
-              } (S)`,
-              onClick: cycleConnectionLineStyle,
-            },
-            {
-              label: "",
-              onClick: () => {},
-              isDivider: true,
-            },
-            {
-              label: "Fit Nodes (Shift+F)",
-              onClick: fitNodes,
-            },
-          ]
-        : []),
-
-      ...(focusedCanvas
-        ? [
-            {
-              label: "",
-              onClick: () => {},
-              isDivider: true,
-            },
-          ]
-        : []),
-
-      ...(focusedCanvas === null
-        ? [
-            {
-              label: `${showGridInRenderView ? "Hide" : "Show"} Grid - Render (G)`,
-              onClick: toggleGridInRenderView,
-            },
-            {
-              label: `Wireframe: ${wireframe ? "On" : "Off"} (W)`,
-              onClick: toggleWireframe,
-            },
-            {
-              label: `X-Ray: ${xRay ? "On" : "Off"} (X)`,
-              onClick: toggleXRay,
-            },
-            {
-              label: `Axis Gizmo: ${showAxisGizmo ? "On" : "Off"} (A)`,
-              onClick: toggleAxisGizmo,
-            },
-            {
-              label: `Camera: ${isOrthographicCamera ? "Orthographic" : "Perspective"} (P/O)`,
-              onClick: () => setOrthographicCamera(!isOrthographicCamera),
-            },
-            {
-              label: "",
-              onClick: () => {},
-              isDivider: true,
-            },
-            {
-              label: `${showGridInFlowCanvas ? "Hide" : "Show"} Grid - Flow (G)`,
-              onClick: toggleGridInFlowCanvas,
-            },
-            {
-              label: `Minimap: ${showMinimap ? "On" : "Off"} (M)`,
-              onClick: toggleMinimap,
-            },
-            {
-              label: `Flow Controls: ${showFlowControls ? "On" : "Off"} (C)`,
-              onClick: toggleFlowControls,
-            },
-            {
-              label: `Connection Style: ${
-                connectionLineStyle.charAt(0).toUpperCase() + connectionLineStyle.slice(1)
-              } (S)`,
-              onClick: cycleConnectionLineStyle,
-            },
-          ]
-        : []),
+      // Display Toggles
+      {
+        label: `Hide Grid (G)`,
+        onClick: focusedCanvas === "flow" ? toggleGridInFlowCanvas : toggleGridInRenderView,
+      },
+      {
+        label: `Wireframe: ${wireframe ? "On" : "Off"} (W)`,
+        onClick: toggleWireframe,
+      },
+      {
+        label: `X-Ray: ${xRay ? "On" : "Off"} (X)`,
+        onClick: toggleXRay,
+      },
+      {
+        label: `Axis Gizmo: ${showAxisGizmo ? "On" : "Off"} (A)`,
+        onClick: toggleAxisGizmo,
+      },
       {
         label: "",
         onClick: () => {},
         isDivider: true,
       },
+
+      {
+        label: `Camera: ${isOrthographicCamera ? "Orthographic" : "Perspective"} (P/O)`,
+        onClick: () => setOrthographicCamera(!isOrthographicCamera),
+      },
+      {
+        label: "",
+        onClick: () => {},
+        isDivider: true,
+      },
+
+      {
+        label: "Top View (T)",
+        onClick: () => {
+          setCameraView("top");
+          setOrthographicCamera(true);
+        },
+      },
+      {
+        label: "Front View (F)",
+        onClick: () => {
+          setCameraView("front");
+          setOrthographicCamera(true);
+        },
+      },
+      {
+        label: "Left View (L)",
+        onClick: () => {
+          setCameraView("left");
+          setOrthographicCamera(true);
+        },
+      },
+      {
+        label: "Right View (R)",
+        onClick: () => {
+          setCameraView("right");
+          setOrthographicCamera(true);
+        },
+      },
+      {
+        label: "Bottom View (B)",
+        onClick: () => {
+          setCameraView("bottom");
+          setOrthographicCamera(true);
+        },
+      },
+      {
+        label: "",
+        onClick: () => {},
+        isDivider: true,
+      },
+
+      {
+        label: "Fit View (Shift+F)",
+        onClick: focusedCanvas === "flow" ? fitNodes : fitView,
+      },
+      {
+        label: "",
+        onClick: () => {},
+        isDivider: true,
+      },
+
       {
         label: "Auto-Layout (Dagre)",
         onClick: handleApplyDagre,
@@ -423,6 +335,7 @@ export default function Header() {
         onClick: () => {},
         isDivider: true,
       },
+
       {
         label: "Reset to Defaults",
         onClick: resetToDefaults,
@@ -430,26 +343,18 @@ export default function Header() {
     ],
     [
       focusedCanvas,
-      showGridInRenderView,
       wireframe,
       xRay,
       showAxisGizmo,
       isOrthographicCamera,
-      showGridInFlowCanvas,
-      showMinimap,
-      showFlowControls,
-      connectionLineStyle,
       toggleGridInRenderView,
+      toggleGridInFlowCanvas,
       toggleWireframe,
       toggleXRay,
       toggleAxisGizmo,
       setOrthographicCamera,
       setCameraView,
       fitView,
-      toggleGridInFlowCanvas,
-      toggleMinimap,
-      toggleFlowControls,
-      cycleConnectionLineStyle,
       fitNodes,
       handleApplyDagre,
       handleApplyELK,
@@ -460,11 +365,21 @@ export default function Header() {
   const helpDropdownItems = [
     {
       label: "Minimystx GitHub Repo",
-      onClick: () => window.open("https://github.com/marko-koljancic/minimystx", "_blank", "noopener,noreferrer"),
+      onClick: () =>
+        window.open(
+          "https://github.com/marko-koljancic/minimystx",
+          "_blank",
+          "noopener,noreferrer"
+        ),
     },
     {
       label: "Minimystx Project Roadmap",
-      onClick: () => window.open("https://github.com/users/marko-koljancic/projects/18", "_blank", "noopener,noreferrer"),
+      onClick: () =>
+        window.open(
+          "https://github.com/users/marko-koljancic/projects/18",
+          "_blank",
+          "noopener,noreferrer"
+        ),
     },
   ];
 

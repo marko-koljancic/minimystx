@@ -1,6 +1,5 @@
 .header {
   background-color: var(--background-tertiary);
-  border-bottom: 0.1rem solid var(--border-primary);
   height: 4rem;
   display: flex;
   align-items: center;
