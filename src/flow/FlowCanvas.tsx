@@ -26,11 +26,14 @@ import {
   useSaveNodePositions,
   useGetNodePositions,
   getContextKey,
+  useGetFlowViewMode,
 } from "../store";
 import { Breadcrumb } from "./Breadcrumb";
 import ConnectionLine from "./edges/ConnectionLine";
 import { FlowBackground } from "./FlowBackground";
 import { FlowControls } from "./FlowControls";
+import FlowViewToggle from "./FlowViewToggle";
+import FlowListView from "./FlowListView";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { edgeTypes, initialEdges, initialNodes, nodeTypes } from "../constants";
 import { v4 as uuid } from "uuid";
@@ -44,6 +47,10 @@ export default function FlowCanvas() {
   const { syncNodeChanges, syncEdgeChanges } = useFlowGraphSync();
   const { setSelectedNode, setSelectedNodes: setUISelectedNodes, clearSelection } = useUIStore();
   const currentContext = useCurrentContext();
+  const getFlowViewMode = useGetFlowViewMode();
+  
+  const contextKey = getContextKey(currentContext);
+  const currentViewMode = getFlowViewMode(contextKey);
   const { applyDagre, applyELK, applyDagreToSelection, applyELKToSelection } = useAutoLayout();
   const { onConnect, onReconnect, handleIsValidConnection } = useEdgeManagement(
     setEdges,
@@ -649,35 +656,42 @@ export default function FlowCanvas() {
       onMouseMove={handleMouseMove}
       onKeyDown={handleKeyDown}
     >
-      <div className={styles.breadcrumbContainer}>
-        <Breadcrumb />
-      </div>
-      <ReactFlow
-        ref={reactFlowRef}
-        nodes={nodes}
-        edges={edges}
-        onConnect={onConnect}
-        onReconnect={onReconnect}
-        onNodesChange={handleNodesChange}
-        onEdgesChange={handleEdgesChange}
-        onSelectionChange={handleSelectionChange}
-        isValidConnection={handleIsValidConnection}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        connectionMode={ConnectionMode.Strict}
-        connectionLineComponent={ConnectionLine}
-        onInit={onInit}
-        onNodeDoubleClick={handleNodeDoubleClick}
-        fitView
-        multiSelectionKeyCode={["Meta", "Control"]}
-        selectionKeyCode="Shift"
-        panOnDrag={[1, 2]}
-        selectNodesOnDrag={false}
-        proOptions={{ hideAttribution: true }}
-      >
-        <FlowBackground />
-        <FlowControls />
-      </ReactFlow>
+      <FlowViewToggle />
+      {currentViewMode === "graph" && (
+        <div className={styles.breadcrumbContainer}>
+          <Breadcrumb />
+        </div>
+      )}
+      {currentViewMode === "list" ? (
+        <FlowListView />
+      ) : (
+        <ReactFlow
+          ref={reactFlowRef}
+          nodes={nodes}
+          edges={edges}
+          onConnect={onConnect}
+          onReconnect={onReconnect}
+          onNodesChange={handleNodesChange}
+          onEdgesChange={handleEdgesChange}
+          onSelectionChange={handleSelectionChange}
+          isValidConnection={handleIsValidConnection}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          connectionMode={ConnectionMode.Strict}
+          connectionLineComponent={ConnectionLine}
+          onInit={onInit}
+          onNodeDoubleClick={handleNodeDoubleClick}
+          fitView
+          multiSelectionKeyCode={["Meta", "Control"]}
+          selectionKeyCode="Shift"
+          panOnDrag={[1, 2]}
+          selectNodesOnDrag={false}
+          proOptions={{ hideAttribution: true }}
+        >
+          <FlowBackground />
+          <FlowControls />
+        </ReactFlow>
+      )}
     </div>
   );
 }

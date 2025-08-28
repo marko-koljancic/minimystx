@@ -31,5 +31,7 @@ export {
   useGetNodePositions,
   useIsRendererMaximized,
   useToggleRendererMaximized,
+  useSetFlowViewMode,
+  useGetFlowViewMode,
   getContextKey,
 } from "./uiStore";

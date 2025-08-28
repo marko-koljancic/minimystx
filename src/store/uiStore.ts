@@ -5,6 +5,7 @@ import type { GraphContext } from "../engine/graphStore";
 type Theme = "dark" | "light" | "system";
 type ConnectionLineStyle = "bezier" | "straight" | "step" | "simpleBezier";
 type FocusedCanvas = "flow" | "render" | null;
+type FlowViewMode = "graph" | "list";
 
 interface UIState {
   theme: Theme;
@@ -36,6 +37,7 @@ interface UIState {
   viewportStates: Record<string, { x: number; y: number; zoom: number }>;
   nodePositions: Record<string, Record<string, { x: number; y: number }>>;
   isRendererMaximized: boolean;
+  flowViewModes: Record<string, FlowViewMode>;
 }
 
 interface UIActions {
@@ -83,6 +85,8 @@ interface UIActions {
   saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => void;
   getNodePositions: (contextKey: string) => Record<string, { x: number; y: number }> | null;
   toggleRendererMaximized: () => void;
+  setFlowViewMode: (contextKey: string, mode: FlowViewMode) => void;
+  getFlowViewMode: (contextKey: string) => FlowViewMode;
 }
 
 type UIStore = UIState & UIActions;
@@ -132,6 +136,7 @@ export const useUIStore = create<UIStore>()(
       viewportStates: {},
       nodePositions: {},
       isRendererMaximized: false,
+      flowViewModes: {},
 
       setTheme: (theme: Theme) => {
         const isDarkTheme = getIsDarkTheme(theme);
@@ -298,6 +303,21 @@ export const useUIStore = create<UIStore>()(
           window.dispatchEvent(new CustomEvent("minimystx:restoreViewportAfterMaximize"));
         }, 100);
       },
+
+      setFlowViewMode: (contextKey: string, mode: FlowViewMode) => {
+        set((state) => ({
+          ...state,
+          flowViewModes: {
+            ...state.flowViewModes,
+            [contextKey]: mode,
+          },
+        }));
+      },
+
+      getFlowViewMode: (contextKey: string) => {
+        const state = get();
+        return state.flowViewModes[contextKey] || "graph";
+      },
     }),
     {
       name: "minimystx-ui-store",
@@ -396,6 +416,9 @@ export const useGetNodePositions = () => useUIStore((state) => state.getNodePosi
 
 export const useIsRendererMaximized = () => useUIStore((state) => state.isRendererMaximized);
 export const useToggleRendererMaximized = () => useUIStore((state) => state.toggleRendererMaximized);
+
+export const useSetFlowViewMode = () => useUIStore((state) => state.setFlowViewMode);
+export const useGetFlowViewMode = () => useUIStore((state) => state.getFlowViewMode);
 
 export const getContextKey = (context: GraphContext): string => {
   return context.type === "root" ? "root" : `subflow-${context.geoNodeId}`;

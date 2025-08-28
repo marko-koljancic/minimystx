@@ -1,0 +1,113 @@
+.listContainer {
+  width: 100%;
+  height: 100%;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  padding: 16px;
+  padding-top: 56px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.tableWrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tableHeader {
+  display: none;
+}
+
+.nameColumn {
+  width: 50%;
+}
+
+.typeColumn {
+  width: 30%;
+  font-style: italic;
+}
+
+.actionColumn {
+  width: 20%;
+  text-align: right;
+}
+
+.tr {
+  transition: background-color 0.15s ease;
+}
+
+.tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.selectedRow .nameColumn {
+  font-weight: 700;
+}
+
+.selectedRow:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.td {
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: middle;
+}
+
+.nameColumn {
+  font-weight: 500;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectButton {
+  background: var(--accent-primary);
+  border: none;
+  color: var(--text-on-accent, #000);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-weight: 500;
+}
+
+.selectButton:hover {
+  background-color: var(--accent-secondary, var(--accent-primary));
+  transform: scale(1.05);
+}
+
+.selectButton:focus {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.selectButton:active {
+  transform: scale(0.95);
+}
+
+:global(.dark-theme) .td {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(.light-theme) .td {
+  border-bottom-color: #e5e5e5;
+}
