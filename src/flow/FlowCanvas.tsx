@@ -575,15 +575,50 @@ export default function FlowCanvas() {
         const currentViewport = reactFlowInstance.getViewport();
         const contextKey = getContextKey(currentContext);
         saveViewportState(contextKey, currentViewport);
+
+        const nodePositions: Record<string, { x: number; y: number }> = {};
+        nodes.forEach((n) => {
+          nodePositions[n.id] = { x: n.position.x, y: n.position.y };
+        });
+        saveNodePositions(contextKey, nodePositions);
+      }
+    };
+
+    const handleRestoreViewportAfterMaximize = () => {
+      if (reactFlowInstance) {
+        const contextKey = getContextKey(currentContext);
+        const savedViewport = getViewportState(contextKey);
+        const savedPositions = getNodePositions(contextKey);
+        
+        if (savedViewport) {
+          reactFlowInstance.setViewport(savedViewport, { duration: 0 });
+        }
+        
+        if (savedPositions) {
+          setNodes((currentNodes) =>
+            currentNodes.map((node) => {
+              const savedPosition = savedPositions[node.id];
+              if (savedPosition) {
+                return {
+                  ...node,
+                  position: savedPosition,
+                };
+              }
+              return node;
+            })
+          );
+        }
       }
     };
 
     window.addEventListener("minimystx:saveCurrentViewport", handleSaveCurrentViewport);
+    window.addEventListener("minimystx:restoreViewportAfterMaximize", handleRestoreViewportAfterMaximize);
 
     return () => {
       window.removeEventListener("minimystx:saveCurrentViewport", handleSaveCurrentViewport);
+      window.removeEventListener("minimystx:restoreViewportAfterMaximize", handleRestoreViewportAfterMaximize);
     };
-  }, [reactFlowInstance, currentContext, saveViewportState]);
+  }, [reactFlowInstance, currentContext, saveViewportState, nodes, saveNodePositions, getViewportState, getNodePositions, setNodes]);
 
   return (
     <div

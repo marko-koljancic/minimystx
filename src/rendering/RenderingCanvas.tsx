@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useKeyboardShortcuts } from "../hooks";
 import { SceneManager } from "./SceneManager";
+import MaximizeToggleButton from "../components/MaximizeToggleButton";
 
 export default function RenderingCanvas() {
   const { containerRef: keyboardContainerRef } = useKeyboardShortcuts({ context: "render" });
@@ -39,7 +40,7 @@ export default function RenderingCanvas() {
   }, []);
 
   return (
-    <div ref={keyboardContainerRef} style={{ width: "100%", height: "100%" }} tabIndex={0}>
+    <div ref={keyboardContainerRef} style={{ width: "100%", height: "100%", position: "relative" }} tabIndex={0}>
       <div ref={resizeContainerRef} style={{ width: "100%", height: "100%" }}>
         <canvas
           ref={canvasRef}
@@ -50,6 +51,7 @@ export default function RenderingCanvas() {
           }}
         />
       </div>
+      <MaximizeToggleButton />
     </div>
   );
 }

@@ -1,0 +1,30 @@
+.maximizeButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  z-index: 1000;
+  color: var(--text-secondary);
+  transition: opacity 0.2s ease;
+}
+
+.maximizeButton:hover {
+  color: var(--text-primary);
+}
+
+.maximizeButton:focus {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.maximizeButton:active {
+  transform: scale(0.95);
+}

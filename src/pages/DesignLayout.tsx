@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useRef, useEffect } from "react";
 import styles from "./DesignLayout.module.css";
 import Header from "../pages/Header";
-import { useUIStore } from "../store";
+import { useUIStore, useIsRendererMaximized } from "../store";
 import PropertiesDrawer from "../components/PropertiesDrawer";
 import { NodePalette } from "../panels/NodePalette";
 
@@ -13,6 +13,7 @@ interface DesignLayoutProps {
 
 const DesignLayout = ({ leftTop, right, children }: DesignLayoutProps) => {
   const { leftPaneWidth, updateLayout } = useUIStore();
+  const isRendererMaximized = useIsRendererMaximized();
 
   const isDraggingVertical = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,19 +77,26 @@ const DesignLayout = ({ leftTop, right, children }: DesignLayoutProps) => {
   return (
     <div className={styles.container}>
       <Header />
-      <div ref={containerRef} className={styles.contentContainer}>
-        <div className={styles.leftPane} style={{ width: `${leftPaneWidth}%` }}>
+      <div ref={containerRef} className={`${styles.contentContainer} ${isRendererMaximized ? styles.maximized : ""}`}>
+        <div 
+          className={styles.leftPane} 
+          style={{ width: isRendererMaximized ? "100%" : `${leftPaneWidth}%` }}
+        >
           {leftTop}
         </div>
-        <div className={styles.verticalResizer} onMouseDown={handleVerticalDragStart}>
-          <div className={`${styles.resizerHandle} ${styles.verticalResizerHandle}`} />
-        </div>
-        <div className={styles.rightPane} style={{ width: `${100 - leftPaneWidth}%` }}>
-          <div className={styles.rightPaneContent}>
-            <div className={styles.flowArea}>{right}</div>
-            <PropertiesDrawer />
-          </div>
-        </div>
+        {!isRendererMaximized && (
+          <>
+            <div className={styles.verticalResizer} onMouseDown={handleVerticalDragStart}>
+              <div className={`${styles.resizerHandle} ${styles.verticalResizerHandle}`} />
+            </div>
+            <div className={styles.rightPane} style={{ width: `${100 - leftPaneWidth}%` }}>
+              <div className={styles.rightPaneContent}>
+                <div className={styles.flowArea}>{right}</div>
+                <PropertiesDrawer />
+              </div>
+            </div>
+          </>
+        )}
       </div>
       <NodePalette />
     </div>

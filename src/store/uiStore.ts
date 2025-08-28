@@ -35,6 +35,7 @@ interface UIState {
   currentContext: GraphContext;
   viewportStates: Record<string, { x: number; y: number; zoom: number }>;
   nodePositions: Record<string, Record<string, { x: number; y: number }>>;
+  isRendererMaximized: boolean;
 }
 
 interface UIActions {
@@ -81,6 +82,7 @@ interface UIActions {
   getViewportState: (contextKey: string) => { x: number; y: number; zoom: number } | null;
   saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => void;
   getNodePositions: (contextKey: string) => Record<string, { x: number; y: number }> | null;
+  toggleRendererMaximized: () => void;
 }
 
 type UIStore = UIState & UIActions;
@@ -129,6 +131,7 @@ export const useUIStore = create<UIStore>()(
       currentContext: { type: "root" },
       viewportStates: {},
       nodePositions: {},
+      isRendererMaximized: false,
 
       setTheme: (theme: Theme) => {
         const isDarkTheme = getIsDarkTheme(theme);
@@ -285,6 +288,16 @@ export const useUIStore = create<UIStore>()(
         const state = get();
         return state.nodePositions[contextKey] || null;
       },
+
+      toggleRendererMaximized: () => {
+        // Save current viewport state before toggling
+        window.dispatchEvent(new CustomEvent("minimystx:saveCurrentViewport"));
+        set((state) => ({ isRendererMaximized: !state.isRendererMaximized }));
+        // Restore state after layout change
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("minimystx:restoreViewportAfterMaximize"));
+        }, 100);
+      },
     }),
     {
       name: "minimystx-ui-store",
@@ -301,6 +314,7 @@ export const useUIStore = create<UIStore>()(
         connectionLineStyle: state.connectionLineStyle,
         collapsed: state.collapsed,
         bottomPaneHeight: state.bottomPaneHeight,
+        isRendererMaximized: state.isRendererMaximized,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -379,6 +393,9 @@ export const useGetViewportState = () => useUIStore((state) => state.getViewport
 
 export const useSaveNodePositions = () => useUIStore((state) => state.saveNodePositions);
 export const useGetNodePositions = () => useUIStore((state) => state.getNodePositions);
+
+export const useIsRendererMaximized = () => useUIStore((state) => state.isRendererMaximized);
+export const useToggleRendererMaximized = () => useUIStore((state) => state.toggleRendererMaximized);
 
 export const getContextKey = (context: GraphContext): string => {
   return context.type === "root" ? "root" : `subflow-${context.geoNodeId}`;

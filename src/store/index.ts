@@ -29,5 +29,7 @@ export {
   useGetViewportState,
   useSaveNodePositions,
   useGetNodePositions,
+  useIsRendererMaximized,
+  useToggleRendererMaximized,
   getContextKey,
 } from "./uiStore";
