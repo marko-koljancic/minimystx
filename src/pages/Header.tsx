@@ -457,6 +457,17 @@ export default function Header() {
     ]
   );
 
+  const helpDropdownItems = [
+    {
+      label: "Minimystx GitHub Repo",
+      onClick: () => window.open("https://github.com/marko-koljancic/minimystx", "_blank", "noopener,noreferrer"),
+    },
+    {
+      label: "Minimystx Project Roadmap",
+      onClick: () => window.open("https://github.com/users/marko-koljancic/projects/18", "_blank", "noopener,noreferrer"),
+    },
+  ];
+
   return (
     <header className={styles.header}>
       <div className={styles.menuBar}>
@@ -464,7 +475,7 @@ export default function Header() {
         <MenuItem title="Edit" />
         <MenuItem title="Components" dropdownItems={componentsDropdownItems} />
         <MenuItem title="View" dropdownItems={viewDropdownItems} />
-        <MenuItem title="Help" />
+        <MenuItem title="Help" dropdownItems={helpDropdownItems} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         {exportProgress && (
