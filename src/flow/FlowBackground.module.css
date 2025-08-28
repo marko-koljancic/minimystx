@@ -4,8 +4,8 @@
 }
 
 :global(.dark-theme) .background {
-  --grid-line-color-small: #1f1f1f;
-  --grid-line-color-large: #181818;
+  --grid-line-color-small: rgba(255, 255, 255, 0.08);
+  --grid-line-color-large: rgba(255, 255, 255, 0.12);
 }
 
 :global(.light-theme) .background {

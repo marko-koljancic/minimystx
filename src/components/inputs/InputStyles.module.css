@@ -24,15 +24,14 @@
 .inputField:focus {
   border-color: var(--accent-primary);
   background-color: var(--background-secondary);
-  outline: 1px solid var(--accent-primary);
-  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  outline: none;
 }
 
 .inputField::placeholder {
   color: var(--input-placeholder);
 }
 
-/* Error states */
 .inputField.error {
   border-color: var(--error-border);
   background-color: var(--error-background);
@@ -118,7 +117,7 @@
   height: 8px;
   min-height: 8px;
   border-radius: 4px;
-  background: var(--background-tertiary);
+  background: var(--background-quaternary);
   outline: none;
   appearance: none;
   -webkit-appearance: none;
@@ -133,6 +132,12 @@
   background: var(--accent-primary);
   cursor: pointer;
   border: none;
+  box-shadow: 0 0 4px rgba(74, 144, 226, 0.4);
+  transition: var(--theme-transition);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 8px rgba(74, 144, 226, 0.6);
 }
 
 .slider::-moz-range-thumb {
@@ -142,6 +147,12 @@
   background: var(--accent-primary);
   cursor: pointer;
   border: none;
+  box-shadow: 0 0 4px rgba(74, 144, 226, 0.4);
+  transition: var(--theme-transition);
+}
+
+.slider::-moz-range-thumb:hover {
+  box-shadow: 0 0 8px rgba(74, 144, 226, 0.6);
 }
 
 .selectInput {
@@ -165,8 +176,8 @@
 .selectInput:focus {
   border-color: var(--accent-primary);
   background-color: var(--background-secondary);
-  outline: 1px solid var(--accent-primary);
-  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  outline: none;
 }
 
 .selectInput.error {
@@ -232,8 +243,8 @@
 .fileSelectButton:focus {
   border-color: var(--accent-primary);
   background-color: var(--background-secondary);
-  outline: 1px solid var(--accent-primary);
-  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  outline: none;
 }
 
 .fileSelectButton.disabled {

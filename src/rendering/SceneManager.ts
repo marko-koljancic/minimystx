@@ -94,7 +94,7 @@ export class SceneManager {
 
   private initializeThreeJS(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf5f5f5);
+    this.scene.background = new THREE.Color(0x2a2a2a);
 
     const width = canvas.clientWidth || 800;
     const height = canvas.clientHeight || 600;
@@ -242,9 +242,9 @@ export class SceneManager {
 
   private updateGridColors() {
     if (!this.gridHelper) return;
-    this.gridHelper.material.color.setHex(0xe8e8e8);
+    this.gridHelper.material.color.setHex(0xffffff);
     const material = this.gridHelper.material as THREE.LineBasicMaterial & { color2?: THREE.Color };
-    material.color2?.setHex(0xdddddd);
+    material.color2?.setHex(0xffffff);
     this.gridHelper.material.opacity = 0.3;
     this.gridHelper.material.transparent = true;
 
@@ -255,9 +255,9 @@ export class SceneManager {
 
   private updateGridPlaneColors(grid: THREE.GridHelper | null) {
     if (!grid) return;
-    grid.material.color.setHex(0xe8e8e8);
+    grid.material.color.setHex(0xffffff);
     const material = grid.material as THREE.LineBasicMaterial & { color2?: THREE.Color };
-    material.color2?.setHex(0xdddddd);
+    material.color2?.setHex(0xffffff);
     grid.material.opacity = 0.3;
     grid.material.transparent = true;
   }
@@ -363,7 +363,7 @@ export class SceneManager {
     const storeState = useUIStore.getState();
     const { isDarkTheme } = storeState;
 
-    const backgroundColor = isDarkTheme ? 0x1a1a1a : 0xf5f5f5;
+    const backgroundColor = isDarkTheme ? 0x2a2a2a : 0xf5f5f5;
     this.scene.background = new THREE.Color(backgroundColor);
   }
 
@@ -403,7 +403,8 @@ export class SceneManager {
             object.material = originalMaterial;
             const wireframeState = useUIStore.getState().wireframe;
             if ("wireframe" in object.material) {
-              (object.material as THREE.Material & { wireframe: boolean }).wireframe = wireframeState;
+              (object.material as THREE.Material & { wireframe: boolean }).wireframe =
+                wireframeState;
             }
           }
         }

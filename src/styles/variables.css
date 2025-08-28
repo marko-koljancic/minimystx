@@ -1,10 +1,10 @@
 :root,
 body,
 body.dark-theme {
-  --background-primary: #000000;
-  --background-secondary: #181818;
-  --background-tertiary: #272727;
-  --background-quaternary: #2d2d2d;
+  --background-primary: #2a2a2a;
+  --background-secondary: #333333;
+  --background-tertiary: #3a3a3a;
+  --background-quaternary: #1e1e1e;
 
   --node-background: #e5e7eb;
 
@@ -16,26 +16,26 @@ body.dark-theme {
   --light-node-border: rgba(255, 255, 255, 0.15);
   --light-node-border-hover: rgba(255, 255, 255, 0.25);
 
-  --border-primary: #181818;
-  --border-secondary: #333333;
-  --border-tertiary: #444444;
+  --border-primary: #404040;
+  --border-secondary: #4a4a4a;
+  --border-tertiary: #555555;
 
   --divider-primary: #555555;
 
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
+  --text-primary: #e0e0e0;
+  --text-secondary: #888888;
   --text-tertiary: #aaaaaa;
   --text-quaternary: #999999;
   --text-highlight: #ffffff;
 
-  --accent-primary: #007acc;
+  --accent-primary: #4a90e2;
   --accent-secondary: #0098ff;
   --accent-tertiary: #003e66;
-  --accent-blue: #4ba3e3;
+  --accent-blue: #4a90e2;
   --accent-green: #5ec269;
   --accent-yellow: #f7df1e;
 
-  --edge-color: #4ba3e3;
+  --edge-color: #4a90e2;
   --connection-line-default: #e5e7eb;
   --connection-line-valid: #55dd99;
   --connection-line-invalid: #ff6060;
@@ -62,9 +62,9 @@ body.dark-theme {
   --error-text: #ff6666;
 
   --input-background: var(--background-quaternary);
-  --input-border: var(--border-secondary);
+  --input-border: var(--border-primary);
   --input-border-focus: var(--accent-primary);
-  --input-border-hover: var(--border-tertiary);
+  --input-border-hover: var(--border-secondary);
   --input-text: var(--text-primary);
   --input-placeholder: var(--text-tertiary);
 }
@@ -73,7 +73,7 @@ body.light-theme {
   --background-primary: #ffffff;
   --background-secondary: #f5f5f5;
   --background-tertiary: #e8e8e8;
-  --background-quaternary: #f0f0f0;
+  --background-quaternary: #e0e0e0;
 
   --node-background: #f8f8f8;
 

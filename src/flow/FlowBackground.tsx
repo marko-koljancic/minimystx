@@ -10,19 +10,11 @@ export function FlowBackground() {
     <div className={styles.background}>
       <Background
         variant={BackgroundVariant.Lines}
-        gap={10}
-        color={`var(--grid-line-color-small)`}
-        bgColor="transparent"
-        lineWidth={1}
-        id="1"
-      />
-      <Background
-        variant={BackgroundVariant.Lines}
-        gap={100}
+        gap={40}
         color={`var(--grid-line-color-large)`}
         bgColor="transparent"
         lineWidth={0.5}
-        id="2"
+        id="1"
       />
     </div>
   );
