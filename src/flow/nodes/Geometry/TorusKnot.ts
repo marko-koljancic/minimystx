@@ -3,10 +3,7 @@ import type { NodeProcessor } from "../props";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
-import {
-  createGeneralParams,
-  createRenderingParams,
-} from "../../../engine/nodeParameterFactories";
+import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 
 export interface TorusKnotNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
@@ -14,21 +11,23 @@ export interface TorusKnotNodeData extends BaseGeometryData, Record<string, unkn
     tube: number;
     p: number;
     q: number;
+    tubularSegments: number;
+    radialSegments: number;
   };
 }
 
 function createTorusKnotGeometry(data: TorusKnotNodeData): BufferGeometry {
-  let { radius, tube, p, q } = data.geometry;
+  let { radius, tube, p, q, tubularSegments, radialSegments } = data.geometry;
   if (radius <= 0) radius = 0.1;
   if (tube <= 0) tube = 0.1;
 
   p = Math.round(Math.max(1, Math.min(10, p)));
   q = Math.round(Math.max(1, Math.min(10, q)));
 
-  const radialSegments = Math.max(3, 16);
-  const tubularSegments = Math.max(3, 100);
+  const clampedTubularSegments = Math.max(3, Math.min(2048, Math.round(tubularSegments)));
+  const clampedRadialSegments = Math.max(3, Math.min(2048, Math.round(radialSegments)));
 
-  return new TorusKnotGeometry(radius, tube, tubularSegments, radialSegments, p, q);
+  return new TorusKnotGeometry(radius, tube, clampedTubularSegments, clampedRadialSegments, p, q);
 }
 
 export const processor: NodeProcessor<
@@ -56,6 +55,18 @@ export const torusKnotNodeParams: NodeParams = {
     }),
     p: createParameterMetadata("number", 2, { displayName: "P Value", min: 1, max: 10, step: 1 }),
     q: createParameterMetadata("number", 3, { displayName: "Q Value", min: 1, max: 10, step: 1 }),
+    tubularSegments: createParameterMetadata("number", 64, {
+      displayName: "Tubular Segments",
+      min: 3,
+      max: 2048,
+      step: 1,
+    }),
+    radialSegments: createParameterMetadata("number", 8, {
+      displayName: "Radial Segments",
+      min: 3,
+      max: 2048,
+      step: 1,
+    }),
   },
   rendering: createRenderingParams(),
 };

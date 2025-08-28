@@ -3,27 +3,26 @@ import type { NodeProcessor } from "../props";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
-import {
-  createGeneralParams,
-  createRenderingParams,
-} from "../../../engine/nodeParameterFactories";
+import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 
 export interface PlaneNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     width: number;
     height: number;
+    widthSegments: number;
+    heightSegments: number;
   };
 }
 
 function createPlaneGeometry(data: PlaneNodeData): BufferGeometry {
-  let { width, height } = data.geometry;
+  let { width, height, widthSegments, heightSegments } = data.geometry;
   if (width <= 0) width = 0.1;
   if (height <= 0) height = 0.1;
 
-  const widthSegments = 1;
-  const heightSegments = 1;
+  const clampedWidthSegments = Math.max(1, Math.min(1024, Math.round(widthSegments)));
+  const clampedHeightSegments = Math.max(1, Math.min(1024, Math.round(heightSegments)));
 
-  return new PlaneGeometry(width, height, widthSegments, heightSegments);
+  return new PlaneGeometry(width, height, clampedWidthSegments, clampedHeightSegments);
 }
 
 export const processor: NodeProcessor<
@@ -48,6 +47,18 @@ export const planeNodeParams: NodeParams = {
       min: 0.01,
       max: 100,
       step: 0.1,
+    }),
+    widthSegments: createParameterMetadata("number", 1, {
+      displayName: "Width Segments",
+      min: 1,
+      max: 1024,
+      step: 1,
+    }),
+    heightSegments: createParameterMetadata("number", 1, {
+      displayName: "Height Segments",
+      min: 1,
+      max: 1024,
+      step: 1,
     }),
   },
   rendering: createRenderingParams(),

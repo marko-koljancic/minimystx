@@ -3,22 +3,34 @@ import type { NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
-import {
-  createGeneralParams,
-  createRenderingParams,
-} from "../../../engine/nodeParameterFactories";
+import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 
 export interface BoxNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     width: number;
     height: number;
     depth: number;
+    widthSegments: number;
+    heightSegments: number;
+    depthSegments: number;
   };
 }
 
 function createBoxGeometry(data: BoxNodeData): BufferGeometry {
-  const { width, height, depth } = data.geometry;
-  return new BoxGeometry(width, height, depth);
+  const { width, height, depth, widthSegments, heightSegments, depthSegments } = data.geometry;
+
+  const clampedWidthSegments = Math.max(1, Math.min(512, Math.round(widthSegments)));
+  const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
+  const clampedDepthSegments = Math.max(1, Math.min(512, Math.round(depthSegments)));
+
+  return new BoxGeometry(
+    width,
+    height,
+    depth,
+    clampedWidthSegments,
+    clampedHeightSegments,
+    clampedDepthSegments
+  );
 }
 
 export const processor: NodeProcessor<
@@ -51,12 +63,29 @@ export const boxNodeParams: NodeParams = {
       max: 100,
       step: 0.1,
     }),
+    widthSegments: createParameterMetadata("number", 1, {
+      displayName: "Width Segments",
+      min: 1,
+      max: 512,
+      step: 1,
+    }),
+    heightSegments: createParameterMetadata("number", 1, {
+      displayName: "Height Segments",
+      min: 1,
+      max: 512,
+      step: 1,
+    }),
+    depthSegments: createParameterMetadata("number", 1, {
+      displayName: "Depth Segments",
+      min: 1,
+      max: 512,
+      step: 1,
+    }),
   },
   rendering: createRenderingParams(),
 };
 
 export const boxNodeCompute = (params: Record<string, any>) => {
-  
   const data: BoxNodeData = {
     general: params.general,
     transform: {

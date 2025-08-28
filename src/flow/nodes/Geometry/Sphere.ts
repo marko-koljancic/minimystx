@@ -3,22 +3,23 @@ import type { NodeProcessor } from "../props";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
-import {
-  createGeneralParams,
-  createRenderingParams,
-} from "../../../engine/nodeParameterFactories";
+import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 
 export interface SphereNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     radius: number;
+    widthSegments: number;
+    heightSegments: number;
   };
 }
 
 function createSphereGeometry(data: SphereNodeData): BufferGeometry {
-  const { radius } = data.geometry;
-  const widthSegments = 32;
-  const heightSegments = 16;
-  return new SphereGeometry(radius, widthSegments, heightSegments);
+  const { radius, widthSegments, heightSegments } = data.geometry;
+
+  const clampedWidthSegments = Math.max(3, Math.min(512, Math.round(widthSegments)));
+  const clampedHeightSegments = Math.max(2, Math.min(512, Math.round(heightSegments)));
+
+  return new SphereGeometry(radius, clampedWidthSegments, clampedHeightSegments);
 }
 
 export const processor: NodeProcessor<
@@ -37,6 +38,18 @@ export const sphereNodeParams: NodeParams = {
       min: 0.01,
       max: 50,
       step: 0.1,
+    }),
+    widthSegments: createParameterMetadata("number", 32, {
+      displayName: "Width Segments",
+      min: 3,
+      max: 512,
+      step: 1,
+    }),
+    heightSegments: createParameterMetadata("number", 16, {
+      displayName: "Height Segments",
+      min: 2,
+      max: 512,
+      step: 1,
     }),
   },
   rendering: createRenderingParams(),

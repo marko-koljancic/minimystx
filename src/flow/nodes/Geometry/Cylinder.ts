@@ -3,30 +3,35 @@ import type { NodeProcessor } from "../props";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
-import {
-  createGeneralParams,
-  createRenderingParams,
-} from "../../../engine/nodeParameterFactories";
+import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 
 export interface CylinderNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     radiusTop: number;
     radiusBottom: number;
     height: number;
+    radialSegments: number;
+    heightSegments: number;
   };
 }
 
 function createCylinderGeometry(data: CylinderNodeData): BufferGeometry {
-  let { radiusTop, radiusBottom, height } = data.geometry;
+  let { radiusTop, radiusBottom, height, radialSegments, heightSegments } = data.geometry;
 
   if (radiusTop <= 0) radiusTop = 0.1;
   if (radiusBottom <= 0) radiusBottom = 0.1;
   if (height <= 0) height = 0.1;
 
-  const radialSegments = 32;
-  const heightSegments = 1;
+  const clampedRadialSegments = Math.max(3, Math.min(512, Math.round(radialSegments)));
+  const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
 
-  return new CylinderGeometry(radiusTop, radiusBottom, height, radialSegments, heightSegments);
+  return new CylinderGeometry(
+    radiusTop,
+    radiusBottom,
+    height,
+    clampedRadialSegments,
+    clampedHeightSegments
+  );
 }
 
 export const processor: NodeProcessor<
@@ -57,6 +62,18 @@ export const cylinderNodeParams: NodeParams = {
       min: 0.01,
       max: 100,
       step: 0.1,
+    }),
+    radialSegments: createParameterMetadata("number", 8, {
+      displayName: "Radial Segments",
+      min: 3,
+      max: 512,
+      step: 1,
+    }),
+    heightSegments: createParameterMetadata("number", 1, {
+      displayName: "Height Segments",
+      min: 1,
+      max: 512,
+      step: 1,
     }),
   },
   rendering: createRenderingParams(),

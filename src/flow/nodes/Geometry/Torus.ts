@@ -3,27 +3,26 @@ import type { NodeProcessor } from "../props";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
-import {
-  createGeneralParams,
-  createRenderingParams,
-} from "../../../engine/nodeParameterFactories";
+import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 
 export interface TorusNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     radius: number;
     tube: number;
+    radialSegments: number;
+    tubularSegments: number;
   };
 }
 
 function createTorusGeometry(data: TorusNodeData): BufferGeometry {
-  let { radius, tube } = data.geometry;
+  let { radius, tube, radialSegments, tubularSegments } = data.geometry;
   if (radius <= 0) radius = 0.1;
   if (tube <= 0) tube = 0.1;
 
-  const radialSegments = Math.max(3, 16);
-  const tubularSegments = Math.max(3, 100);
+  const clampedRadialSegments = Math.max(3, Math.min(1024, Math.round(radialSegments)));
+  const clampedTubularSegments = Math.max(3, Math.min(1024, Math.round(tubularSegments)));
 
-  return new TorusGeometry(radius, tube, radialSegments, tubularSegments);
+  return new TorusGeometry(radius, tube, clampedRadialSegments, clampedTubularSegments);
 }
 
 export const processor: NodeProcessor<
@@ -48,6 +47,18 @@ export const torusNodeParams: NodeParams = {
       min: 0.01,
       max: 100,
       step: 0.1,
+    }),
+    radialSegments: createParameterMetadata("number", 8, {
+      displayName: "Radial Segments",
+      min: 3,
+      max: 1024,
+      step: 1,
+    }),
+    tubularSegments: createParameterMetadata("number", 6, {
+      displayName: "Tubular Segments",
+      min: 3,
+      max: 1024,
+      step: 1,
     }),
   },
   rendering: createRenderingParams(),

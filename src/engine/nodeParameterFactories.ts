@@ -55,9 +55,6 @@ export function createTransformParams(): CategoryParams {
 
 export function createRenderingParams(): CategoryParams {
   return {
-    color: createParameterMetadata("color", "#ffffff", {
-      displayName: "Color",
-    }),
     visible: createParameterMetadata("boolean", true, {
       displayName: "Visible",
     }),
