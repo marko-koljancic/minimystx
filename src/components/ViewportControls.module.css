@@ -1,0 +1,86 @@
+.viewportControls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+  user-select: none;
+}
+
+.controlButtonContainer {
+  position: relative;
+}
+
+.controlButton {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 400;
+  padding: 4px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+  font-family: inherit;
+  line-height: 1.2;
+  opacity: 0.7;
+}
+
+.controlButton:hover {
+  background-color: var(--background-quaternary);
+  opacity: 1;
+}
+
+.controlButton:focus {
+  outline: none;
+  background-color: var(--background-quaternary);
+  opacity: 1;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 2px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 100px;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 400;
+  padding: 6px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
+.dropdownItem:hover {
+  background-color: var(--background-quaternary);
+}
+
+.dropdownItem:focus {
+  outline: none;
+  background-color: var(--background-quaternary);
+}
+
+.dropdownItem.active {
+  font-weight: 500;
+  background-color: var(--background-quaternary);
+}
+
+.dropdownItem.active:hover {
+  background-color: var(--background-quaternary);
+}

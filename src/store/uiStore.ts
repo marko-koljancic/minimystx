@@ -6,6 +6,7 @@ type Theme = "dark" | "light" | "system";
 type ConnectionLineStyle = "bezier" | "straight" | "step" | "simpleBezier";
 type FocusedCanvas = "flow" | "render" | null;
 type FlowViewMode = "graph" | "list";
+type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
 
 interface UIState {
   theme: Theme;
@@ -29,6 +30,7 @@ interface UIState {
   focusedCanvas: FocusedCanvas;
   isOrthographicCamera: boolean;
   showAxisGizmo: boolean;
+  currentCameraView: CameraView;
   selectedCategoryIndex: number;
   selectedNodeIndex: number;
   paletteSearchQuery: string;
@@ -72,6 +74,7 @@ interface UIActions {
   toggleCameraMode: () => void;
   toggleAxisGizmo: () => void;
   setCameraView: (view: "top" | "front" | "left" | "right" | "bottom") => void;
+  setCurrentCameraView: (view: CameraView) => void;
   setSelectedCategoryIndex: (index: number) => void;
   setSelectedNodeIndex: (index: number) => void;
   setPaletteSearchQuery: (query: string) => void;
@@ -128,6 +131,7 @@ export const useUIStore = create<UIStore>()(
       focusedCanvas: null,
       isOrthographicCamera: false,
       showAxisGizmo: true,
+      currentCameraView: "3d",
       selectedCategoryIndex: 0,
       selectedNodeIndex: 0,
       paletteSearchQuery: "",
@@ -220,6 +224,9 @@ export const useUIStore = create<UIStore>()(
       },
       setOrthographicCamera: (isOrthographic: boolean) => {
         set({ isOrthographicCamera: isOrthographic });
+        if (!isOrthographic) {
+          set({ currentCameraView: "3d" });
+        }
         window.dispatchEvent(
           new CustomEvent("minimystx:setCameraMode", { detail: { isOrthographic } })
         );
@@ -233,7 +240,11 @@ export const useUIStore = create<UIStore>()(
         window.dispatchEvent(new CustomEvent("minimystx:toggleAxisGizmo"));
       },
       setCameraView: (view: "top" | "front" | "left" | "right" | "bottom") => {
+        set({ currentCameraView: view });
         window.dispatchEvent(new CustomEvent("minimystx:setCameraView", { detail: { view } }));
+      },
+      setCurrentCameraView: (view: CameraView) => {
+        set({ currentCameraView: view });
       },
 
       setSelectedCategoryIndex: (index: number) => set({ selectedCategoryIndex: index }),
@@ -390,6 +401,8 @@ export const useSetOrthographicCamera = () => useUIStore((state) => state.setOrt
 export const useToggleCameraMode = () => useUIStore((state) => state.toggleCameraMode);
 export const useToggleAxisGizmo = () => useUIStore((state) => state.toggleAxisGizmo);
 export const useSetCameraView = () => useUIStore((state) => state.setCameraView);
+export const useCurrentCameraView = () => useUIStore((state) => state.currentCameraView);
+export const useSetCurrentCameraView = () => useUIStore((state) => state.setCurrentCameraView);
 
 export const useSelectedCategoryIndex = () => useUIStore((state) => state.selectedCategoryIndex);
 export const useSelectedNodeIndex = () => useUIStore((state) => state.selectedNodeIndex);

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useKeyboardShortcuts } from "../hooks";
 import { SceneManager } from "./SceneManager";
 import MaximizeToggleButton from "../components/MaximizeToggleButton";
+import ViewportControls from "../components/ViewportControls";
 
 export default function RenderingCanvas() {
   const { containerRef: keyboardContainerRef } = useKeyboardShortcuts({ context: "render" });
@@ -51,6 +52,7 @@ export default function RenderingCanvas() {
           }}
         />
       </div>
+      <ViewportControls />
       <MaximizeToggleButton />
     </div>
   );
