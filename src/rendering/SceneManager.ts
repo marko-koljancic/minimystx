@@ -94,7 +94,7 @@ export class SceneManager {
 
   private initializeThreeJS(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x2a2a2a);
+    this.scene.background = new THREE.Color(0x191919);
 
     const width = canvas.clientWidth || 800;
     const height = canvas.clientHeight || 600;
@@ -363,7 +363,7 @@ export class SceneManager {
     const storeState = useUIStore.getState();
     const { isDarkTheme } = storeState;
 
-    const backgroundColor = isDarkTheme ? 0x2a2a2a : 0xf5f5f5;
+    const backgroundColor = isDarkTheme ? 0x191919 : 0xf5f5f5;
     this.scene.background = new THREE.Color(backgroundColor);
   }
 
