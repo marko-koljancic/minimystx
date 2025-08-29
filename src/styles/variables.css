@@ -82,7 +82,7 @@ body.light-theme {
   --geometry-node-border: rgba(0, 0, 0, 0.15);
   --geometry-node-border-hover: rgba(0, 0, 0, 0.25);
 
-  --light-node-background: #f8e7b0;
+  --light-node-background: #fff7de;
   --light-node-border: rgba(0, 0, 0, 0.15);
   --light-node-border-hover: rgba(0, 0, 0, 0.25);
 
