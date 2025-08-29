@@ -5,7 +5,14 @@ import * as computeEngine from "./computeEngine";
 import { nodeRegistry } from "./nodeRegistry";
 import { GRAPH_SCHEMA } from "../constants";
 import { extractDefaultValues, validateAndNormalizeParams } from "./parameterUtils";
-import { CoreGraph, ConnectionManager, Cooker, DirtyController, type Connection, type GraphNode } from "./graph";
+import {
+  CoreGraph,
+  ConnectionManager,
+  Cooker,
+  DirtyController,
+  type Connection,
+  type GraphNode,
+} from "./graph";
 
 export type Result<T = void> =
   | {
@@ -102,7 +109,7 @@ export type GraphState = {
   subFlows: Record<string, SubFlowGraph>;
   evaluationMode: "eager" | "lazy";
   isImporting: boolean;
-  
+
   graph: CoreGraph;
   connectionManager: ConnectionManager;
   cooker: Cooker;
@@ -136,9 +143,13 @@ export type GraphState = {
     nodePositions?: Record<string, { x: number; y: number }>
   ) => Promise<SerializedGraph>;
   setSubFlowActiveOutput: (geoNodeId: string, nodeId: string) => void;
-  
+
   preloadImportObjAssets: () => Promise<void>;
-  preloadAssetForNode: (nodeId: string, runtime: NodeRuntime, context: GraphContext) => Promise<void>;
+  preloadAssetForNode: (
+    nodeId: string,
+    runtime: NodeRuntime,
+    context: GraphContext
+  ) => Promise<void>;
   markAllNodesAsDirty: () => void;
   validatePostImportComputation: () => Promise<void>;
   clearRecomputationTracking: () => void;
@@ -164,17 +175,16 @@ export type SerializedGraph = {
 
 export { nodeRegistry } from "./nodeRegistry";
 
-
 const coreGraph = new CoreGraph();
 const connectionManager = new ConnectionManager();
 const cooker = new Cooker(coreGraph);
 
 cooker.setComputeFunction(async (nodeId: string) => {
   const state = useGraphStore.getState();
-  
+
   let nodeRuntime: NodeRuntime | undefined;
   let context: GraphContext | undefined;
-  
+
   if (state.rootNodeRuntime[nodeId]) {
     nodeRuntime = state.rootNodeRuntime[nodeId];
     context = { type: "root" };
@@ -187,27 +197,28 @@ cooker.setComputeFunction(async (nodeId: string) => {
       }
     }
   }
-  
+
   if (!nodeRuntime || !context) {
     return;
   }
-  
+
   if (!nodeRuntime.isDirty) {
     return;
   }
-  
+
   const nodeDef = nodeRegistry[nodeRuntime.type];
   if (!nodeDef) {
     return;
   }
-  
+
   const inputConnections = connectionManager.getInputConnections(nodeId);
   const inputs: Record<string, any> = {};
-  
-  const sourceRuntime = context.type === "root" 
-    ? state.rootNodeRuntime 
-    : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-  
+
+  const sourceRuntime =
+    context.type === "root"
+      ? state.rootNodeRuntime
+      : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+
   if (sourceRuntime) {
     for (const connection of inputConnections) {
       const sourceNode = sourceRuntime[connection.sourceNodeId];
@@ -217,35 +228,34 @@ cooker.setComputeFunction(async (nodeId: string) => {
       }
     }
   }
-  
+
   try {
     const result = computeEngine.evaluateNode(nodeId, nodeRuntime.params, inputs, nodeDef.compute);
-    
+
     useGraphStore.setState((state) => {
-      const targetRuntime = context.type === "root"
-        ? state.rootNodeRuntime[nodeId]
-        : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-        
+      const targetRuntime =
+        context.type === "root"
+          ? state.rootNodeRuntime[nodeId]
+          : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+
       if (targetRuntime) {
         targetRuntime.output = result;
         targetRuntime.isDirty = false;
         targetRuntime.error = undefined;
       }
     });
-    
-    
   } catch (err) {
     useGraphStore.setState((state) => {
-      const targetRuntime = context.type === "root"
-        ? state.rootNodeRuntime[nodeId]
-        : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-        
+      const targetRuntime =
+        context.type === "root"
+          ? state.rootNodeRuntime[nodeId]
+          : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+
       if (targetRuntime) {
         targetRuntime.error = err instanceof Error ? err.message : String(err);
         targetRuntime.isDirty = false;
       }
     });
-    
   }
 });
 
@@ -255,7 +265,7 @@ export const useGraphStore = create<GraphState>()(
     subFlows: {},
     evaluationMode: "eager",
     isImporting: false,
-    
+
     graph: coreGraph,
     connectionManager: connectionManager,
     cooker: cooker,
@@ -327,16 +337,15 @@ export const useGraphStore = create<GraphState>()(
           output: null,
           isDirty: true,
         };
-        
-        const graphNodeForDirty: GraphNode = { 
-          id, 
+
+        const graphNodeForDirty: GraphNode = {
+          id,
           isDirty: () => newNodeRuntime.isDirty,
-          cook: async () => {
-          }
+          cook: async () => {},
         };
         newNodeRuntime.dirtyController = new DirtyController(
-          graphNodeForDirty, 
-          get().cooker, 
+          graphNodeForDirty,
+          get().cooker,
           (nodeId: string) => get().graph.getAllSuccessors(nodeId)
         );
 
@@ -385,11 +394,9 @@ export const useGraphStore = create<GraphState>()(
         state.graph.removeNode(nodeId);
         state.connectionManager.removeAllConnectionsForNode(nodeId);
       });
-
     },
 
     setParams: (nodeId: string, params: Partial<Record<string, any>>, context: GraphContext) => {
-
       set((state) => {
         const targetRuntime =
           context.type === "root"
@@ -402,8 +409,13 @@ export const useGraphStore = create<GraphState>()(
 
         const wasVisible = targetRuntime[nodeId].params.rendering?.visible;
         const willBeVisible = params.rendering?.visible;
-        
-        if (context.type === "subflow" && willBeVisible === true && wasVisible !== true && !state.isImporting) {
+
+        if (
+          context.type === "subflow" &&
+          willBeVisible === true &&
+          wasVisible !== true &&
+          !state.isImporting
+        ) {
           const subFlow = state.subFlows[context.geoNodeId!];
           Object.keys(subFlow.nodeRuntime).forEach((id) => {
             if (id !== nodeId && subFlow.nodeRuntime[id].params.rendering?.visible) {
@@ -414,10 +426,10 @@ export const useGraphStore = create<GraphState>()(
         }
 
         const oldParams = targetRuntime[nodeId].params;
-        
+
         const newParams = { ...oldParams };
         for (const [category, categoryParams] of Object.entries(params)) {
-          if (typeof categoryParams === 'object' && categoryParams !== null) {
+          if (typeof categoryParams === "object" && categoryParams !== null) {
             newParams[category] = {
               ...oldParams[category],
               ...categoryParams,
@@ -438,9 +450,11 @@ export const useGraphStore = create<GraphState>()(
 
       if (get().evaluationMode === "eager") {
         get().cooker.enqueue(nodeId);
-        
+
         if (context.type === "subflow" && context.geoNodeId) {
           get().cooker.enqueue(context.geoNodeId);
+          // Propagate dirty state to all downstream nodes connected to the parent geoNode
+          get().markDirty(context.geoNodeId, { type: "root" });
         }
       }
     },
@@ -477,17 +491,18 @@ export const useGraphStore = create<GraphState>()(
           sourceNodeId: source,
           targetNodeId: target,
           sourceHandle,
-          targetHandle
+          targetHandle,
         };
 
         state.connectionManager.addConnection(connection);
-        
+
         state.graph.connect(source, target);
 
-        const targetNodeRuntime = context.type === "root"
-          ? state.rootNodeRuntime[target]
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime[target];
-        
+        const targetNodeRuntime =
+          context.type === "root"
+            ? state.rootNodeRuntime[target]
+            : state.subFlows[context.geoNodeId!]?.nodeRuntime[target];
+
         if (targetNodeRuntime) {
           targetNodeRuntime.isDirty = true;
         }
@@ -526,33 +541,41 @@ export const useGraphStore = create<GraphState>()(
       }
 
       set((state) => {
-        const connectionsToRemove = state.connectionManager.getConnectionsBetweenNodes(source, target);
-        
+        const connectionsToRemove = state.connectionManager.getConnectionsBetweenNodes(
+          source,
+          target
+        );
+
         let connectionToRemove = connectionsToRemove[0];
         if (sourceHandle && targetHandle) {
-          connectionToRemove = connectionsToRemove.find(conn => 
-            conn.sourceHandle === sourceHandle && conn.targetHandle === targetHandle
-          ) || connectionsToRemove[0];
+          connectionToRemove =
+            connectionsToRemove.find(
+              (conn) => conn.sourceHandle === sourceHandle && conn.targetHandle === targetHandle
+            ) || connectionsToRemove[0];
         }
 
         if (connectionToRemove) {
           state.connectionManager.removeConnection(connectionToRemove.id);
-          
-          const remainingConnections = state.connectionManager.getConnectionsBetweenNodes(source, target);
+
+          const remainingConnections = state.connectionManager.getConnectionsBetweenNodes(
+            source,
+            target
+          );
           if (remainingConnections.length === 0) {
             state.graph.disconnect(source, target);
           }
         }
 
-        const targetNodeRuntime = context.type === "root"
-          ? state.rootNodeRuntime[target]
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime[target];
-        
+        const targetNodeRuntime =
+          context.type === "root"
+            ? state.rootNodeRuntime[target]
+            : state.subFlows[context.geoNodeId!]?.nodeRuntime[target];
+
         if (targetNodeRuntime) {
           if (sourceHandle && targetHandle && targetNodeRuntime.inputs[targetHandle]) {
             delete targetNodeRuntime.inputs[targetHandle];
           }
-          
+
           targetNodeRuntime.isDirty = true;
         }
       });
@@ -565,15 +588,15 @@ export const useGraphStore = create<GraphState>()(
     },
 
     resetEdges: (edges: EdgeData[], context: GraphContext): Result => {
-      
       set((state) => {
-        const nodeRuntime = context.type === "root" 
-          ? state.rootNodeRuntime 
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-        
+        const nodeRuntime =
+          context.type === "root"
+            ? state.rootNodeRuntime
+            : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+
         if (nodeRuntime) {
           const nodeIds = Object.keys(nodeRuntime);
-          
+
           for (const nodeId of nodeIds) {
             state.connectionManager.removeAllConnectionsForNode(nodeId);
             state.graph.removeNode(nodeId);
@@ -601,21 +624,22 @@ export const useGraphStore = create<GraphState>()(
 
     markDirty: (nodeId: string, context: GraphContext) => {
       const state = get();
-      
-      const targetNodeRuntime = context.type === "root"
-        ? state.rootNodeRuntime
-        : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-        
+
+      const targetNodeRuntime =
+        context.type === "root"
+          ? state.rootNodeRuntime
+          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+
       if (!targetNodeRuntime?.[nodeId]) {
         return;
       }
-      
+
       const runtime = targetNodeRuntime[nodeId];
       if (runtime.dirtyController) {
         runtime.dirtyController.setDirty();
       } else {
         const successors = state.graph.getAllSuccessors(nodeId);
-        const nodesToMark = [nodeId, ...successors.map(n => n.id)];
+        const nodesToMark = [nodeId, ...successors.map((n) => n.id)];
         set((_state) => {
           for (const id of nodesToMark) {
             if (targetNodeRuntime[id]) {
@@ -628,24 +652,23 @@ export const useGraphStore = create<GraphState>()(
 
     recomputeFrom: (nodeId: string, _context: GraphContext) => {
       const state = get();
-      
+
       if (state.isImporting) {
         return;
       }
-      
+
       state.cooker.enqueue(nodeId, {
-        type: 'compute',
-        trigger: state.graph.getNode(nodeId)
+        type: "compute",
+        trigger: state.graph.getNode(nodeId),
       });
-      
     },
 
     clear: () => {
       const state = get();
       state.graph = new CoreGraph();
-      state.connectionManager = new ConnectionManager(); 
+      state.connectionManager = new ConnectionManager();
       state.cooker = new Cooker(state.graph);
-      
+
       set({
         rootNodeRuntime: {},
         subFlows: {},
@@ -654,39 +677,43 @@ export const useGraphStore = create<GraphState>()(
 
     importGraph: async (serialized: SerializedGraph) => {
       const { nodes, edges, nodeRuntime, positions, subFlows } = serialized;
-      
+
       set((state) => {
         state.isImporting = true;
       });
-      
+
       get().clear();
-      
+
       const rootContext: GraphContext = { type: "root" };
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         get().addNode(node, rootContext);
       });
-      
-      edges.forEach(edge => {
+
+      edges.forEach((edge) => {
         get().addEdge(edge.source, edge.target, rootContext, edge.sourceHandle, edge.targetHandle);
       });
-      
+
       if (subFlows) {
         Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
           const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
-          
-          
-          subFlow.nodes.forEach(node => {
+
+          subFlow.nodes.forEach((node) => {
             get().addNode(node, subFlowContext);
           });
-          
-          subFlow.edges.forEach(edge => {
-            
-            const result = get().addEdge(edge.source, edge.target, subFlowContext, edge.sourceHandle, edge.targetHandle);
+
+          subFlow.edges.forEach((edge) => {
+            const result = get().addEdge(
+              edge.source,
+              edge.target,
+              subFlowContext,
+              edge.sourceHandle,
+              edge.targetHandle
+            );
             if (!result.ok) {
             } else {
             }
           });
-          
+
           set((state) => {
             const targetSubFlow = state.subFlows[geoNodeId];
             if (targetSubFlow) {
@@ -695,14 +722,13 @@ export const useGraphStore = create<GraphState>()(
                   targetSubFlow.nodeRuntime[nodeId].inputs = runtime.inputs;
                 }
               });
-              
+
               targetSubFlow.activeOutputNodeId = subFlow.activeOutputNodeId;
-              
             }
           });
         });
       }
-      
+
       set((state) => {
         Object.entries(nodeRuntime).forEach(([nodeId, runtime]) => {
           if (state.rootNodeRuntime[nodeId]) {
@@ -710,16 +736,16 @@ export const useGraphStore = create<GraphState>()(
           }
         });
       });
-      
+
       (async () => {
         try {
           const { useUIStore } = await import("../store/uiStore");
           const { saveNodePositions } = useUIStore.getState();
-          
+
           if (positions && Object.keys(positions).length > 0) {
             saveNodePositions("root", positions);
           }
-          
+
           if (subFlows) {
             Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
               if (subFlow.positions && Object.keys(subFlow.positions).length > 0) {
@@ -728,127 +754,119 @@ export const useGraphStore = create<GraphState>()(
               }
             });
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       })();
-      
 
       set((state) => {
         state.isImporting = false;
       });
-      
+
       if (get().evaluationMode === "eager") {
-        
         await get().preloadImportObjAssets();
-        
+
         get().markAllNodesAsDirty();
-        
+
         get().clearRecomputationTracking();
-        
+
         if (subFlows) {
-          
           for (const [geoNodeId, subFlow] of Object.entries(subFlows)) {
             const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
-            
+
             for (const node of subFlow.nodes) {
               await get().recomputeFromSync(node.id, subFlowContext);
             }
           }
         }
-        
+
         for (const node of nodes) {
           await get().recomputeFromSync(node.id, rootContext);
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         await get().validatePostImportComputation();
-        
       }
-      
+
       const allNodeIds = [
-        ...nodes.map(n => n.id),
-        ...Object.values(subFlows || {}).flatMap(sf => sf.nodes.map(n => n.id))
+        ...nodes.map((n) => n.id),
+        ...Object.values(subFlows || {}).flatMap((sf) => sf.nodes.map((n) => n.id)),
       ];
       const allContexts = [
         { type: "root" as const },
-        ...Object.keys(subFlows || {}).map(geoNodeId => ({ type: "subflow" as const, geoNodeId }))
+        ...Object.keys(subFlows || {}).map((geoNodeId) => ({
+          type: "subflow" as const,
+          geoNodeId,
+        })),
       ];
       get().forceResetImportedNodeTracking(allNodeIds, allContexts);
-      
     },
 
     preloadImportObjAssets: async () => {
       const state = get();
-      
-      
+
       for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
-        if (runtime.type === 'importObjNode') {
-          await get().preloadAssetForNode(nodeId, runtime, { type: 'root' });
+        if (runtime.type === "importObjNode") {
+          await get().preloadAssetForNode(nodeId, runtime, { type: "root" });
         }
       }
-      
+
       for (const [geoNodeId, subFlow] of Object.entries(state.subFlows)) {
         for (const [nodeId, runtime] of Object.entries(subFlow.nodeRuntime)) {
-          if (runtime.type === 'importObjNode') {
-            await get().preloadAssetForNode(nodeId, runtime, { type: 'subflow', geoNodeId });
+          if (runtime.type === "importObjNode") {
+            await get().preloadAssetForNode(nodeId, runtime, { type: "subflow", geoNodeId });
           }
         }
       }
-      
     },
 
     preloadAssetForNode: async (nodeId: string, runtime: NodeRuntime, context: GraphContext) => {
-      if (runtime.type !== 'importObjNode' || !runtime.params?.object) return;
-      
+      if (runtime.type !== "importObjNode" || !runtime.params?.object) return;
+
       const objectParams = runtime.params.object as any;
       if (!objectParams?.assetHash || objectParams?.file) return;
-      
+
       try {
-        
-        const { getAssetCache } = await import('../io/mxscene/opfs-cache');
+        const { getAssetCache } = await import("../io/mxscene/opfs-cache");
         const assetCache = getAssetCache();
         const assetData = await assetCache.get(objectParams.assetHash);
-        
+
         if (!assetData) {
           return;
         }
-        
+
         const decoder = new TextDecoder();
         const content = decoder.decode(assetData);
         const encodedContent = btoa(content);
-        
+
         const serializableFile = {
           name: `restored-${objectParams.assetHash.slice(0, 8)}.obj`,
           size: assetData.byteLength,
           lastModified: Date.now(),
           content: encodedContent,
         };
-        
+
         set((state) => {
-          const targetRuntime = context.type === 'root' 
-            ? state.rootNodeRuntime[nodeId]
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-            
+          const targetRuntime =
+            context.type === "root"
+              ? state.rootNodeRuntime[nodeId]
+              : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+
           if (targetRuntime && targetRuntime.params?.object) {
             const objParams = targetRuntime.params.object as any;
             objParams.file = serializableFile;
             targetRuntime.isDirty = true;
-            
           }
         });
-      } catch (error) {
-      }
+      } catch (error) {}
     },
 
     markAllNodesAsDirty: () => {
-      
       set((state) => {
         for (const runtime of Object.values(state.rootNodeRuntime)) {
           runtime.isDirty = true;
           runtime.output = null; // Clear cached output
         }
-        
+
         for (const subFlow of Object.values(state.subFlows)) {
           for (const runtime of Object.values(subFlow.nodeRuntime)) {
             runtime.isDirty = true;
@@ -860,32 +878,32 @@ export const useGraphStore = create<GraphState>()(
 
     validatePostImportComputation: async () => {
       const state = get();
-      
+
       let hasIssues = false;
-      
+
       for (const [, runtime] of Object.entries(state.rootNodeRuntime)) {
         if (runtime.isDirty) {
           hasIssues = true;
-        } else if (!runtime.output && runtime.type !== 'noteNode') {
+        } else if (!runtime.output && runtime.type !== "noteNode") {
           hasIssues = true;
         } else if (runtime.error) {
           hasIssues = true;
         } else {
         }
       }
-      
+
       for (const [, subFlow] of Object.entries(state.subFlows)) {
         for (const [, runtime] of Object.entries(subFlow.nodeRuntime)) {
           if (runtime.isDirty) {
             hasIssues = true;
-          } else if (!runtime.output && runtime.type !== 'noteNode') {
+          } else if (!runtime.output && runtime.type !== "noteNode") {
             hasIssues = true;
           } else if (runtime.error) {
             hasIssues = true;
           } else {
           }
         }
-        
+
         if (subFlow.activeOutputNodeId) {
           const outputRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
           if (!outputRuntime?.output) {
@@ -893,7 +911,7 @@ export const useGraphStore = create<GraphState>()(
           }
         }
       }
-      
+
       if (hasIssues) {
       } else {
       }
@@ -911,29 +929,29 @@ export const useGraphStore = create<GraphState>()(
 
     recomputeFromSync: async (nodeId: string, context: GraphContext) => {
       const state = get();
-      
-      
-      const nodeRuntime = context.type === "root" 
-        ? state.rootNodeRuntime 
-        : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-        
+
+      const nodeRuntime =
+        context.type === "root"
+          ? state.rootNodeRuntime
+          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
+
       if (!nodeRuntime || !nodeRuntime[nodeId]) {
         return;
       }
-      
+
       const node = nodeRuntime[nodeId];
       if (!node.isDirty) {
         return;
       }
-      
+
       const nodeDef = nodeRegistry[node.type];
       if (!nodeDef) {
         return;
       }
-      
+
       const inputConnections = state.connectionManager.getInputConnections(nodeId);
       const inputs: Record<string, any> = {};
-      
+
       for (const connection of inputConnections) {
         const sourceNode = nodeRuntime[connection.sourceNodeId];
         if (sourceNode && sourceNode.output !== undefined) {
@@ -941,53 +959,52 @@ export const useGraphStore = create<GraphState>()(
           inputs[inputHandle] = sourceNode.output;
         }
       }
-      
+
       try {
         const result = computeEngine.evaluateNode(nodeId, node.params, inputs, nodeDef.compute);
-        
+
         set((state) => {
-          const targetRuntime = context.type === "root"
-            ? state.rootNodeRuntime[nodeId]
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-            
+          const targetRuntime =
+            context.type === "root"
+              ? state.rootNodeRuntime[nodeId]
+              : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+
           if (targetRuntime) {
             targetRuntime.output = result;
             targetRuntime.isDirty = false;
             targetRuntime.error = undefined;
           }
         });
-        
-        
       } catch (err) {
         set((state) => {
-          const targetRuntime = context.type === "root"
-            ? state.rootNodeRuntime[nodeId]
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-            
+          const targetRuntime =
+            context.type === "root"
+              ? state.rootNodeRuntime[nodeId]
+              : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
+
           if (targetRuntime) {
             targetRuntime.error = err instanceof Error ? err.message : String(err);
             targetRuntime.isDirty = false;
           }
         });
-        
       }
     },
 
     exportGraph: async (nodePositions?: Record<string, { x: number; y: number }>) => {
       const state = get();
-      
+
       const nodes: NodeInitData[] = Object.entries(state.rootNodeRuntime).map(([id, runtime]) => ({
         id,
         type: runtime.type,
         params: runtime.params,
       }));
-      
+
       const edges: EdgeData[] = [];
       const rootNodeIds = Object.keys(state.rootNodeRuntime);
-      
+
       for (const nodeId of rootNodeIds) {
         const connections = state.connectionManager.getOutputConnections(nodeId);
-        
+
         for (const connection of connections) {
           if (rootNodeIds.includes(connection.targetNodeId)) {
             edges.push({
@@ -1000,7 +1017,7 @@ export const useGraphStore = create<GraphState>()(
           }
         }
       }
-      
+
       const nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">> = {};
       Object.entries(state.rootNodeRuntime).forEach(([id, runtime]) => {
         nodeRuntime[id] = {
@@ -1009,21 +1026,23 @@ export const useGraphStore = create<GraphState>()(
           inputs: runtime.inputs,
         };
       });
-      
+
       const subFlows: Record<string, SerializedSubFlow> = {};
       Object.entries(state.subFlows).forEach(([geoNodeId, subFlow]) => {
-        const subFlowNodes: NodeInitData[] = Object.entries(subFlow.nodeRuntime).map(([id, runtime]) => ({
-          id,
-          type: runtime.type,
-          params: runtime.params,
-        }));
-        
+        const subFlowNodes: NodeInitData[] = Object.entries(subFlow.nodeRuntime).map(
+          ([id, runtime]) => ({
+            id,
+            type: runtime.type,
+            params: runtime.params,
+          })
+        );
+
         const subFlowEdges: EdgeData[] = [];
         const subFlowNodeIds = Object.keys(subFlow.nodeRuntime);
-        
+
         for (const nodeId of subFlowNodeIds) {
           const connections = state.connectionManager.getOutputConnections(nodeId);
-          
+
           for (const connection of connections) {
             if (subFlowNodeIds.includes(connection.targetNodeId)) {
               subFlowEdges.push({
@@ -1036,8 +1055,11 @@ export const useGraphStore = create<GraphState>()(
             }
           }
         }
-        
-        const subFlowNodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">> = {};
+
+        const subFlowNodeRuntime: Record<
+          string,
+          Omit<NodeRuntime, "output" | "isDirty" | "error">
+        > = {};
         Object.entries(subFlow.nodeRuntime).forEach(([id, runtime]) => {
           subFlowNodeRuntime[id] = {
             type: runtime.type,
@@ -1045,9 +1067,9 @@ export const useGraphStore = create<GraphState>()(
             inputs: runtime.inputs,
           };
         });
-        
+
         const subFlowPositions: Record<string, { x: number; y: number }> = {};
-        
+
         subFlows[geoNodeId] = {
           nodes: subFlowNodes,
           edges: subFlowEdges,
@@ -1056,7 +1078,7 @@ export const useGraphStore = create<GraphState>()(
           activeOutputNodeId: subFlow.activeOutputNodeId,
         };
       });
-      
+
       return {
         nodes,
         edges,
@@ -1111,10 +1133,10 @@ export const useEdges = () => {
     const edges: EdgeData[] = [];
 
     const rootNodeIds = Object.keys(rootNodeRuntime);
-    
+
     for (const nodeId of rootNodeIds) {
       const connections = connectionManager.getOutputConnections(nodeId);
-      
+
       for (const connection of connections) {
         if (rootNodeIds.includes(connection.targetNodeId)) {
           edges.push({
@@ -1266,8 +1288,7 @@ export async function exportGraphWithMeta() {
     if (eventData.viewportData) {
       viewport = eventData.viewportData;
     }
-  } catch (e) {
-  }
+  } catch (e) {}
 
   let nodePositions: Record<string, { x: number; y: number }> = {};
   try {
@@ -1277,8 +1298,7 @@ export async function exportGraphWithMeta() {
     if (eventData.nodePositions) {
       nodePositions = eventData.nodePositions;
     }
-  } catch (e) {
-  }
+  } catch (e) {}
 
   let camera = { position: [5, 2, 5], target: [0, 0, 0] };
   try {
@@ -1288,8 +1308,7 @@ export async function exportGraphWithMeta() {
     if (eventData.cameraData) {
       camera = eventData.cameraData;
     }
-  } catch (e) {
-  }
+  } catch (e) {}
 
   const graph = await useGraphStore.getState().exportGraph(nodePositions);
 
