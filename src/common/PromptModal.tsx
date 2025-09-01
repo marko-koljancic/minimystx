@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./PromptModal.module.css";
-
 interface PromptModalProps {
   title: string;
   placeholder: string;
@@ -8,7 +7,6 @@ interface PromptModalProps {
   onSave: (value: string) => void;
   onCancel: () => void;
 }
-
 export function PromptModal({
   title,
   placeholder,
@@ -19,7 +17,6 @@ export function PromptModal({
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-
   const handleSave = useCallback(() => {
     const trimmedValue = value.trim();
     if (trimmedValue) {
@@ -28,14 +25,12 @@ export function PromptModal({
       onCancel();
     }
   }, [value, onSave, onCancel]);
-
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
     }
   }, []);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -46,17 +41,14 @@ export function PromptModal({
         handleSave();
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [value, onCancel, handleSave]);
-
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === modalRef.current) {
       onCancel();
     }
   };
-
   return (
     <div className={styles.backdrop} ref={modalRef} onClick={handleBackdropClick}>
       <div className={styles.modal}>

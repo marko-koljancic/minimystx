@@ -1,13 +1,11 @@
 import { useEffect, useRef, useCallback } from "react";
 import styles from "./ScreenshotModal.module.css";
-
 interface ScreenshotModalProps {
   imageUrl: string;
   filename: string;
   onClose: () => void;
   onDownload: () => void;
 }
-
 export function ScreenshotModal({
   imageUrl,
   filename,
@@ -15,7 +13,6 @@ export function ScreenshotModal({
   onDownload,
 }: ScreenshotModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -23,17 +20,14 @@ export function ScreenshotModal({
         onClose();
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
-
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === modalRef.current) {
       onClose();
     }
   };
-
   const handleDownload = useCallback(() => {
     const link = document.createElement('a');
     link.href = imageUrl;
@@ -43,7 +37,6 @@ export function ScreenshotModal({
     document.body.removeChild(link);
     onDownload();
   }, [imageUrl, filename, onDownload]);
-
   return (
     <div className={styles.backdrop} ref={modalRef} onClick={handleBackdropClick}>
       <div className={styles.modal}>

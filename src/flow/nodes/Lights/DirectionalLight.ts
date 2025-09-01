@@ -14,7 +14,6 @@ import type {
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
 import { validateAndFixShadowCamera } from "../../../utils/shadowValidation";
-
 export interface DirectionalLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
   transform: {
@@ -25,24 +24,20 @@ export interface DirectionalLightNodeData extends Record<string, unknown> {
   shadow: DirectionalLightShadowProps;
   rendering: DirectionalLightRenderingProps;
 }
-
 export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object3D }> = (
   data: DirectionalLightNodeData
 ) => {
   const light = new ThreeDirectionalLight(data.light.color, data.light.intensity);
-
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
-
   light.target.position.set(
     data.transform.target.x,
     data.transform.target.y,
     data.transform.target.z
   );
-
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
     const mapSize = parseInt(data.shadow.mapSize);
@@ -50,7 +45,6 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
     light.shadow.mapSize.height = mapSize;
     light.shadow.bias = data.shadow.bias;
     light.shadow.normalBias = data.shadow.normalBias;
-
     light.shadow.camera.near = data.shadow.cameraNear;
     light.shadow.camera.far = data.shadow.cameraFar;
     light.shadow.camera.left = data.shadow.cameraLeft;
@@ -58,21 +52,16 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
     light.shadow.camera.top = data.shadow.cameraTop;
     light.shadow.camera.bottom = data.shadow.cameraBottom;
   }
-
   light.visible = data.rendering.visible;
-
   const lightGroup = new Group();
   lightGroup.add(light);
   lightGroup.add(light.target);
-
   if (data.rendering.showHelper) {
     const helper = new DirectionalLightHelper(light, data.rendering.helperSize, data.light.color);
     lightGroup.add(helper);
   }
-
   return { object: lightGroup };
 };
-
 export const directionalLightNodeParams: NodeParams = {
   general: {
     name: createParameterMetadata("string", "Directional Light", {
@@ -172,13 +161,11 @@ export const directionalLightNodeParams: NodeParams = {
     }),
   },
 };
-
 export const directionalLightNodeCompute = (params: Record<string, unknown>) => {
   const shadowParams = params.shadow as DirectionalLightShadowProps;
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
   }
-
   const data: DirectionalLightNodeData = {
     general: params.general as GeneralProps,
     transform: {
@@ -189,6 +176,5 @@ export const directionalLightNodeCompute = (params: Record<string, unknown>) => 
     shadow: shadowParams,
     rendering: params.rendering as DirectionalLightRenderingProps,
   };
-
   return processor(data);
 };

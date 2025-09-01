@@ -2,35 +2,27 @@ import { Handle, HandleProps } from "@xyflow/react";
 import React, { useState } from "react";
 import { getHandleTypeInfo } from "./handleTypes";
 import styles from "./IOHandle.module.css";
-
 export interface IOHandleProps extends HandleProps {
   name?: string;
   description?: string;
 }
-
 export default function IOHandle({ ...props }: IOHandleProps) {
   const [showTooltip, setShowTooltip] = useState(false);
-
   const handleMouseEnter = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowTooltip(true);
   };
-
   const handleMouseLeave = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowTooltip(false);
   };
-
   const handleTypeInfo = getHandleTypeInfo(props.id || "unknown", props.type);
-
   const getTooltipStyle = (): React.CSSProperties => {
     const tooltipOffset = 8;
     const isInput = props.type === "target";
-
     let handleLeftPos = 0;
     let handleTopPos = 0;
     let handleBottomPos = 0;
-
     if (props.style?.left) {
       if (typeof props.style.left === "number") {
         handleLeftPos = props.style.left;
@@ -38,7 +30,6 @@ export default function IOHandle({ ...props }: IOHandleProps) {
         handleLeftPos = parseFloat(props.style.left) || 0;
       }
     }
-
     if (props.style?.top) {
       if (typeof props.style.top === "number") {
         handleTopPos = props.style.top;
@@ -46,7 +37,6 @@ export default function IOHandle({ ...props }: IOHandleProps) {
         handleTopPos = parseFloat(props.style.top) || 0;
       }
     }
-
     if (props.style?.bottom) {
       if (typeof props.style.bottom === "number") {
         handleBottomPos = props.style.bottom;
@@ -54,9 +44,7 @@ export default function IOHandle({ ...props }: IOHandleProps) {
         handleBottomPos = parseFloat(props.style.bottom) || 0;
       }
     }
-
     const handleRadius = 6.4;
-
     if (isInput) {
       return {
         top: `${handleTopPos - tooltipOffset - 20}px`,
@@ -71,7 +59,6 @@ export default function IOHandle({ ...props }: IOHandleProps) {
       };
     }
   };
-
   return (
     <>
       <Handle

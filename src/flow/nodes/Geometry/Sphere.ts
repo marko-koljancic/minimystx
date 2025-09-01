@@ -5,7 +5,6 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
 import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 import { BaseContainer } from "../../../engine/containers/BaseContainer";
-
 export interface SphereNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     radius: number;
@@ -13,16 +12,12 @@ export interface SphereNodeData extends BaseGeometryData, Record<string, unknown
     heightSegments: number;
   };
 }
-
 function createSphereGeometry(data: SphereNodeData): BufferGeometry {
   const { radius, widthSegments, heightSegments } = data.geometry;
-
   const clampedWidthSegments = Math.max(3, Math.min(512, Math.round(widthSegments)));
   const clampedHeightSegments = Math.max(2, Math.min(512, Math.round(heightSegments)));
-
   return new SphereGeometry(radius, clampedWidthSegments, clampedHeightSegments);
 }
-
 export const processor: NodeProcessor<
   SphereNodeData,
   { object: Object3D; geometry: BufferGeometry }
@@ -30,7 +25,6 @@ export const processor: NodeProcessor<
   const geometry = createSphereGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };
-
 export const sphereNodeParams: NodeParams = {
   general: createGeneralParams("Sphere", "Creates a 3D sphere geometry"),
   geometry: {
@@ -55,7 +49,6 @@ export const sphereNodeParams: NodeParams = {
   },
   rendering: createRenderingParams(),
 };
-
 export const sphereNodeCompute = (params: Record<string, any>) => {
   const data: SphereNodeData = {
     general: params.general,
@@ -70,7 +63,6 @@ export const sphereNodeCompute = (params: Record<string, any>) => {
   const inputObject = undefined;
   return processor(data, inputObject);
 };
-
 export const sphereNodeComputeTyped = (
   params: Record<string, any>,
   inputs: Record<string, BaseContainer>,
@@ -86,9 +78,7 @@ export const sphereNodeComputeTyped = (
     geometry: params.geometry,
     rendering: params.rendering,
   } as SphereNodeData;
-
   const geometry = createSphereGeometry(data);
   const container = createGeometryMesh(data, geometry);
-  
   return { default: container };
 };

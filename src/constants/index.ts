@@ -36,7 +36,6 @@ import { RectAreaLightNodeData } from "../flow/nodes/Lights/RectAreaLight";
 import { GeoNodeData } from "../flow/nodes/Root/GeoNode";
 import NoteNode from "../flow/nodes/Utility/NoteNode.tsx";
 import { NoteNodeData } from "../flow/nodes/Utility/Note";
-
 export const nodeTypes = {
   boxNode: BoxNode,
   sphereNode: SphereNode,
@@ -57,11 +56,9 @@ export const nodeTypes = {
   geoNode: GeoNodeNode,
   noteNode: NoteNode,
 };
-
 export const edgeTypes = {
   wire: EdgeLine,
 };
-
 type FlowNodeTypes =
   | BoxNodeData
   | SphereNodeData
@@ -81,9 +78,6 @@ type FlowNodeTypes =
   | RectAreaLightNodeData
   | GeoNodeData
   | NoteNodeData;
-
 export const initialEdges: Edge[] = [];
-
 export const initialNodes: Node<FlowNodeTypes>[] = [];
-
 export const GRAPH_SCHEMA = 1;

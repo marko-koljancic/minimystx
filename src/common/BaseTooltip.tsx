@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getAbsolutePositionStyles, getArrowStyles, PositionType } from "../utils/position";
 import styles from "./BaseTooltip.module.css";
-
 export interface TooltipProps {
   name: string;
   description?: string;
@@ -11,7 +10,6 @@ export interface TooltipProps {
   triggerElement?: React.ReactNode;
   isOpen?: boolean;
 }
-
 export default function BaseTooltip({
   name,
   description,
@@ -24,13 +22,11 @@ export default function BaseTooltip({
   const [isVisible, setIsVisible] = useState(!!isOpen);
   const [coords, setCoords] = useState({ x: 0, y: 0 });
   const triggerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (isOpen !== undefined) {
       setIsVisible(isOpen);
     }
   }, [isOpen]);
-
   useEffect(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
@@ -40,34 +36,27 @@ export default function BaseTooltip({
       });
     }
   }, [isVisible]);
-
   const getTooltipStyle = (): React.CSSProperties => {
     const positionStyles = getAbsolutePositionStyles(coords.x, coords.y, position, 10);
-
     return {
       ...positionStyles,
       maxWidth: `${maxWidth / 10}rem`,
     };
   };
-
   const getArrowStyle = (): React.CSSProperties => {
     return getArrowStyles(position, 6, "var(--background-quaternary)");
   };
-
   const tooltipVisibilityClass = isVisible ? styles.tooltipVisible : styles.tooltipHidden;
-
   const handleMouseEnter = () => {
     if (isOpen === undefined) {
       setIsVisible(true);
     }
   };
-
   const handleMouseLeave = () => {
     if (isOpen === undefined) {
       setIsVisible(false);
     }
   };
-
   return (
     <>
       {triggerElement && (

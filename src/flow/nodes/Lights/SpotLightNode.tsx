@@ -4,14 +4,11 @@ import LightNodeBaseDesign from "../../../common/LightNodeBaseDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
 import { SpotLightNodeData } from "./SpotLight";
-
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
-
 export default function SpotLightNode(props: NodeProps) {
   const { data, selected, id } = props;
   const nodeData = data as SpotLightNodeData;
-
   return (
     <div className={styles.nodeContainer}>
       <LightNodeBaseDesign

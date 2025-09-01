@@ -13,7 +13,6 @@ import type {
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createLightTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
-
 export interface HemisphereLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
   transform: {
@@ -22,7 +21,6 @@ export interface HemisphereLightNodeData extends Record<string, unknown> {
   light: HemisphereLightProps;
   rendering: HemisphereLightRenderingProps;
 }
-
 export const processor: NodeProcessor<HemisphereLightNodeData, { object: Object3D }> = (
   data: HemisphereLightNodeData
 ) => {
@@ -31,27 +29,20 @@ export const processor: NodeProcessor<HemisphereLightNodeData, { object: Object3
     data.light.groundColor,
     data.light.intensity
   );
-
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
-
   light.visible = data.rendering.visible;
-
   const lightGroup = new Group();
   lightGroup.add(light);
-
   if (data.rendering.showHelper) {
     const helper = new HemisphereLightHelper(light, data.rendering.helperSize);
     lightGroup.add(helper);
   }
-
-
   return { object: lightGroup };
 };
-
 export const hemisphereLightNodeParams: NodeParams = {
   general: {
     name: createParameterMetadata("string", "Hemisphere Light", {
@@ -86,18 +77,15 @@ export const hemisphereLightNodeParams: NodeParams = {
     }),
   },
 };
-
 export const hemisphereLightNodeCompute = (params: Record<string, unknown>) => {
   const lightParams = params.light as HemisphereLightProps;
   if (lightParams && lightParams.intensity < 0) {
     lightParams.intensity = 0;
   }
-
   const renderingParams = params.rendering as HemisphereLightRenderingProps;
   if (renderingParams && renderingParams.helperSize <= 0) {
     renderingParams.helperSize = 1;
   }
-
   const data: HemisphereLightNodeData = {
     general: params.general as GeneralProps,
     transform: {
@@ -106,6 +94,5 @@ export const hemisphereLightNodeCompute = (params: Record<string, unknown>) => {
     light: lightParams,
     rendering: renderingParams,
   };
-
   return processor(data);
 };

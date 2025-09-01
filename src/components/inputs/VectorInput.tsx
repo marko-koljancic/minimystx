@@ -4,14 +4,12 @@ import { validateParameterValue } from "../../engine/parameterUtils";
 import { useMiddleMousePrecisionDrag } from "../../hooks/useMiddleMousePrecisionDrag";
 import { PrecisionOverlay } from "./PrecisionOverlay";
 import styles from "./InputStyles.module.css";
-
 interface VectorInputProps {
   value: { x: number; y: number; z?: number; w?: number };
   metadata: ParameterMetadata;
   onChange: (value: { x: number; y: number; z?: number; w?: number }) => void;
   disabled?: boolean;
 }
-
 export const VectorInput: React.FC<VectorInputProps> = ({
   value,
   metadata,
@@ -37,12 +35,10 @@ export const VectorInput: React.FC<VectorInputProps> = ({
     });
     return initial;
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [focusedComponent, setFocusedComponent] = useState<string | null>(null);
   const lastValidValues = useRef({ ...value });
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
   const xPrecisionDrag = useMiddleMousePrecisionDrag(
     value.x || 0,
     (newValue) => {
@@ -56,7 +52,6 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       sensitivity: 0.5,
     }
   );
-
   const yPrecisionDrag = useMiddleMousePrecisionDrag(
     value.y || 0,
     (newValue) => {
@@ -70,7 +65,6 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       sensitivity: 0.5,
     }
   );
-
   const zPrecisionDrag = useMiddleMousePrecisionDrag(
     value.z || 0,
     (newValue) => {
@@ -84,7 +78,6 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       sensitivity: 0.5,
     }
   );
-
   const wPrecisionDrag = useMiddleMousePrecisionDrag(
     value.w || 0,
     (newValue) => {
@@ -98,16 +91,13 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       sensitivity: 0.5,
     }
   );
-
   const precisionDragHooks: Record<string, ReturnType<typeof useMiddleMousePrecisionDrag>> = {
     x: xPrecisionDrag,
     y: yPrecisionDrag,
     z: zPrecisionDrag,
     w: wPrecisionDrag,
   };
-
   const isAnyDragging = components.some((comp) => precisionDragHooks[comp]?.state.isDragging);
-
   useEffect(() => {
     if (!focusedComponent && !isAnyDragging) {
       const newInputValues: Record<string, string> = {};
@@ -119,30 +109,23 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       setErrors({});
     }
   }, [value, focusedComponent, isAnyDragging, components]);
-
   const commitValue = useCallback(
     (component: string, textValue: string) => {
       const numValue = parseFloat(textValue);
-
       const tempVector = { ...lastValidValues.current };
       tempVector[component as keyof typeof tempVector] = numValue;
-
       const validation = validateParameterValue(tempVector, metadata);
-
       if (validation.valid) {
         lastValidValues.current[component as keyof typeof lastValidValues.current] = numValue;
-
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors[component];
           return newErrors;
         });
-
         setInputValues((prev) => ({
           ...prev,
           [component]: numValue.toString(),
         }));
-
         onChange(lastValidValues.current);
       } else {
         setErrors((prev) => ({
@@ -153,14 +136,12 @@ export const VectorInput: React.FC<VectorInputProps> = ({
     },
     [metadata, onChange]
   );
-
   const handleInputChange = (component: string, value: string) => {
     setInputValues((prev) => ({
       ...prev,
       [component]: value,
     }));
   };
-
   const handleKeyDown = (component: string, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (precisionDragHooks[component]?.state.isDragging) {
       precisionDragHooks[component].bind.onKeyDown(e);
@@ -169,7 +150,6 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       }
       return;
     }
-
     if (e.key === "Enter") {
       e.preventDefault();
       commitValue(component, inputValues[component]);
@@ -190,7 +170,6 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       inputRefs.current[component]?.blur();
     }
   };
-
   const handleBlur = (component: string) => {
     setFocusedComponent(null);
     if (
@@ -200,11 +179,9 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       commitValue(component, inputValues[component]);
     }
   };
-
   const handleFocus = (component: string) => {
     setFocusedComponent(component);
   };
-
   const getInputClasses = (component: string) => {
     const classes = [
       styles.inputField,
@@ -217,15 +194,12 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       .join(" ");
     return classes;
   };
-
   const getDisplayValue = (component: string) => {
     const hook = precisionDragHooks[component];
     return hook?.state.isDragging ? hook.getDisplayValue() : inputValues[component];
   };
-
   const activeDragComponent = components.find((comp) => precisionDragHooks[comp]?.state.isDragging);
   const activePrecisionDrag = activeDragComponent ? precisionDragHooks[activeDragComponent] : null;
-
   return (
     <div className={styles.inputContainer}>
       <div className={styles.vectorContainer}>
@@ -252,13 +226,11 @@ export const VectorInput: React.FC<VectorInputProps> = ({
           </div>
         ))}
       </div>
-
       {Object.entries(errors).map(([component, error]) => (
         <div key={component} className={styles.errorMessage}>
           {component.toUpperCase()}: {error}
         </div>
       ))}
-
       {activePrecisionDrag && (
         <PrecisionOverlay
           isVisible={activePrecisionDrag.state.showOverlay}

@@ -1,13 +1,11 @@
 import React from "react";
 import styles from "./PrecisionOverlay.module.css";
-
 interface PrecisionOverlayProps {
   isVisible: boolean;
   precisionList: number[];
   selectedIndex: number;
   position: { x: number; y: number };
 }
-
 export const PrecisionOverlay: React.FC<PrecisionOverlayProps> = ({
   isVisible,
   precisionList,
@@ -15,7 +13,6 @@ export const PrecisionOverlay: React.FC<PrecisionOverlayProps> = ({
   position,
 }) => {
   if (!isVisible) return null;
-
   const formatPrecision = (precision: number): string => {
     if (precision >= 1) {
       return precision.toString();
@@ -23,14 +20,12 @@ export const PrecisionOverlay: React.FC<PrecisionOverlayProps> = ({
       return precision.toString();
     }
   };
-
   const overlayHeight = precisionList.length * 28;
   const overlayWidth = 80;
   const overlayStyle = {
     left: position.x - overlayWidth / 2,
     top: position.y - overlayHeight / 2,
   };
-
   return (
     <div className={styles.precisionOverlay} style={overlayStyle}>
       {precisionList.map((precision, index) => {
@@ -45,7 +40,6 @@ export const PrecisionOverlay: React.FC<PrecisionOverlayProps> = ({
         } else {
           opacity = 0.35;
         }
-
         return (
           <div
             key={precision}

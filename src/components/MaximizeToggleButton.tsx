@@ -1,11 +1,9 @@
 import { FaExpandArrowsAlt, FaCompress } from "react-icons/fa";
 import { useIsRendererMaximized, useToggleRendererMaximized } from "../store";
 import styles from "./MaximizeToggleButton.module.css";
-
 const MaximizeToggleButton = () => {
   const isMaximized = useIsRendererMaximized();
   const toggleMaximized = useToggleRendererMaximized();
-
   return (
     <button
       className={styles.maximizeButton}
@@ -16,5 +14,4 @@ const MaximizeToggleButton = () => {
     </button>
   );
 };
-
 export default MaximizeToggleButton;

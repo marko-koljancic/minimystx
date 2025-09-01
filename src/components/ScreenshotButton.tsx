@@ -1,10 +1,8 @@
 import { FaCamera } from "react-icons/fa";
 import styles from "./ScreenshotButton.module.css";
-
 interface ScreenshotButtonProps {
   onCapture: () => void;
 }
-
 const ScreenshotButton = ({ onCapture }: ScreenshotButtonProps) => {
   return (
     <button
@@ -16,5 +14,4 @@ const ScreenshotButton = ({ onCapture }: ScreenshotButtonProps) => {
     </button>
   );
 };
-
 export default ScreenshotButton;

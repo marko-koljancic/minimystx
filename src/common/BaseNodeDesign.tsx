@@ -4,9 +4,7 @@ export interface HandleData {
   shortLabel?: string;
   longLabel?: string;
 }
-
 import styles from "./BaseNodeDesign.module.css";
-
 export interface NodeStyleProps {
   label?: string;
   width?: number;
@@ -15,7 +13,6 @@ export interface NodeStyleProps {
   bottomPadding?: number;
   isSelected?: boolean;
 }
-
 export default function BaseNodeDesign({
   label = "<Node Name>",
   width = 48,

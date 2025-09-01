@@ -1,13 +1,10 @@
 import { useUIStore } from "../store";
 import styles from "./ThemeToggle.module.css";
-
 export function ThemeToggle() {
   const { theme, setTheme } = useUIStore();
-
   const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setTheme(e.target.value as "dark" | "light" | "system");
   };
-
   return (
     <div className={styles.toggleContainer}>
       <span className={styles.themeLabel}>Theme</span>

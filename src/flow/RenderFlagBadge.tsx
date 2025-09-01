@@ -2,14 +2,12 @@ import { useCallback } from "react";
 import { useGraphStore } from "../engine/graphStore";
 import { useCurrentContext } from "../store/uiStore";
 import styles from "./RenderFlagBadge.module.css";
-
 interface RenderFlagBadgeProps {
   nodeId: string;
   render: boolean;
   nodeWidth: number;
   nodeHeight: number;
 }
-
 export default function RenderFlagBadge({
   nodeId,
   render,
@@ -18,7 +16,6 @@ export default function RenderFlagBadge({
 }: RenderFlagBadgeProps) {
   const { setParams } = useGraphStore();
   const currentContext = useCurrentContext();
-
   const handleToggleRender = useCallback(
     (event: React.MouseEvent) => {
       event.stopPropagation();
@@ -34,19 +31,15 @@ export default function RenderFlagBadge({
     },
     [nodeId, render, setParams, currentContext]
   );
-
   const isSubFlowContext = currentContext.type === "subflow";
-
   const isLightNode = nodeWidth === 90 && nodeHeight === 30;
   const isGeometryNode = nodeWidth === 90 && nodeHeight === 30 && !isLightNode;
   const isGeoNode = nodeWidth === 48 && nodeHeight === 48;
-
   const badgeLeft = isLightNode
     ? `${-2.5}rem`
     : isGeometryNode
     ? `${-2.5}rem`
     : `${(nodeWidth / 2 - 8) / 10 - 4}rem`;
-
   return (
     <>
       {render && (

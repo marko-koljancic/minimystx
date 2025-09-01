@@ -1,6 +1,5 @@
 import { BaseEdge, EdgeProps } from "@xyflow/react";
 import { BaseConnection } from "./BaseConnection";
-
 export default function EdgeLine({
   sourceX,
   sourceY,

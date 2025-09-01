@@ -5,7 +5,6 @@ import {
   createRenderingParams,
 } from "../../../engine/nodeParameterFactories";
 import { Object3DContainer } from "../../../engine/containers/BaseContainer";
-
 export interface GeoNodeData extends Record<string, unknown> {
   general: {
     name: string;
@@ -23,15 +22,12 @@ export interface GeoNodeData extends Record<string, unknown> {
     receiveShadow: boolean;
   };
 }
-
 export const geoNodeParams: NodeParams = {
   general: createGeneralParams("Geo", "Container for sub-flow geometry"),
   transform: createTransformParams(),
   rendering: createRenderingParams(),
 };
-
 export const geoNodeCompute = (params: Record<string, any>, _inputs?: any, context?: { nodeId?: string }) => {
-  
   const data: GeoNodeData = {
     general: params.general,
     transform: {
@@ -42,23 +38,17 @@ export const geoNodeCompute = (params: Record<string, any>, _inputs?: any, conte
     },
     rendering: params.rendering,
   };
-
   let subflowObject = null;
   if (context?.nodeId) {
     try {
       const graphStore = useGraphStore.getState();
       const subFlow = graphStore.subFlows[context.nodeId];
-      
-      
       if (subFlow && subFlow.activeOutputNodeId) {
         const outputNodeRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
-        
         if (outputNodeRuntime?.output) {
-          // Handle new container format
           if (outputNodeRuntime.output.default instanceof Object3DContainer) {
             subflowObject = outputNodeRuntime.output.default.value;
           }
-          // Handle legacy object format
           else if (outputNodeRuntime.output.object) {
             subflowObject = outputNodeRuntime.output.object;
           }
@@ -68,6 +58,5 @@ export const geoNodeCompute = (params: Record<string, any>, _inputs?: any, conte
     }
   } else {
   }
-
   return { object: subflowObject, data };
 };

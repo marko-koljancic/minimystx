@@ -1,26 +1,21 @@
 import { useState, useRef, useEffect } from "react";
 import { useUIStore } from "../store";
 import styles from "./ViewportControls.module.css";
-
 interface DropdownItem {
   label: string;
   onClick: () => void;
   isActive?: boolean;
 }
-
 interface DropdownProps {
   items: DropdownItem[];
   isOpen: boolean;
   onClose: () => void;
   triggerRef: React.RefObject<HTMLButtonElement>;
 }
-
 function Dropdown({ items, isOpen, onClose, triggerRef }: DropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!isOpen) return;
-
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -31,13 +26,10 @@ function Dropdown({ items, isOpen, onClose, triggerRef }: DropdownProps) {
         onClose();
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose, triggerRef]);
-
   if (!isOpen) return null;
-
   return (
     <div ref={dropdownRef} className={styles.dropdown}>
       {items.map((item, index) => (
@@ -55,7 +47,6 @@ function Dropdown({ items, isOpen, onClose, triggerRef }: DropdownProps) {
     </div>
   );
 }
-
 export default function ViewportControls() {
   const {
     wireframe,
@@ -71,35 +62,27 @@ export default function ViewportControls() {
     setCameraView,
     toggleAxisGizmo,
   } = useUIStore();
-
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  
   const perspectiveRef = useRef<HTMLButtonElement>(null);
   const viewsRef = useRef<HTMLButtonElement>(null);
   const shadingRef = useRef<HTMLButtonElement>(null);
   const displayRef = useRef<HTMLButtonElement>(null);
-
   const handleDropdownToggle = (dropdown: string) => {
     setOpenDropdown(openDropdown === dropdown ? null : dropdown);
   };
-
   const handleDropdownClose = () => {
     setOpenDropdown(null);
   };
-
   const perspectiveLabel = isOrthographicCamera ? "Orthographic" : "Perspective";
-  
   const getViewLabel = () => {
     if (!isOrthographicCamera) return "3D";
     return currentCameraView.charAt(0).toUpperCase() + currentCameraView.slice(1);
   };
-  
   const getShadingLabel = () => {
     if (wireframe) return "Wireframe";
     if (xRay) return "X-Ray";
     return "Shaded";
   };
-
   const viewsItems: DropdownItem[] = [
     {
       label: "3D",
@@ -149,7 +132,6 @@ export default function ViewportControls() {
       isActive: currentCameraView === "bottom",
     },
   ];
-
   const shadingItems: DropdownItem[] = [
     {
       label: "Wireframe",
@@ -170,7 +152,6 @@ export default function ViewportControls() {
       isActive: xRay,
     },
   ];
-
   const displayItems: DropdownItem[] = [
     {
       label: "Display Grid",
@@ -183,7 +164,6 @@ export default function ViewportControls() {
       isActive: showAxisGizmo,
     },
   ];
-
   return (
     <div className={styles.viewportControls}>
       <div className={styles.controlButtonContainer}>
@@ -195,7 +175,6 @@ export default function ViewportControls() {
           {perspectiveLabel}
         </button>
       </div>
-
       <div className={styles.controlButtonContainer}>
         <button
           ref={viewsRef}
@@ -211,7 +190,6 @@ export default function ViewportControls() {
           triggerRef={viewsRef}
         />
       </div>
-
       <div className={styles.controlButtonContainer}>
         <button
           ref={shadingRef}
@@ -227,7 +205,6 @@ export default function ViewportControls() {
           triggerRef={shadingRef}
         />
       </div>
-
       <div className={styles.controlButtonContainer}>
         <button
           ref={displayRef}

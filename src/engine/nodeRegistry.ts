@@ -8,7 +8,10 @@ import { coneNodeParams, coneNodeComputeTyped } from "../flow/nodes/Geometry/Con
 import { torusNodeParams, torusNodeComputeTyped } from "../flow/nodes/Geometry/Torus";
 import { torusKnotNodeParams, torusKnotNodeComputeTyped } from "../flow/nodes/Geometry/TorusKnot";
 import { importObjNodeParams, importObjNodeComputeTyped } from "../flow/nodes/Geometry/ImportObj";
-import { importGltfNodeParams, importGltfNodeComputeTyped } from "../flow/nodes/Geometry/ImportGltf";
+import {
+  importGltfNodeParams,
+  importGltfNodeComputeTyped,
+} from "../flow/nodes/Geometry/ImportGltf";
 import { pointLightNodeParams, pointLightNodeCompute } from "../flow/nodes/Lights/PointLight";
 import { ambientLightNodeParams, ambientLightNodeCompute } from "../flow/nodes/Lights/AmbientLight";
 import {
@@ -26,7 +29,6 @@ import {
 } from "../flow/nodes/Lights/RectAreaLight";
 import { geoNodeParams, geoNodeCompute } from "../flow/nodes/Root/GeoNode";
 import { noteNodeParams, noteNodeCompute } from "../flow/nodes/Utility/Note";
-
 export const nodeRegistry: Record<string, NodeDefinition> = {
   geoNode: {
     type: "geoNode",
@@ -38,7 +40,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   boxNode: {
     type: "boxNode",
-    category: "3D Primitives", 
+    category: "3D Primitives",
     displayName: "Box",
     allowedContexts: ["subflow"],
     params: boxNodeParams,
@@ -183,32 +185,25 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     compute: rectAreaLightNodeCompute,
   },
 };
-
 export const getAvailableNodeTypes = (): string[] => {
   return Object.keys(nodeRegistry);
 };
-
 export const isValidNodeType = (type: string): boolean => {
   return type in nodeRegistry;
 };
-
 export const getAllNodeDefinitions = (): NodeDefinition[] => {
   return Object.values(nodeRegistry);
 };
-
 export const getNodesByCategory = (): Record<string, NodeDefinition[]> => {
   const categories: Record<string, NodeDefinition[]> = {};
-
   Object.values(nodeRegistry).forEach((node) => {
     if (!categories[node.category]) {
       categories[node.category] = [];
     }
     categories[node.category].push(node);
   });
-
   return categories;
 };
-
 export const getAvailableCategories = (): string[] => {
   const categories = new Set<string>();
   Object.values(nodeRegistry).forEach((node) => {
@@ -216,22 +211,17 @@ export const getAvailableCategories = (): string[] => {
   });
   return Array.from(categories).sort();
 };
-
 const calculateFuzzyScore = (query: string, target: string): number => {
   if (query === target) return 1000;
-
   const queryLower = query.toLowerCase();
   const targetLower = target.toLowerCase();
-
   if (targetLower.includes(queryLower)) {
     const index = targetLower.indexOf(queryLower);
     return 500 - index;
   }
-
   let score = 0;
   let queryIndex = 0;
   let consecutiveMatches = 0;
-
   for (let i = 0; i < targetLower.length && queryIndex < queryLower.length; i++) {
     if (targetLower[i] === queryLower[queryIndex]) {
       score += 10;
@@ -244,56 +234,44 @@ const calculateFuzzyScore = (query: string, target: string): number => {
       consecutiveMatches = 0;
     }
   }
-
   const unmatchedChars = queryLower.length - queryIndex;
   score -= unmatchedChars * 20;
-
   return Math.max(0, score);
 };
-
 export const searchNodes = (query: string, maxResults: number = 100): NodeDefinition[] => {
   if (!query.trim()) return getAllNodeDefinitions();
-
   const scoredNodes = Object.values(nodeRegistry).map((node) => {
     const displayNameScore = calculateFuzzyScore(query, node.displayName);
     const typeScore = calculateFuzzyScore(query, node.type);
     const categoryScore = calculateFuzzyScore(query, node.category) * 0.3;
-
     const maxScore = Math.max(displayNameScore, typeScore, categoryScore);
-
     return {
       node,
       score: maxScore,
     };
   });
-
   return scoredNodes
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, maxResults)
     .map(({ node }) => node);
 };
-
 export const getFilteredNodesByCategory = (
   searchQuery: string
 ): Record<string, NodeDefinition[]> => {
   if (!searchQuery.trim()) {
     return getNodesByCategory();
   }
-
   const searchResults = searchNodes(searchQuery);
   const filteredCategories: Record<string, NodeDefinition[]> = {};
-
   searchResults.forEach((node) => {
     if (!filteredCategories[node.category]) {
       filteredCategories[node.category] = [];
     }
     filteredCategories[node.category].push(node);
   });
-
   return filteredCategories;
 };
-
 export const getNodesByCategoryForContext = (
   contextType: "root" | "subflow"
 ): Record<string, NodeDefinition[]> => {
@@ -308,7 +286,6 @@ export const getNodesByCategoryForContext = (
     });
   return categories;
 };
-
 export const getAvailableCategoriesForContext = (contextType: "root" | "subflow"): string[] => {
   const categories = new Set<string>();
   Object.values(nodeRegistry)
@@ -318,7 +295,6 @@ export const getAvailableCategoriesForContext = (contextType: "root" | "subflow"
     });
   return Array.from(categories).sort();
 };
-
 export const searchNodesForContext = (
   query: string,
   contextType: "root" | "subflow",
@@ -327,29 +303,24 @@ export const searchNodesForContext = (
   if (!query.trim()) {
     return Object.values(nodeRegistry).filter((node) => node.allowedContexts.includes(contextType));
   }
-
   const scoredNodes = Object.values(nodeRegistry)
     .filter((node) => node.allowedContexts.includes(contextType))
     .map((node) => {
       const displayNameScore = calculateFuzzyScore(query, node.displayName);
       const typeScore = calculateFuzzyScore(query, node.type);
       const categoryScore = calculateFuzzyScore(query, node.category) * 0.3;
-
       const maxScore = Math.max(displayNameScore, typeScore, categoryScore);
-
       return {
         node,
         score: maxScore,
       };
     });
-
   return scoredNodes
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, maxResults)
     .map(({ node }) => node);
 };
-
 export const getFilteredNodesByCategoryForContext = (
   searchQuery: string,
   contextType: "root" | "subflow"
@@ -357,16 +328,13 @@ export const getFilteredNodesByCategoryForContext = (
   if (!searchQuery.trim()) {
     return getNodesByCategoryForContext(contextType);
   }
-
   const searchResults = searchNodesForContext(searchQuery, contextType);
   const filteredCategories: Record<string, NodeDefinition[]> = {};
-
   searchResults.forEach((node) => {
     if (!filteredCategories[node.category]) {
       filteredCategories[node.category] = [];
     }
     filteredCategories[node.category].push(node);
   });
-
   return filteredCategories;
 };

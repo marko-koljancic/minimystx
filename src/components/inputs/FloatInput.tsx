@@ -4,14 +4,12 @@ import { validateParameterValue } from "../../engine/parameterUtils";
 import { useMiddleMousePrecisionDrag } from "../../hooks/useMiddleMousePrecisionDrag";
 import { PrecisionOverlay } from "./PrecisionOverlay";
 import styles from "./InputStyles.module.css";
-
 interface FloatInputProps {
   value: number;
   metadata: ParameterMetadata;
   onChange: (value: number) => void;
   disabled?: boolean;
 }
-
 export const FloatInput: React.FC<FloatInputProps> = ({
   value,
   metadata,
@@ -24,13 +22,11 @@ export const FloatInput: React.FC<FloatInputProps> = ({
   const [hasFocus, setHasFocus] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastValidValue = useRef(value);
-
   const precisionDrag = useMiddleMousePrecisionDrag(value, onChange, {
     min: metadata.min,
     max: metadata.max,
     sensitivity: 0.5,
   });
-
   useEffect(() => {
     if (!hasFocus && !precisionDrag.state.isDragging) {
       setInputValue(value.toString());
@@ -39,12 +35,10 @@ export const FloatInput: React.FC<FloatInputProps> = ({
       setErrorMessage("");
     }
   }, [value, hasFocus, precisionDrag.state.isDragging]);
-
   const commitValue = useCallback(
     (textValue: string) => {
       const numValue = parseFloat(textValue);
       const validation = validateParameterValue(numValue, metadata);
-
       if (validation.valid) {
         setHasError(false);
         setErrorMessage("");
@@ -58,11 +52,9 @@ export const FloatInput: React.FC<FloatInputProps> = ({
     },
     [metadata, onChange]
   );
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (precisionDrag.state.isDragging) {
       precisionDrag.bind.onKeyDown(e);
@@ -71,7 +63,6 @@ export const FloatInput: React.FC<FloatInputProps> = ({
       }
       return;
     }
-
     if (e.key === "Enter") {
       e.preventDefault();
       commitValue(inputValue);
@@ -84,18 +75,15 @@ export const FloatInput: React.FC<FloatInputProps> = ({
       inputRef.current?.blur();
     }
   };
-
   const handleBlur = () => {
     setHasFocus(false);
     if (inputValue !== lastValidValue.current.toString()) {
       commitValue(inputValue);
     }
   };
-
   const handleFocus = () => {
     setHasFocus(true);
   };
-
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const numValue = parseFloat(e.target.value);
     setInputValue(numValue.toString());
@@ -107,9 +95,7 @@ export const FloatInput: React.FC<FloatInputProps> = ({
       setErrorMessage("");
     }
   };
-
   const hasSlider = metadata.min !== undefined && metadata.max !== undefined;
-
   const getInputClasses = (baseClasses: string) => {
     const classes = [
       baseClasses,
@@ -121,11 +107,9 @@ export const FloatInput: React.FC<FloatInputProps> = ({
       .join(" ");
     return classes;
   };
-
   const displayValue = precisionDrag.state.isDragging
     ? precisionDrag.getDisplayValue()
     : inputValue;
-
   return (
     <div className={styles.inputContainer}>
       {hasSlider ? (
@@ -173,9 +157,7 @@ export const FloatInput: React.FC<FloatInputProps> = ({
           readOnly={precisionDrag.state.isDragging}
         />
       )}
-
       {hasError && errorMessage && <div className={styles.errorMessage}>{errorMessage}</div>}
-
       <PrecisionOverlay
         isVisible={precisionDrag.state.showOverlay}
         precisionList={precisionDrag.precisionList}

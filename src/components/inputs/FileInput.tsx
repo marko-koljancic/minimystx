@@ -1,14 +1,12 @@
 import React, { useRef } from "react";
 import { ParameterMetadata } from "../../engine/graphStore";
 import styles from "./InputStyles.module.css";
-
 interface FileInputProps {
   value: File | null;
   metadata: ParameterMetadata;
   onChange: (value: File | null) => void;
   disabled?: boolean;
 }
-
 export const FileInput: React.FC<FileInputProps> = ({
   value,
   metadata,
@@ -16,18 +14,15 @@ export const FileInput: React.FC<FileInputProps> = ({
   disabled = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     onChange(file);
   };
-
   const handleButtonClick = () => {
     if (fileInputRef.current && !disabled) {
       fileInputRef.current.click();
     }
   };
-
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onChange(null);
@@ -35,7 +30,6 @@ export const FileInput: React.FC<FileInputProps> = ({
       fileInputRef.current.value = "";
     }
   };
-
   return (
     <div className={styles.inputContainer}>
       <input

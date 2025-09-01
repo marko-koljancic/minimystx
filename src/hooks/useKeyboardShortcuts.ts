@@ -1,15 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useUIStore } from "../store";
-
 type ShortcutContext = "flow" | "render";
-
 interface UseKeyboardShortcutsProps {
   context: ShortcutContext;
   enabled?: boolean;
   onDeleteSelectedEdges?: () => void;
   onAutoLayoutCycle?: (forceAllNodes?: boolean) => void;
 }
-
 export function useKeyboardShortcuts({ context, enabled = true, onDeleteSelectedEdges, onAutoLayoutCycle }: UseKeyboardShortcutsProps) {
   const {
     toggleGridInFlowCanvas,
@@ -29,28 +26,21 @@ export function useKeyboardShortcuts({ context, enabled = true, onDeleteSelected
   } = useUIStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const isFocusedRef = useRef(false);
-
   useEffect(() => {
     if (!enabled) return;
-
     const container = containerRef.current;
     if (!container) return;
-
     const handleMouseEnter = () => {
       isFocusedRef.current = true;
       setFocusedCanvas(context);
     };
-
     const handleMouseLeave = () => {
       isFocusedRef.current = false;
     };
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isFocusedRef.current) return;
-
       const key = event.key.toLowerCase();
       const isShiftPressed = event.shiftKey;
-
       switch (key) {
         case "g":
           event.preventDefault();
@@ -164,11 +154,9 @@ export function useKeyboardShortcuts({ context, enabled = true, onDeleteSelected
           break;
       }
     };
-
     container.addEventListener("mouseenter", handleMouseEnter);
     container.addEventListener("mouseleave", handleMouseLeave);
     document.addEventListener("keydown", handleKeyDown);
-
     return () => {
       container.removeEventListener("mouseenter", handleMouseEnter);
       container.removeEventListener("mouseleave", handleMouseLeave);
@@ -194,6 +182,5 @@ export function useKeyboardShortcuts({ context, enabled = true, onDeleteSelected
     onDeleteSelectedEdges,
     onAutoLayoutCycle,
   ]);
-
   return { containerRef };
 }

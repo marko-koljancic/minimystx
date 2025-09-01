@@ -3,11 +3,9 @@ import { EdgeData, useGraphStore } from "../engine/graphStore";
 import { nodeRegistry } from "../engine/nodeRegistry";
 import { useCurrentContext } from "../store/uiStore";
 import { EdgeChange } from "@xyflow/react";
-
 export const useFlowGraphSync = () => {
   const currentContext = useCurrentContext();
   const { addNode, removeNode, setParams, addEdge, removeEdge, resetEdges } = useGraphStore();
-
   const syncNodeChanges = useCallback(
     (changes: any[]) => {
       changes.forEach((change: any) => {
@@ -22,11 +20,9 @@ export const useFlowGraphSync = () => {
               currentContext
             );
             break;
-
           case "remove":
             removeNode(change.id, currentContext);
             break;
-
           case "replace":
             if (change.item?.data) setParams(change.item.id, change.item.data, currentContext);
             break;
@@ -34,18 +30,15 @@ export const useFlowGraphSync = () => {
           case "dimensions":
           case "select":
             break;
-
           default:
         }
       });
     },
     [addNode, removeNode, setParams, currentContext]
   );
-
   const syncEdgeChanges = useCallback(
     (changes: EdgeChange[], customResetEdges?: EdgeData[], currentEdges?: any[]) => {
       const results: Array<{ success: boolean; error?: string; edgeId?: string }> = [];
-
       changes.forEach((change) => {
         switch (change.type) {
           case "add":
@@ -73,13 +66,10 @@ export const useFlowGraphSync = () => {
               }
             }
             break;
-
           case "remove":
             if ("id" in change && currentEdges) {
-              // CRITICAL FIX: Find the edge data before removal and call removeEdge
               const edgeToRemove = currentEdges.find(edge => edge.id === change.id);
               if (edgeToRemove) {
-                console.log(`🔌 Edge removal detected: ${edgeToRemove.source} → ${edgeToRemove.target}`);
                 const result = removeEdge(
                   edgeToRemove.source,
                   edgeToRemove.target,
@@ -93,22 +83,18 @@ export const useFlowGraphSync = () => {
                   edgeId: change.id
                 });
               } else {
-                console.warn(`🔌 Could not find edge data for removal: ${change.id}`);
                 results.push({ success: false, error: "Edge data not found", edgeId: change.id });
               }
             } else {
               results.push({ success: false, error: "No current edges provided", edgeId: (change as any).id });
             }
             break;
-
           case "select":
             results.push({ success: true, edgeId: (change as any).id });
             break;
-
           default:
         }
       });
-
       if (customResetEdges) {
         const result = resetEdges(customResetEdges, currentContext);
         results.push({
@@ -116,11 +102,9 @@ export const useFlowGraphSync = () => {
           error: result.ok ? undefined : result.error,
         });
       }
-
       return results;
     },
     [addEdge, removeEdge, resetEdges, currentContext]
   );
-
   return { syncNodeChanges, syncEdgeChanges };
 };

@@ -5,7 +5,6 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
 import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 import { BaseContainer } from "../../../engine/containers/BaseContainer";
-
 export interface ConeNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     radius: number;
@@ -14,18 +13,14 @@ export interface ConeNodeData extends BaseGeometryData, Record<string, unknown> 
     heightSegments: number;
   };
 }
-
 function createConeGeometry(data: ConeNodeData): BufferGeometry {
   let { radius, height, radialSegments, heightSegments } = data.geometry;
   if (radius <= 0) radius = 0.1;
   if (height <= 0) height = 0.1;
-
   const clampedRadialSegments = Math.max(3, Math.min(512, Math.round(radialSegments)));
   const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
-
   return new ConeGeometry(radius, height, clampedRadialSegments, clampedHeightSegments);
 }
-
 export const processor: NodeProcessor<
   ConeNodeData,
   { object: Object3D; geometry: BufferGeometry }
@@ -33,7 +28,6 @@ export const processor: NodeProcessor<
   const geometry = createConeGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };
-
 export const coneNodeParams: NodeParams = {
   general: createGeneralParams("Cone", "Creates a 3D cone geometry"),
   geometry: {
@@ -64,7 +58,6 @@ export const coneNodeParams: NodeParams = {
   },
   rendering: createRenderingParams(),
 };
-
 export const coneNodeDefaults = {
   general: {
     name: "Cone Node",
@@ -84,7 +77,6 @@ export const coneNodeDefaults = {
     visible: true,
   },
 };
-
 export const coneNodeCompute = (params: Record<string, any>) => {
   const data: ConeNodeData = {
     general: params.general,
@@ -99,7 +91,6 @@ export const coneNodeCompute = (params: Record<string, any>) => {
   const inputObject = undefined;
   return processor(data, inputObject);
 };
-
 export const coneNodeComputeTyped = (
   params: Record<string, any>,
   inputs: Record<string, BaseContainer>,
@@ -115,9 +106,7 @@ export const coneNodeComputeTyped = (
     geometry: params.geometry,
     rendering: params.rendering,
   } as ConeNodeData;
-
   const geometry = createConeGeometry(data);
   const container = createGeometryMesh(data, geometry);
-
   return { default: container };
 };

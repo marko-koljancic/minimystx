@@ -10,13 +10,11 @@ import type {
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createLightTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
-
 let rectAreaLibInitialized = false;
 if (!rectAreaLibInitialized) {
   RectAreaLightUniformsLib.init();
   rectAreaLibInitialized = true;
 }
-
 export interface RectAreaLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
   transform: {
@@ -25,7 +23,6 @@ export interface RectAreaLightNodeData extends Record<string, unknown> {
   light: RectAreaLightProps;
   rendering: RectAreaLightRenderingProps;
 }
-
 export const processor: NodeProcessor<RectAreaLightNodeData, { object: Object3D }> = (
   data: RectAreaLightNodeData
 ) => {
@@ -35,27 +32,20 @@ export const processor: NodeProcessor<RectAreaLightNodeData, { object: Object3D 
     data.light.width,
     data.light.height
   );
-
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
-
   light.visible = data.rendering.visible;
-
   const lightGroup = new Group();
   lightGroup.add(light);
-
   if (data.rendering.showHelper) {
     const helper = new RectAreaLightHelper(light);
     lightGroup.add(helper);
   }
-
-
   return { object: lightGroup };
 };
-
 export const rectAreaLightNodeParams: NodeParams = {
   general: {
     name: createParameterMetadata("string", "Rect Area Light", {
@@ -95,23 +85,19 @@ export const rectAreaLightNodeParams: NodeParams = {
     showHelper: createParameterMetadata("boolean", false, { displayName: "Show Helper" }),
   },
 };
-
 export const rectAreaLightNodeCompute = (params: Record<string, unknown>) => {
   const lightParams = params.light as RectAreaLightProps;
   if (lightParams) {
     if (lightParams.intensity < 0) {
       lightParams.intensity = 0;
     }
-
     if (lightParams.width <= 0) {
       lightParams.width = 0.1;
     }
-
     if (lightParams.height <= 0) {
       lightParams.height = 0.1;
     }
   }
-
   const data: RectAreaLightNodeData = {
     general: params.general as GeneralProps,
     transform: {
@@ -120,6 +106,5 @@ export const rectAreaLightNodeCompute = (params: Record<string, unknown>) => {
     light: lightParams,
     rendering: params.rendering as RectAreaLightRenderingProps,
   };
-
   return processor(data);
 };

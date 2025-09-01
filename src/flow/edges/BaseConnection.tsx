@@ -7,7 +7,6 @@ import {
   Position,
 } from "@xyflow/react";
 import { useUIStore } from "../../store";
-
 interface BaseConnectionProps {
   sourceX: number;
   sourceY: number;
@@ -17,14 +16,12 @@ interface BaseConnectionProps {
   targetPosition?: Position;
   children: (pathData: string) => React.ReactNode;
 }
-
 enum CONNECTION_LINE_STYLE {
   Bezier = "Bezier",
   SmoothStep = "SmoothStep",
   Straight = "Straight",
   SimpleBezier = "SimpleBezier",
 }
-
 export function BaseConnection({
   sourceX,
   sourceY,
@@ -36,7 +33,6 @@ export function BaseConnection({
 }: BaseConnectionProps) {
   const { connectionLineStyle } = useUIStore();
   let d: string;
-
   const getConnectionStyle = (style: string) => {
     switch (style) {
       case "bezier":
@@ -51,9 +47,7 @@ export function BaseConnection({
         return CONNECTION_LINE_STYLE.SmoothStep;
     }
   };
-
   const currentStyle = getConnectionStyle(connectionLineStyle);
-
   switch (currentStyle) {
     case CONNECTION_LINE_STYLE.Bezier:
       [d] = getBezierPath({
@@ -96,6 +90,5 @@ export function BaseConnection({
       });
       break;
   }
-
   return <>{children(d)}</>;
 }

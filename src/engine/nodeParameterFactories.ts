@@ -1,7 +1,5 @@
-
 import { createParameterMetadata } from "./parameterUtils";
 import type { CategoryParams } from "./graphStore";
-
 export function createGeneralParams(
   defaultName: string,
   defaultDescription: string
@@ -17,7 +15,6 @@ export function createGeneralParams(
     }),
   };
 }
-
 export function createTransformParams(): CategoryParams {
   return {
     position: createParameterMetadata(
@@ -52,7 +49,6 @@ export function createTransformParams(): CategoryParams {
     }),
   };
 }
-
 export function createRenderingParams(): CategoryParams {
   return {
     visible: createParameterMetadata("boolean", true, {
@@ -66,7 +62,6 @@ export function createRenderingParams(): CategoryParams {
     }),
   };
 }
-
 export function createLightTransformParams(
   defaultPosition: { x: number; y: number; z: number } = { x: 0, y: 5, z: 0 }
 ): CategoryParams {
@@ -76,7 +71,6 @@ export function createLightTransformParams(
     }),
   };
 }
-
 export function createLightRenderingParams(): CategoryParams {
   return {
     enabled: createParameterMetadata("boolean", true, {
@@ -87,7 +81,6 @@ export function createLightRenderingParams(): CategoryParams {
     }),
   };
 }
-
 export function createSubflowRenderingParams(): CategoryParams {
   return {
     visible: createParameterMetadata("boolean", false, {

@@ -1,11 +1,9 @@
 import { Background, BackgroundVariant } from "@xyflow/react";
 import styles from "./FlowBackground.module.css";
 import { useUIStore } from "../store";
-
 export function FlowBackground() {
   const { showGridInFlowCanvas } = useUIStore();
   if (!showGridInFlowCanvas) return null;
-
   return (
     <div className={styles.background}>
       <Background

@@ -3,7 +3,6 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { useGraphStore } from "../engine/graphStore";
 import { useUIStore } from "../store";
 import { Object3DContainer } from "../engine/containers/BaseContainer";
-
 export class SceneManager {
   private scene!: THREE.Scene;
   private renderer!: THREE.WebGLRenderer;
@@ -26,7 +25,6 @@ export class SceneManager {
   private fitViewHandler = () => {
     this.fitView();
   };
-
   private getCameraDataHandler = (event: CustomEvent) => {
     if (this.camera && this.controls) {
       const cameraData = {
@@ -36,7 +34,6 @@ export class SceneManager {
       (event as unknown as { cameraData?: typeof cameraData }).cameraData = cameraData;
     }
   };
-
   private setCameraDataHandler = (event: CustomEvent) => {
     const cameraData = event.detail;
     if (cameraData && this.camera && this.controls) {
@@ -49,21 +46,17 @@ export class SceneManager {
       this.controls.update();
     }
   };
-
   private setCameraModeHandler = (event: CustomEvent) => {
     const { isOrthographic } = event.detail;
     this.setCameraMode(isOrthographic);
   };
-
   private setCameraViewHandler = (event: CustomEvent) => {
     const { view } = event.detail;
     this.setCameraView(view);
   };
-
   private toggleAxisGizmoHandler = () => {
     this.toggleAxisGizmo();
   };
-
   constructor(canvas: HTMLCanvasElement) {
     this.initializeThreeJS(canvas);
     this.initializeGrid();
@@ -73,38 +66,31 @@ export class SceneManager {
     this.subscribeToUIStore();
     this.setupEventListeners();
     this.startRenderLoop();
-
     setTimeout(() => {
       this.updateSceneBackground();
       const { showGridInRenderView } = useUIStore.getState();
       this.updateGridVisibility(showGridInRenderView);
     }, 50);
-
     setTimeout(() => {
       this.updateSceneBackground();
       const { showGridInRenderView } = useUIStore.getState();
       this.updateGridVisibility(showGridInRenderView);
     }, 200);
-
     setTimeout(() => {
       this.updateSceneBackground();
       const { showGridInRenderView } = useUIStore.getState();
       this.updateGridVisibility(showGridInRenderView);
     }, 500);
   }
-
   private initializeThreeJS(canvas: HTMLCanvasElement) {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x191919);
-
     const width = canvas.clientWidth || 800;
     const height = canvas.clientHeight || 600;
     const aspect = width / height;
-
     this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
     this.camera.position.set(5, 2, 5);
     this.camera.lookAt(0, 0, 0);
-
     const frustumSize = 10;
     this.orthographicCamera = new THREE.OrthographicCamera(
       (-frustumSize * aspect) / 2,
@@ -116,7 +102,6 @@ export class SceneManager {
     );
     this.orthographicCamera.position.set(5, 2, 5);
     this.orthographicCamera.lookAt(0, 0, 0);
-
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -125,51 +110,40 @@ export class SceneManager {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
     this.controls = new OrbitControls(this.getCurrentCamera(), canvas);
     this.controls.target.set(0, 0, 0);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
     this.controls.update();
-
     this.updateCameraControls();
   }
-
   private initializeGrid() {
     this.gridHelper = new THREE.GridHelper(20, 20);
     this.updateGridColors();
     this.scene.add(this.gridHelper);
-
     this.initializeGridPlanes();
-
     const { showGridInRenderView } = useUIStore.getState();
     this.updateGridVisibility(showGridInRenderView);
   }
-
   private initializeGridPlanes() {
     const gridSize = 20;
     const divisions = 20;
-
     this.xyGrid = new THREE.GridHelper(gridSize, divisions);
     this.xyGrid.rotateX(Math.PI / 2);
     this.updateGridPlaneColors(this.xyGrid);
     this.xyGrid.visible = false;
     this.scene.add(this.xyGrid);
-
     this.xzGrid = new THREE.GridHelper(gridSize, divisions);
     this.updateGridPlaneColors(this.xzGrid);
     this.xzGrid.visible = false;
     this.scene.add(this.xzGrid);
-
     this.yzGrid = new THREE.GridHelper(gridSize, divisions);
     this.yzGrid.rotateZ(Math.PI / 2);
     this.updateGridPlaneColors(this.yzGrid);
     this.yzGrid.visible = false;
     this.scene.add(this.yzGrid);
-
     this.showGridPlane("xz");
   }
-
   private initializeXRayMaterial() {
     this.xRayMaterial = new THREE.MeshBasicMaterial({
       color: 0x808080,
@@ -177,10 +151,8 @@ export class SceneManager {
       opacity: 0.5,
     });
   }
-
   private initializeAxisGizmo() {
     this.axisGizmo = new THREE.Group();
-
     const xMaterial = new THREE.LineBasicMaterial({
       color: 0xff0000,
       linewidth: 2,
@@ -196,42 +168,34 @@ export class SceneManager {
       linewidth: 2,
       transparent: false,
     });
-
     const xGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(1, 0, 0),
     ]);
     const xLine = new THREE.Line(xGeometry, xMaterial);
     this.axisGizmo.add(xLine);
-
     const yGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, 1, 0),
     ]);
     const yLine = new THREE.Line(yGeometry, yMaterial);
     this.axisGizmo.add(yLine);
-
     const zGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, 0, 1),
     ]);
     const zLine = new THREE.Line(zGeometry, zMaterial);
     this.axisGizmo.add(zLine);
-
     const { showAxisGizmo } = useUIStore.getState();
     this.axisGizmo.visible = showAxisGizmo;
     this.scene.add(this.axisGizmo);
-
     this.updateAxisGizmo();
   }
-
   private getCurrentCamera(): THREE.Camera {
     return this.isOrthographic ? this.orthographicCamera : this.camera;
   }
-
   private updateCameraControls() {
     if (!this.controls) return;
-
     if (this.isOrthographic) {
       this.controls.minPolarAngle = 0;
       this.controls.maxPolarAngle = Math.PI;
@@ -240,7 +204,6 @@ export class SceneManager {
       this.controls.maxPolarAngle = Math.PI - 0.1;
     }
   }
-
   private updateGridColors() {
     if (!this.gridHelper) return;
     this.gridHelper.material.color.setHex(0xffffff);
@@ -248,12 +211,10 @@ export class SceneManager {
     material.color2?.setHex(0xffffff);
     this.gridHelper.material.opacity = 0.3;
     this.gridHelper.material.transparent = true;
-
     this.updateGridPlaneColors(this.xyGrid);
     this.updateGridPlaneColors(this.xzGrid);
     this.updateGridPlaneColors(this.yzGrid);
   }
-
   private updateGridPlaneColors(grid: THREE.GridHelper | null) {
     if (!grid) return;
     grid.material.color.setHex(0xffffff);
@@ -262,18 +223,14 @@ export class SceneManager {
     grid.material.opacity = 0.3;
     grid.material.transparent = true;
   }
-
   private showGridPlane(plane: "xy" | "xz" | "yz") {
     if (this.currentGridPlane === plane) return;
-
     this.currentGridPlane = plane;
     const { showGridInRenderView } = useUIStore.getState();
-
     if (this.gridHelper) this.gridHelper.visible = false;
     if (this.xyGrid) this.xyGrid.visible = false;
     if (this.xzGrid) this.xzGrid.visible = false;
     if (this.yzGrid) this.yzGrid.visible = false;
-
     if (showGridInRenderView) {
       switch (plane) {
         case "xy":
@@ -288,7 +245,6 @@ export class SceneManager {
       }
     }
   }
-
   private getGridPlaneForView(
     view: "top" | "front" | "left" | "right" | "bottom" | "perspective"
   ): "xy" | "xz" | "yz" {
@@ -306,7 +262,6 @@ export class SceneManager {
         return "xz";
     }
   }
-
   private setupEventListeners() {
     window.addEventListener("minimystx:fitView", this.fitViewHandler);
     window.addEventListener("minimystx:getCameraData", this.getCameraDataHandler as EventListener);
@@ -315,30 +270,25 @@ export class SceneManager {
     window.addEventListener("minimystx:setCameraView", this.setCameraViewHandler as EventListener);
     window.addEventListener("minimystx:toggleAxisGizmo", this.toggleAxisGizmoHandler);
   }
-
   private subscribeToUIStore() {
     this.uiStoreUnsubscribe = useUIStore.subscribe((state, prevState) => {
       if (state.showGridInRenderView !== prevState?.showGridInRenderView) {
         this.updateGridVisibility(state.showGridInRenderView);
       }
-
       if (state.isDarkTheme !== prevState?.isDarkTheme) {
         this.updateSceneBackground();
         this.updateGridColors();
       }
-
       if (state.wireframe !== prevState?.wireframe) this.updateWireframeMode(state.wireframe);
       if (state.xRay !== prevState?.xRay) this.updateXRayMode(state.xRay);
       if (state.showAxisGizmo !== prevState?.showAxisGizmo)
         this.updateAxisGizmoVisibility(state.showAxisGizmo);
     });
   }
-
   private updateGridVisibility(visible: boolean) {
     if (this.gridHelper) {
       this.gridHelper.visible = false;
     }
-
     if (visible) {
       switch (this.currentGridPlane) {
         case "xy":
@@ -357,17 +307,13 @@ export class SceneManager {
       if (this.yzGrid) this.yzGrid.visible = false;
     }
   }
-
   private updateSceneBackground() {
     if (!this.scene) return;
-
     const storeState = useUIStore.getState();
     const { isDarkTheme } = storeState;
-
     const backgroundColor = isDarkTheme ? 0x191919 : 0xf5f5f5;
     this.scene.background = new THREE.Color(backgroundColor);
   }
-
   private updateWireframeMode(wireframe: boolean) {
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh && object.material instanceof THREE.Material) {
@@ -385,10 +331,8 @@ export class SceneManager {
       }
     });
   }
-
   private updateXRayMode(xRay: boolean) {
     if (!this.xRayMaterial) return;
-
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         if (xRay) {
@@ -412,29 +356,23 @@ export class SceneManager {
       }
     });
   }
-
   private updateAxisGizmoVisibility(visible: boolean) {
     if (this.axisGizmo) {
       this.axisGizmo.visible = visible;
     }
   }
-
   private updateAxisGizmo() {
     if (!this.axisGizmo) return;
-
     const camera = this.getCurrentCamera();
-
     if (this.isOrthographic) {
       const orthoCamera = camera as THREE.OrthographicCamera;
       const left = orthoCamera.left / orthoCamera.zoom;
       const right = orthoCamera.right / orthoCamera.zoom;
       const top = orthoCamera.top / orthoCamera.zoom;
       const bottom = orthoCamera.bottom / orthoCamera.zoom;
-
       const maxExtentX = Math.max(Math.abs(left), Math.abs(right));
       const maxExtentY = Math.max(Math.abs(top), Math.abs(bottom));
       const maxExtentZ = maxExtentX;
-
       const children = this.axisGizmo.children as THREE.Line[];
       if (children.length >= 3) {
         const xGeometry = new THREE.BufferGeometry().setFromPoints([
@@ -443,14 +381,12 @@ export class SceneManager {
         ]);
         children[0].geometry.dispose();
         children[0].geometry = xGeometry;
-
         const yGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, -maxExtentY, 0),
           new THREE.Vector3(0, maxExtentY, 0),
         ]);
         children[1].geometry.dispose();
         children[1].geometry = yGeometry;
-
         const zGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, 0, -maxExtentZ),
           new THREE.Vector3(0, 0, maxExtentZ),
@@ -468,14 +404,12 @@ export class SceneManager {
         ]);
         children[0].geometry.dispose();
         children[0].geometry = xGeometry;
-
         const yGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, 0, 0),
           new THREE.Vector3(0, axisLength, 0),
         ]);
         children[1].geometry.dispose();
         children[1].geometry = yGeometry;
-
         const zGeometry = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, 0, 0),
           new THREE.Vector3(0, 0, axisLength),
@@ -485,21 +419,17 @@ export class SceneManager {
       }
     }
   }
-
   private setCameraMode(isOrthographic: boolean) {
     if (this.isOrthographic === isOrthographic) return;
-
     const currentCamera = this.getCurrentCamera();
     const newCamera = isOrthographic ? this.orthographicCamera : this.camera;
     const target = this.controls.target.clone();
-
     if (isOrthographic) {
       newCamera.position.copy(currentCamera.position);
       newCamera.up.copy(currentCamera.up);
       newCamera.lookAt(target);
     } else {
       newCamera.up.set(0, 1, 0);
-
       const distance = Math.max(currentCamera.position.distanceTo(target), 10);
       newCamera.position.set(
         target.x + distance * 0.7,
@@ -508,27 +438,21 @@ export class SceneManager {
       );
       newCamera.lookAt(target);
     }
-
     this.controls.object = newCamera;
     this.controls.update();
-
     this.isOrthographic = isOrthographic;
     this.updateCameraControls();
     this.updateAxisGizmo();
-
     if (!isOrthographic) {
       this.showGridPlane("xz");
     }
   }
-
   private setCameraView(view: "top" | "front" | "left" | "right" | "bottom") {
     if (!this.controls) return;
-
     const currentTarget = this.controls.target.clone();
     const camera = this.getCurrentCamera();
     const distance = camera.position.distanceTo(currentTarget);
     const standardDistance = Math.max(distance, 10);
-
     switch (view) {
       case "top":
         camera.position.set(currentTarget.x, currentTarget.y + standardDistance, currentTarget.z);
@@ -551,26 +475,20 @@ export class SceneManager {
         camera.up.set(0, 0, 1);
         break;
     }
-
     camera.lookAt(currentTarget);
-
     this.controls.update();
     this.updateAxisGizmo();
-
     const gridPlane = this.getGridPlaneForView(view);
     this.showGridPlane(gridPlane);
   }
-
   private toggleAxisGizmo() {
     const { showAxisGizmo } = useUIStore.getState();
     this.updateAxisGizmoVisibility(!showAxisGizmo);
   }
-
   public fitView() {
     if (!this.controls || !this.scene) return;
     const box = new THREE.Box3();
     const visibleObjects: THREE.Object3D[] = [];
-
     this.scene.traverse((object) => {
       if (
         object.visible &&
@@ -583,22 +501,16 @@ export class SceneManager {
       )
         visibleObjects.push(object);
     });
-
     if (visibleObjects.length === 0) return;
-
     visibleObjects.forEach((object) => {
       const objectBox = new THREE.Box3().setFromObject(object);
       box.union(objectBox);
     });
-
     if (box.isEmpty()) return;
-
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
-
     const camera = this.getCurrentCamera();
-
     if (this.isOrthographic) {
       const orthoCamera = camera as THREE.OrthographicCamera;
       const padding = 1.2;
@@ -608,7 +520,6 @@ export class SceneManager {
       );
       orthoCamera.zoom = newZoom;
       orthoCamera.updateProjectionMatrix();
-
       const direction = camera.position.clone().sub(center).normalize();
       camera.position.copy(center).add(direction.multiplyScalar(10));
     } else {
@@ -617,40 +528,28 @@ export class SceneManager {
       const direction = camera.position.clone().sub(center).normalize();
       camera.position.copy(center).add(direction.multiplyScalar(distance * 1.5));
     }
-
     this.controls.target.copy(center);
     this.controls.update();
   }
-
   private subscribeToStore() {
     this.storeUnsubscribe = useGraphStore.subscribe(() => {
       this.updateSceneFromRenderableObjects();
     });
   }
-
   private updateSceneFromRenderableObjects() {
     const state = useGraphStore.getState();
     const renderableObjects: THREE.Object3D[] = [];
-
     for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
       if (runtime.error) {
         continue;
       }
-
       if (runtime.isDirty) {
-        // Skip dirty nodes during rendering
       }
-
-      // Handle light nodes (root-level)
       if (runtime.type.includes('Light')) {
         const lightVisible = runtime.params?.rendering?.visible !== false;
         if (!lightVisible) continue;
-
-        // Check if light has output (computed result)
         if (runtime.output && typeof runtime.output === "object") {
           let lightObject = null;
-          
-          // Extract light from container or direct format
           if (runtime.output.default instanceof Object3DContainer) {
             lightObject = runtime.output.default.value;
           } else if (runtime.output.isObject3D) {
@@ -658,99 +557,52 @@ export class SceneManager {
           } else if (runtime.output.object?.isObject3D) {
             lightObject = runtime.output.object;
           }
-
           if (lightObject && typeof lightObject.clone === "function") {
             try {
               const clonedLight = lightObject.clone();
               renderableObjects.push(clonedLight);
-              console.log(`✅ Added light to scene:`, runtime.type, lightObject);
             } catch (error) {
-              console.warn(`Could not clone light ${nodeId}:`, error);
             }
           }
         }
         continue;
       }
-
       if (runtime.type === "geoNode") {
         const geoNodeVisible = runtime.params?.rendering?.visible !== false;
         if (!geoNodeVisible) continue;
-
         const subFlow = state.subFlows[nodeId];
-        // Debug logging removed for production
         if (!subFlow || !subFlow.activeOutputNodeId) continue;
-
         const outputNodeRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
-        console.log(`🔍 OutputNodeRuntime for ${subFlow.activeOutputNodeId}:`, {
-          exists: !!outputNodeRuntime,
-          hasOutput: !!outputNodeRuntime?.output,
-          outputType: typeof outputNodeRuntime?.output,
-          outputKeys: outputNodeRuntime?.output ? Object.keys(outputNodeRuntime.output) : [],
-          output: outputNodeRuntime?.output
-        });
-        
         if (!outputNodeRuntime) {
-          console.log(`❌ No outputNodeRuntime found for ${subFlow.activeOutputNodeId}`);
           continue;
         }
-
         if (outputNodeRuntime.error) {
-          console.log(`❌ OutputNodeRuntime has error:`, outputNodeRuntime.error);
           continue;
         }
-
         if (!outputNodeRuntime.output) {
-          console.log(`❌ OutputNodeRuntime has no output`);
           continue;
         }
-
         if (!outputNodeRuntime.output || typeof outputNodeRuntime.output !== "object") {
           continue;
         }
-
         if (outputNodeRuntime.isDirty) {
-          // Skip dirty output nodes
         }
-
         const outputNodeVisible = outputNodeRuntime.params?.rendering?.visible === true;
         if (!outputNodeVisible) continue;
-
         const subFlowOutput = outputNodeRuntime.output;
-
         let object3D = null;
         if (subFlowOutput && typeof subFlowOutput === "object") {
-          console.log(`🔧 Container extraction attempt:`, {
-            hasDefault: 'default' in subFlowOutput,
-            defaultType: subFlowOutput.default?.constructor?.name,
-            isContainer: subFlowOutput.default instanceof Object3DContainer,
-            hasObject: 'object' in subFlowOutput,
-            isDirectObject3D: 'isObject3D' in subFlowOutput,
-            keys: Object.keys(subFlowOutput)
-          });
-          
-          // Handle new container format first
           if (subFlowOutput.default instanceof Object3DContainer) {
             const container = subFlowOutput.default;
-            console.log(`✅ Found Object3DContainer:`, {
-              hasValue: !!container.value,
-              valueType: container.value?.constructor?.name,
-              canClone: typeof container.value?.clone === 'function'
-            });
             if (container.value && typeof container.value.clone === "function") {
               object3D = container.value;
-              console.log(`✅ Extracted Object3D from container:`, object3D);
             }
           }
-          // Handle direct Object3D (legacy/direct format)
           else if ("isObject3D" in subFlowOutput && subFlowOutput.isObject3D) {
-            console.log(`✅ Found direct Object3D`);
             if (typeof subFlowOutput.clone === "function") {
               object3D = subFlowOutput;
-            } else {
-              console.log(`❌ Direct Object3D cannot be cloned`);
             }
           }
-          // Handle legacy wrapped format
           else if (
             "object" in subFlowOutput &&
             subFlowOutput.object &&
@@ -758,17 +610,11 @@ export class SceneManager {
             "isObject3D" in subFlowOutput.object &&
             subFlowOutput.object.isObject3D
           ) {
-            console.log(`✅ Found legacy wrapped Object3D`);
             if (typeof subFlowOutput.object.clone === "function") {
               object3D = subFlowOutput.object;
-            } else {
-              console.log(`❌ Legacy wrapped Object3D cannot be cloned`);
             }
-          } else {
-            console.log(`❌ No valid Object3D or container found in subFlowOutput`);
           }
         }
-
         if (object3D) {
           let clonedOutput;
           try {
@@ -776,7 +622,6 @@ export class SceneManager {
           } catch (error) {
             continue;
           }
-
           const transform = runtime.params?.transform;
           if (transform) {
             if (transform.position) {
@@ -786,7 +631,6 @@ export class SceneManager {
                 clonedOutput.position.z + (transform.position.z || 0)
               );
             }
-
             if (transform.rotation) {
               clonedOutput.rotation.set(
                 clonedOutput.rotation.x + (transform.rotation.x || 0),
@@ -794,7 +638,6 @@ export class SceneManager {
                 clonedOutput.rotation.z + (transform.rotation.z || 0)
               );
             }
-
             if (transform.scale) {
               const scaleFactor = transform.scaleFactor || 1;
               clonedOutput.scale.set(
@@ -804,13 +647,11 @@ export class SceneManager {
               );
             }
           }
-
           renderableObjects.push(clonedOutput);
         }
       } else {
         const renderingVisible = runtime.params?.rendering?.visible !== false;
         if (!renderingVisible) continue;
-
         const output = runtime.output;
         let rootObject3D = null;
         if (output && typeof output === "object") {
@@ -825,13 +666,11 @@ export class SceneManager {
             rootObject3D = output.object;
           }
         }
-
         if (rootObject3D) {
           renderableObjects.push(rootObject3D);
         }
       }
     }
-
     for (const [, object] of this.nodeObjects) {
       this.scene.remove(object);
       if (object instanceof THREE.Mesh) {
@@ -840,18 +679,15 @@ export class SceneManager {
       }
     }
     this.nodeObjects.clear();
-
     renderableObjects.forEach((object3D, index) => {
       if (object3D && typeof object3D === "object" && "isObject3D" in object3D) {
         const objectId = object3D.uuid || `renderable_${index}`;
         this.scene.add(object3D);
         this.nodeObjects.set(objectId, object3D);
       } else {
-        // Invalid object3D, skip rendering
       }
     });
   }
-
   private startRenderLoop() {
     const render = () => {
       this.animationId = requestAnimationFrame(render);
@@ -861,79 +697,59 @@ export class SceneManager {
     };
     render();
   }
-
   public handleResize() {
     const canvas = this.renderer.domElement;
     const container = canvas.parentElement;
-
     const width = container ? container.clientWidth : canvas.clientWidth;
     const height = container ? container.clientHeight : canvas.clientHeight;
     const aspect = width / height;
-
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
-
     const frustumSize = 10;
     this.orthographicCamera.left = (-frustumSize * aspect) / 2;
     this.orthographicCamera.right = (frustumSize * aspect) / 2;
     this.orthographicCamera.top = frustumSize / 2;
     this.orthographicCamera.bottom = -frustumSize / 2;
     this.orthographicCamera.updateProjectionMatrix();
-
     this.renderer.setSize(width, height);
     this.updateAxisGizmo();
   }
-
   public captureScreenshot(multiplier: number = 2): string {
     if (!this.renderer || !this.scene) {
       throw new Error("Renderer or scene not initialized");
     }
-
     const canvas = this.renderer.domElement;
     const originalWidth = canvas.width;
     const originalHeight = canvas.height;
-
     let targetWidth = originalWidth * multiplier;
     let targetHeight = originalHeight * multiplier;
-
-    // Clamp dimensions to max 4096px
     const maxDimension = 4096;
     if (targetWidth > maxDimension || targetHeight > maxDimension) {
       const scale = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
       targetWidth = Math.floor(targetWidth * scale);
       targetHeight = Math.floor(targetHeight * scale);
     }
-
-    // Create temporary canvas for high-res capture
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = targetWidth;
     tempCanvas.height = targetHeight;
-
     const tempRenderer = new THREE.WebGLRenderer({
       canvas: tempCanvas,
       antialias: true,
       preserveDrawingBuffer: true,
     });
-
     tempRenderer.setSize(targetWidth, targetHeight);
     tempRenderer.setPixelRatio(1); // Use pixel ratio 1 for temp renderer
     tempRenderer.shadowMap.enabled = this.renderer.shadowMap.enabled;
     tempRenderer.shadowMap.type = this.renderer.shadowMap.type;
-
-    // Copy scene background
     const clearColor = new THREE.Color();
     this.renderer.getClearColor(clearColor);
     tempRenderer.setClearColor(clearColor, this.renderer.getClearAlpha());
-
-    // Update camera aspect ratio for temp render
     const camera = this.getCurrentCamera();
     const originalAspect =
       camera instanceof THREE.PerspectiveCamera
         ? camera.aspect
         : (camera as THREE.OrthographicCamera).right / (camera as THREE.OrthographicCamera).top;
-
     const newAspect = targetWidth / targetHeight;
-
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.aspect = newAspect;
       camera.updateProjectionMatrix();
@@ -945,14 +761,8 @@ export class SceneManager {
       orthoCamera.right = currentWidth / 2;
       orthoCamera.updateProjectionMatrix();
     }
-
-    // Render to temp canvas
     tempRenderer.render(this.scene, camera);
-
-    // Get data URL
     const dataURL = tempCanvas.toDataURL("image/png");
-
-    // Restore original camera settings
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.aspect = originalAspect;
       camera.updateProjectionMatrix();
@@ -964,32 +774,24 @@ export class SceneManager {
       orthoCamera.right = currentWidth / 2;
       orthoCamera.updateProjectionMatrix();
     }
-
-    // Cleanup temp renderer
     tempRenderer.dispose();
-
     return dataURL;
   }
-
   public dispose() {
     if (this.animationId !== null) cancelAnimationFrame(this.animationId);
-
     if (this.storeUnsubscribe) {
       this.storeUnsubscribe();
       this.storeUnsubscribe = null;
     }
-
     if (this.uiStoreUnsubscribe) {
       this.uiStoreUnsubscribe();
       this.uiStoreUnsubscribe = null;
     }
-
     if (this.gridHelper) {
       this.scene.remove(this.gridHelper);
       this.gridHelper.dispose();
       this.gridHelper = null;
     }
-
     if (this.xyGrid) {
       this.scene.remove(this.xyGrid);
       this.xyGrid.dispose();
@@ -1005,12 +807,10 @@ export class SceneManager {
       this.yzGrid.dispose();
       this.yzGrid = null;
     }
-
     if (this.xRayMaterial) {
       this.xRayMaterial.dispose();
       this.xRayMaterial = null;
     }
-
     this.originalMaterials = new WeakMap();
     window.removeEventListener("minimystx:fitView", this.fitViewHandler);
     window.removeEventListener(
@@ -1032,7 +832,6 @@ export class SceneManager {
     window.removeEventListener("minimystx:toggleAxisGizmo", this.toggleAxisGizmoHandler);
     this.controls.dispose();
     this.renderer.dispose();
-
     if (this.axisGizmo) {
       this.scene.remove(this.axisGizmo);
       this.axisGizmo.traverse((child) => {
@@ -1045,7 +844,6 @@ export class SceneManager {
       });
       this.axisGizmo = null;
     }
-
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         object.geometry.dispose();

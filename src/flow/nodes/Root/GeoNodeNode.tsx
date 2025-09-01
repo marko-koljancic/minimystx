@@ -3,14 +3,11 @@ import BaseNodeDesign from "../../../common/BaseNodeDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
 import { GeoNodeData } from "./GeoNode";
-
 const NODE_HEIGHT = 48;
 const NODE_WIDTH = 48;
-
 export default function GeoNodeNode(props: NodeProps) {
   const { data, selected, id } = props;
   const nodeData = data as GeoNodeData;
-
   return (
     <div className={styles.nodeContainer}>
       <BaseNodeDesign

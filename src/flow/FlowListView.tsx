@@ -3,24 +3,20 @@ import { useContextNodes } from "../hooks/useContextNodes";
 import { nodeRegistry } from "../engine/nodeRegistry";
 import { useUIStore } from "../store";
 import styles from "./FlowListView.module.css";
-
 interface NodeListItem {
   id: string;
   name: string;
   type: string;
   displayName: string;
 }
-
 const FlowListView = () => {
   const contextNodes = useContextNodes();
   const { setSelectedNode, selectedNodeId } = useUIStore();
-
   const nodeListItems: NodeListItem[] = useMemo(() => {
     return contextNodes.map((node) => {
       const nodeDefinition = nodeRegistry[node.type];
       const name = node.data?.general?.name || nodeDefinition?.displayName || node.type;
       const displayName = nodeDefinition?.displayName || node.type;
-
       return {
         id: node.id,
         name: name,
@@ -29,16 +25,13 @@ const FlowListView = () => {
       };
     });
   }, [contextNodes]);
-
   const sortedNodes = nodeListItems;
-
   const handleSelectNode = useCallback(
     (nodeId: string) => {
       setSelectedNode(nodeId);
     },
     [setSelectedNode]
   );
-
   if (sortedNodes.length === 0) {
     return (
       <div className={styles.listContainer}>
@@ -46,7 +39,6 @@ const FlowListView = () => {
       </div>
     );
   }
-
   return (
     <div className={styles.listContainer}>
       <div className={styles.tableWrapper}>
@@ -74,5 +66,4 @@ const FlowListView = () => {
     </div>
   );
 };
-
 export default FlowListView;

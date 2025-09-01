@@ -2,12 +2,10 @@ export interface HandleTypeInfo {
   label: string;
   description: string;
 }
-
 export interface HandleTypeDefinition {
   input: HandleTypeInfo;
   output: HandleTypeInfo;
 }
-
 export const handleTypes: Record<string, HandleTypeDefinition> = {
   geometry: {
     input: {
@@ -50,13 +48,11 @@ export const handleTypes: Record<string, HandleTypeDefinition> = {
     },
   },
 };
-
 export const getHandleTypeInfo = (
   handleId: string,
   handleType: "source" | "target"
 ): HandleTypeInfo => {
   const baseType = handleId.split("_")[0];
-
   const typeDefinition = handleTypes[baseType];
   if (!typeDefinition) {
     return {
@@ -64,6 +60,5 @@ export const getHandleTypeInfo = (
       description: handleType === "source" ? "Node output" : "Node input",
     };
   }
-
   return handleType === "source" ? typeDefinition.output : typeDefinition.input;
 };

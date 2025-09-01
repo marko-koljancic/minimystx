@@ -4,7 +4,6 @@ export {
   getCurrentSceneData,
   type ExportOptions,
 } from "./export";
-
 export {
   importFromMxScene,
   applyImportedScene,
@@ -12,7 +11,6 @@ export {
   createAssetReferencesFromImport,
   type ImportOptions,
 } from "./import";
-
 export { getAssetCache } from "./opfs-cache";
 import { getAssetCache } from "./opfs-cache";
 export {
@@ -22,7 +20,6 @@ export {
   validateAssets,
   type AssetProvider,
 } from "./asset-discovery";
-
 export {
   hashBytesSHA256,
   formatHashForStorage,
@@ -32,7 +29,6 @@ export {
   verifyHash,
   hashBytesWithProgress,
 } from "./crypto";
-
 export {
   createZipWriter,
   createZipReader,
@@ -40,7 +36,6 @@ export {
   generateAssetFilename,
   parseAssetFilename,
 } from "./zip";
-
 export type {
   ManifestJson,
   AssetManifestEntry,
@@ -71,19 +66,13 @@ export type {
   ZipError,
   OpfsError,
 } from "./types";
-
 export const MXSCENE_VERSION = "1.0";
 export const ENGINE_VERSION = "0.1.0";
-
 export async function initializeMxScene(): Promise<void> {
   try {
-    // const assetCache = getAssetCache();
-    // const _stats = await assetCache.getStats();
-
   } catch (error) {
   }
 }
-
 export async function getSystemHealth(): Promise<{
   opfsSupported: boolean;
   assetCacheHealthy: boolean;
@@ -94,14 +83,11 @@ export async function getSystemHealth(): Promise<{
   let opfsSupported = false;
   let assetCacheHealthy = false;
   let cachedAssetCount = 0;
-
   try {
     const assetCache = getAssetCache();
     const stats = await assetCache.getStats();
-
     opfsSupported = stats.isOpfsSupported;
     cachedAssetCount = stats.assetCount;
-
     assetCacheHealthy = await assetCache.isHealthy();
     if (!assetCacheHealthy) {
       errors.push("Asset cache health check failed");
@@ -109,7 +95,6 @@ export async function getSystemHealth(): Promise<{
   } catch (error) {
     errors.push(`Asset cache error: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
-
   return {
     opfsSupported,
     assetCacheHealthy,

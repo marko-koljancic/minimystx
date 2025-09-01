@@ -9,15 +9,18 @@ import {
   exportToMxScene,
   downloadMxSceneFile,
   selectAndImportMxSceneFile,
-  applyImportedScene,
   getCurrentSceneData,
   initializeMxScene,
+  applyImportedScene,
 } from "../io/mxscene";
+import {
+  initializeNewScene,
+  setupSceneEventListeners,
+} from "../io/sceneManager";
 import {
   getNodesByCategoryForContext,
   getAvailableCategoriesForContext,
 } from "../engine/nodeRegistry";
-
 export default function Header() {
   const {
     wireframe,
@@ -36,26 +39,23 @@ export default function Header() {
     fitNodes,
     resetToDefaults,
   } = useUIStore();
-
   const currentContext = useCurrentContext();
-
   const handleApplyDagre = useCallback(() => {
     const event = new CustomEvent("minimystx:applyAutoLayout", {
       detail: { algorithm: "dagre" },
     });
     window.dispatchEvent(event);
   }, []);
-
   const handleApplyELK = useCallback(() => {
     const event = new CustomEvent("minimystx:applyAutoLayout", {
       detail: { algorithm: "elk" },
     });
     window.dispatchEvent(event);
   }, []);
-
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [exportProgress, setExportProgress] = useState<{
     percentage: number;
     message: string;
@@ -64,22 +64,17 @@ export default function Header() {
     percentage: number;
     message: string;
   } | null>(null);
-
   const handleSave = useCallback(() => {
     setShowSaveModal(true);
   }, []);
-
   const handleSaveConfirm = useCallback(async (filename: string) => {
     const sanitized = sanitizeFilename(filename);
     const finalFilename = sanitized || getDefaultFilename();
-
     setShowSaveModal(false);
     setIsExporting(true);
     setExportProgress({ percentage: 0, message: "Starting export..." });
-
     try {
       const sceneData = await getCurrentSceneData();
-
       const result = await exportToMxScene(sceneData, {
         projectName: finalFilename,
         onProgress: (progress) => {
@@ -93,11 +88,8 @@ export default function Header() {
           setIsExporting(false);
         },
       });
-
       downloadMxSceneFile(result);
-
       setExportProgress({ percentage: 100, message: "Export complete!" });
-
       setTimeout(() => {
         setExportProgress(null);
         setIsExporting(false);
@@ -107,15 +99,27 @@ export default function Header() {
       setIsExporting(false);
     }
   }, []);
-
   const handleSaveCancel = useCallback(() => {
     setShowSaveModal(false);
   }, []);
-
+  const handleNewScene = useCallback(async () => {
+    setIsCreatingNew(true);
+    try {
+      await initializeNewScene({
+        triggerRecomputation: true,
+        restoreCamera: true,
+        restoreUI: true,
+      });
+      setTimeout(() => {
+        setIsCreatingNew(false);
+      }, 500);
+    } catch (error) {
+      setIsCreatingNew(false);
+    }
+  }, []);
   const handleOpen = useCallback(async () => {
     setIsImporting(true);
     setImportProgress({ percentage: 0, message: "Opening file picker..." });
-
     try {
       const result = await selectAndImportMxSceneFile({
         onProgress: (progress) => {
@@ -129,16 +133,11 @@ export default function Header() {
           setIsImporting(false);
         },
       });
-
       if (result) {
         await applyImportedScene(result);
-
         setImportProgress({ percentage: 100, message: "Project loaded successfully!" });
-
         if (result.warnings && result.warnings.length > 0) {
-          console.warn("Import warnings:", result.warnings);
         }
-
         setTimeout(() => {
           setImportProgress(null);
           setIsImporting(false);
@@ -150,17 +149,13 @@ export default function Header() {
     } catch (error) {
       setImportProgress(null);
       setIsImporting(false);
-
       if (error instanceof Error) {
         if (error.message.includes("Unsupported")) {
-          console.error("Unsupported file format:", error.message);
         } else if (error.message.includes("integrity")) {
-          console.error("File integrity error:", error.message);
         }
       }
     }
   }, []);
-
   const handleCreateNodeAtCenter = useCallback((nodeType: string) => {
     const event = new CustomEvent("minimystx:createNode", {
       detail: {
@@ -170,66 +165,64 @@ export default function Header() {
     });
     window.dispatchEvent(event);
   }, []);
-
   useEffect(() => {
     initializeMxScene().catch((error) => {
-      console.error("Failed to initialize MxScene:", error);
     });
+    setupSceneEventListeners();
   }, []);
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const isMac = navigator.userAgent.indexOf("Mac") !== -1;
       const cmdOrCtrl = isMac ? event.metaKey : event.ctrlKey;
-
       if (cmdOrCtrl && event.shiftKey && event.key.toLowerCase() === "s") {
         event.preventDefault();
         handleSave();
       } else if (cmdOrCtrl && !event.shiftKey && event.key.toLowerCase() === "o") {
         event.preventDefault();
         handleOpen();
+      } else if (cmdOrCtrl && event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        handleNewScene();
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleSave, handleOpen]);
-
+  }, [handleSave, handleOpen, handleNewScene]);
   const componentsDropdownItems = useMemo(() => {
     const nodesByCategory = getNodesByCategoryForContext(currentContext.type);
     const categories = getAvailableCategoriesForContext(currentContext.type);
-
     const items: Array<{
       label: string;
       onClick: () => void;
       submenu?: Array<{ label: string; onClick: () => void }>;
     }> = [];
-
-    // Sort categories alphabetically
     const sortedCategories = [...categories].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-
     sortedCategories.forEach((category) => {
       const nodes = nodesByCategory[category] || [];
-
-      // Sort nodes within each category alphabetically
       const sortedNodes = [...nodes].sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' }));
-
       const submenuItems = sortedNodes.map((node) => ({
         label: node.displayName,
         onClick: () => handleCreateNodeAtCenter(node.type),
       }));
-
       items.push({
         label: category,
         onClick: () => {},
         submenu: submenuItems,
       });
     });
-
     return items;
   }, [handleCreateNodeAtCenter, currentContext.type]);
-
   const fileDropdownItems = [
+    {
+      label: isCreatingNew ? "Creating..." : "New Scene (Ctrl+N)",
+      onClick: isCreatingNew ? () => {} : handleNewScene,
+      testId: "file-new",
+    },
+    {
+      label: "",
+      onClick: () => {},
+      isDivider: true,
+    },
     {
       label: isExporting ? "Exporting..." : "Save… (Ctrl+Shift+S)",
       onClick: isExporting ? () => {} : handleSave,
@@ -241,10 +234,8 @@ export default function Header() {
       testId: "file-open",
     },
   ];
-
   const viewDropdownItems = useMemo(
     () => [
-      // Display Toggles
       {
         label: `Hide Grid (G)`,
         onClick: focusedCanvas === "flow" ? toggleGridInFlowCanvas : toggleGridInRenderView,
@@ -266,7 +257,6 @@ export default function Header() {
         onClick: () => {},
         isDivider: true,
       },
-
       {
         label: `Camera: ${isOrthographicCamera ? "Orthographic" : "Perspective"} (P/O)`,
         onClick: () => setOrthographicCamera(!isOrthographicCamera),
@@ -276,7 +266,6 @@ export default function Header() {
         onClick: () => {},
         isDivider: true,
       },
-
       {
         label: "Top View (T)",
         onClick: () => {
@@ -317,7 +306,6 @@ export default function Header() {
         onClick: () => {},
         isDivider: true,
       },
-
       {
         label: "Fit View (Shift+F)",
         onClick: focusedCanvas === "flow" ? fitNodes : fitView,
@@ -327,7 +315,6 @@ export default function Header() {
         onClick: () => {},
         isDivider: true,
       },
-
       {
         label: "Auto-Layout (Dagre)",
         onClick: handleApplyDagre,
@@ -366,7 +353,6 @@ export default function Header() {
       resetToDefaults,
     ]
   );
-
   const helpDropdownItems = [
     {
       label: "Minimystx GitHub Repo",
@@ -387,7 +373,6 @@ export default function Header() {
         ),
     },
   ];
-
   return (
     <header className={styles.header}>
       <div className={styles.menuBar}>

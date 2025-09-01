@@ -5,16 +5,13 @@ import { nodeRegistry } from "../engine/nodeRegistry";
 import { getParameterDisplayName } from "../engine/parameterUtils";
 import { ParameterInput } from "./inputs/ParameterInput";
 import styles from "./UnifiedPropertiesPanel.module.css";
-
 type TabType = "general" | "transform" | "geometry" | "light" | "shadow" | "rendering" | "object";
-
 export default function UnifiedPropertiesPanel() {
   const [activeTab, setActiveTab] = useState<TabType>("general");
   const selectedNodeId = useUIStore((state) => state.selectedNodeId);
   const selectedNodeIds = useUIStore((state) => state.selectedNodeIds);
   const currentContext = useCurrentContext();
   const { rootNodeRuntime, subFlows, setParams } = useGraphStore();
-
   const getNodeRuntime = () => {
     if (currentContext.type === "root") {
       return rootNodeRuntime;
@@ -23,9 +20,7 @@ export default function UnifiedPropertiesPanel() {
     }
     return {};
   };
-
   const nodeRuntime = getNodeRuntime();
-
   useEffect(() => {
     if (selectedNodeId) {
       const nodeData = rootNodeRuntime[selectedNodeId];
@@ -37,7 +32,6 @@ export default function UnifiedPropertiesPanel() {
       }
     }
   }, [selectedNodeId, nodeRuntime, activeTab, rootNodeRuntime]);
-
   if (selectedNodeIds.length > 1) {
     return (
       <div className={styles.emptyState}>
@@ -48,31 +42,24 @@ export default function UnifiedPropertiesPanel() {
       </div>
     );
   }
-
   if (!selectedNodeId) {
     return <div className={styles.emptyState}>Select a node to edit its properties</div>;
   }
-
   const nodeData = nodeRuntime[selectedNodeId];
   if (!nodeData) {
     return <div className={styles.emptyState}>Node data not found</div>;
   }
-
   const nodeDefinition = nodeRegistry[nodeData.type];
   if (!nodeDefinition) {
     return <div className={styles.emptyState}>Unknown node type: {nodeData.type}</div>;
   }
-
   const availableTabs = getAvailableTabs(nodeData.params);
   if (availableTabs.length === 0) {
     return <div className={styles.emptyState}>No parameters available</div>;
   }
-
   const currentTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
-
   const handleParamChange = (category: string, paramKey: string, value: unknown) => {
     let processedValue = value;
-
     if (
       category === "transform" &&
       paramKey === "rotation" &&
@@ -86,30 +73,24 @@ export default function UnifiedPropertiesPanel() {
         z: (rotationValue.z * Math.PI) / 180,
       };
     }
-
     const newParams = {
       [category]: {
         ...nodeData.params[category],
         [paramKey]: processedValue,
       },
     };
-
     setParams(selectedNodeId, newParams, currentContext);
   };
-
   const renderTabContent = () => {
     const categoryParams = nodeData.params[currentTab];
     if (!categoryParams) {
       return <div className={styles.emptyState}>No parameters in this category</div>;
     }
-
     const categoryMetadata = nodeDefinition.params[currentTab];
     if (!categoryMetadata) {
       return <div className={styles.emptyState}>No parameter metadata found</div>;
     }
-
     const shadowsEnabled = nodeData.params.light?.castShadow === true;
-
     if (currentTab === "shadow" && !shadowsEnabled) {
       return (
         <div className={styles.emptyState}>
@@ -117,7 +98,6 @@ export default function UnifiedPropertiesPanel() {
         </div>
       );
     }
-
     return (
       <div className={styles.tabContent}>
         <div className={styles.parameterGrid}>
@@ -126,7 +106,6 @@ export default function UnifiedPropertiesPanel() {
             if (!metadata) {
               return null;
             }
-
             let displayValue = value;
             if (
               currentTab === "transform" &&
@@ -141,7 +120,6 @@ export default function UnifiedPropertiesPanel() {
                 z: (rotationValue.z * 180) / Math.PI,
               };
             }
-
             return (
               <div key={key} className={styles.parameterRow}>
                 <div className={styles.labelColumn}>
@@ -163,7 +141,6 @@ export default function UnifiedPropertiesPanel() {
       </div>
     );
   };
-
   return (
     <div className={styles.container}>
       <div className={styles.tabNav}>
@@ -181,7 +158,6 @@ export default function UnifiedPropertiesPanel() {
     </div>
   );
 }
-
 function getTabDisplayName(tab: TabType, nodeType?: string): string {
   switch (tab) {
     case "object":
@@ -196,10 +172,8 @@ function getTabDisplayName(tab: TabType, nodeType?: string): string {
       return tab.charAt(0).toUpperCase() + tab.slice(1);
   }
 }
-
 function getAvailableTabs(params: Record<string, any>): TabType[] {
   const availableTabs: TabType[] = [];
-
   if (params.general && Object.keys(params.general).length > 0) availableTabs.push("general");
   if (params.transform && Object.keys(params.transform).length > 0) availableTabs.push("transform");
   if (params.geometry && Object.keys(params.geometry).length > 0) availableTabs.push("geometry");
@@ -207,6 +181,5 @@ function getAvailableTabs(params: Record<string, any>): TabType[] {
   if (params.shadow && Object.keys(params.shadow).length > 0) availableTabs.push("shadow");
   if (params.object && Object.keys(params.object).length > 0) availableTabs.push("object");
   if (params.rendering && Object.keys(params.rendering).length > 0) availableTabs.push("rendering");
-
   return availableTabs;
 }

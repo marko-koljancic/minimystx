@@ -1,5 +1,4 @@
 import { ParameterMetadata, NodeParams } from "./graphStore";
-
 type ParameterValue =
   | string
   | number
@@ -7,7 +6,6 @@ type ParameterValue =
   | { x: number; y: number; z?: number; w?: number }
   | File
   | null;
-
 export const createParameterMetadata = (
   type: ParameterMetadata["type"],
   defaultValue: ParameterValue,
@@ -17,7 +15,6 @@ export const createParameterMetadata = (
   type,
   ...options,
 });
-
 export const validateParameterValue = (
   value: any,
   metadata: ParameterMetadata
@@ -25,7 +22,6 @@ export const validateParameterValue = (
   if (value === null || value === undefined) {
     return { valid: false, error: "Value is required" };
   }
-
   switch (metadata.type) {
     case "number":
       const num = Number(value);
@@ -39,25 +35,21 @@ export const validateParameterValue = (
         return { valid: false, error: `Must be at most ${metadata.max}` };
       }
       return { valid: true };
-
     case "boolean":
       if (typeof value !== "boolean") {
         return { valid: false, error: "Must be true or false" };
       }
       return { valid: true };
-
     case "string":
       if (typeof value !== "string") {
         return { valid: false, error: "Must be a text value" };
       }
       return { valid: true };
-
     case "enum":
       if (!metadata.enumValues || !metadata.enumValues.includes(value)) {
         return { valid: false, error: `Must be one of: ${metadata.enumValues?.join(", ")}` };
       }
       return { valid: true };
-
     case "color":
       if (typeof value !== "string") {
         return { valid: false, error: "Color must be a string" };
@@ -66,7 +58,6 @@ export const validateParameterValue = (
         return { valid: false, error: "Must be a valid color (hex or name)" };
       }
       return { valid: true };
-
     case "vector2":
     case "vector3":
     case "vector4":
@@ -79,7 +70,6 @@ export const validateParameterValue = (
           : metadata.type === "vector3"
           ? ["x", "y", "z"]
           : ["x", "y", "z", "w"];
-
       for (const key of expectedKeys) {
         if (!(key in value) || isNaN(Number(value[key]))) {
           return { valid: false, error: `${key.toUpperCase()} component must be a valid number` };
@@ -93,16 +83,13 @@ export const validateParameterValue = (
         }
       }
       return { valid: true };
-
     case "file":
-        if (value === null || value === undefined) {
+      if (value === null || value === undefined) {
         return { valid: true };
       }
-
       if (value instanceof File) {
         return { valid: true };
       }
-
       if (typeof value === "object" && value !== null) {
         const objFile = value as any;
         if (
@@ -114,18 +101,14 @@ export const validateParameterValue = (
           return { valid: true };
         }
       }
-
       return { valid: false, error: "Must be a valid file" };
-
     default:
       return { valid: true };
   }
 };
-
 export const getParameterDisplayName = (paramKey: string, metadata: ParameterMetadata): string => {
   return metadata.displayName || paramKey.charAt(0).toUpperCase() + paramKey.slice(1);
 };
-
 export const flattenNodeParams = (
   params: NodeParams
 ): Array<{
@@ -140,7 +123,6 @@ export const flattenNodeParams = (
     metadata: ParameterMetadata;
     fullKey: string;
   }> = [];
-
   for (const [category, categoryParams] of Object.entries(params)) {
     for (const [key, metadata] of Object.entries(categoryParams)) {
       flattened.push({
@@ -151,40 +133,31 @@ export const flattenNodeParams = (
       });
     }
   }
-
   return flattened;
 };
-
 export const extractDefaultValues = (params: NodeParams): Record<string, any> => {
   const defaults: Record<string, any> = {};
-
   for (const [category, categoryParams] of Object.entries(params)) {
     defaults[category] = {};
     for (const [key, metadata] of Object.entries(categoryParams)) {
       defaults[category][key] = metadata.default;
     }
   }
-
   return defaults;
 };
-
 export const validateAndNormalizeParams = (
   params: Record<string, any>,
   paramsDef: NodeParams
 ): Record<string, any> => {
   const validated: Record<string, any> = {};
-
   for (const [category, categoryDef] of Object.entries(paramsDef)) {
     validated[category] = {};
-
     for (const [key, metadata] of Object.entries(categoryDef)) {
       const currentValue = params[category]?.[key];
-
       if (currentValue === undefined || currentValue === null) {
         validated[category][key] = metadata.default;
         continue;
       }
-
       const validation = validateParameterValue(currentValue, metadata);
       if (validation.valid) {
         validated[category][key] = currentValue;
@@ -193,6 +166,5 @@ export const validateAndNormalizeParams = (
       }
     }
   }
-
   return validated;
 };

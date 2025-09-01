@@ -2,14 +2,12 @@ import React, { useState, useRef, useCallback } from "react";
 import { ParameterMetadata } from "../../engine/graphStore";
 import { validateParameterValue } from "../../engine/parameterUtils";
 import styles from "./InputStyles.module.css";
-
 interface ColorInputProps {
   value: string;
   metadata: ParameterMetadata;
   onChange: (value: string) => void;
   disabled?: boolean;
 }
-
 export const ColorInput: React.FC<ColorInputProps> = ({
   value,
   metadata,
@@ -20,11 +18,9 @@ export const ColorInput: React.FC<ColorInputProps> = ({
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const colorPickerRef = useRef<HTMLInputElement>(null);
-
   const commitValue = useCallback(
     (newValue: string) => {
       const validation = validateParameterValue(newValue, metadata);
-
       if (validation.valid) {
         onChange(newValue);
         setTextValue(newValue);
@@ -37,18 +33,15 @@ export const ColorInput: React.FC<ColorInputProps> = ({
     },
     [metadata, onChange]
   );
-
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setTextValue(newValue);
   };
-
   const handleTextBlur = () => {
     if (textValue !== value) {
       commitValue(textValue);
     }
   };
-
   const handleTextKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -62,18 +55,15 @@ export const ColorInput: React.FC<ColorInputProps> = ({
       e.currentTarget.blur();
     }
   };
-
   const handleSwatchClick = () => {
     if (!disabled && colorPickerRef.current) {
       colorPickerRef.current.click();
     }
   };
-
   const handleColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     commitValue(newValue);
   };
-
   const getSwatchColor = () => {
     try {
       if (/^#[0-9A-F]{6}$/i.test(value)) {
@@ -87,7 +77,6 @@ export const ColorInput: React.FC<ColorInputProps> = ({
       return "#ffffff";
     }
   };
-
   return (
     <div className={styles.inputContainer}>
       <div className={styles.colorContainer}>
@@ -116,7 +105,6 @@ export const ColorInput: React.FC<ColorInputProps> = ({
           disabled={disabled}
         />
       </div>
-
       {hasError && errorMessage && <div className={styles.errorMessage}>{errorMessage}</div>}
     </div>
   );

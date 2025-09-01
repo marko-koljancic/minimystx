@@ -1,9 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router";
-
 import HomePage from "./pages/HomePage";
 import NotFound from "./pages/NotFound";
 import DesignPage from "./pages/DesignPage";
-
 const App = () => {
   return (
     <BrowserRouter>
@@ -15,5 +13,4 @@ const App = () => {
     </BrowserRouter>
   );
 };
-
 export default App;

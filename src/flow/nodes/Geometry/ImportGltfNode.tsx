@@ -6,45 +6,35 @@ import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
 import { ImportGltfNodeData, loadGltfFile, SerializableGltfFile } from "./ImportGltf";
 import { useGraphStore } from "../../../engine/graphStore";
-import { useCurrentContext } from "../../../store/uiStore";
-
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
-
 export default function ImportGltfNode(props: NodeProps) {
   const { data, selected, id } = props;
   const nodeData = data as ImportGltfNodeData;
   const recomputeFrom = useGraphStore(state => state.recomputeFrom);
   const markDirty = useGraphStore(state => state.markDirty);
-  const currentContext = useCurrentContext();
   const lastFileRef = useRef<File | SerializableGltfFile | null>(null);
-
   useEffect(() => {
     const currentFile = nodeData.object?.file;
-    
     const filesAreDifferent = currentFile && (
       !lastFileRef.current ||
       currentFile.name !== lastFileRef.current.name ||
       currentFile.size !== lastFileRef.current.size ||
       currentFile.lastModified !== lastFileRef.current.lastModified
     );
-    
     if (filesAreDifferent) {
       lastFileRef.current = currentFile;
-      
       loadGltfFile(currentFile)
         .then(() => {
           markDirty(id);
           recomputeFrom(id);
         })
         .catch(() => {
-          // Handle error silently, node will show empty state
         });
     } else if (!currentFile) {
       lastFileRef.current = null;
     }
-  }, [nodeData.object?.file, id, recomputeFrom, markDirty, currentContext]);
-
+  }, [nodeData.object?.file, id, recomputeFrom, markDirty]);
   return (
     <div className={styles.nodeContainer}>
       <BaseGeometryNodeDesign

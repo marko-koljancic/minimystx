@@ -6,7 +6,6 @@ import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 import { NodePatterns } from "../../../engine/nodes/NodeBuilder";
 import { ContainerFactory, BaseContainer } from "../../../engine/containers/BaseContainer";
-
 export interface BoxNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     width: number;
@@ -17,14 +16,11 @@ export interface BoxNodeData extends BaseGeometryData, Record<string, unknown> {
     depthSegments: number;
   };
 }
-
 function createBoxGeometry(data: BoxNodeData): BufferGeometry {
   const { width, height, depth, widthSegments, heightSegments, depthSegments } = data.geometry;
-
   const clampedWidthSegments = Math.max(1, Math.min(512, Math.round(widthSegments)));
   const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
   const clampedDepthSegments = Math.max(1, Math.min(512, Math.round(depthSegments)));
-
   return new BoxGeometry(
     width,
     height,
@@ -34,7 +30,6 @@ function createBoxGeometry(data: BoxNodeData): BufferGeometry {
     clampedDepthSegments
   );
 }
-
 export const processor: NodeProcessor<
   BoxNodeData,
   { object: Object3D; geometry: BufferGeometry }
@@ -43,7 +38,6 @@ export const processor: NodeProcessor<
   const result = createGeometryMesh(data, geometry, input?.object);
   return result;
 };
-
 export const boxNodeParams: NodeParams = {
   general: createGeneralParams("Box", "Creates a 3D box geometry"),
   geometry: {
@@ -86,7 +80,6 @@ export const boxNodeParams: NodeParams = {
   },
   rendering: createRenderingParams(),
 };
-
 export const boxNodeCompute = (params: Record<string, any>) => {
   const data: BoxNodeData = {
     general: params.general,
@@ -102,7 +95,6 @@ export const boxNodeCompute = (params: Record<string, any>) => {
   const result = processor(data, inputObject);
   return result;
 };
-
 export const boxNodeComputeTyped = (
   params: Record<string, any>,
   inputs: Record<string, BaseContainer>,
@@ -118,64 +110,58 @@ export const boxNodeComputeTyped = (
     geometry: params.geometry,
     rendering: params.rendering,
   };
-
   const geometry = createBoxGeometry(data);
   const container = createGeometryMesh(data, geometry);
-  
   return { default: container };
 };
-
-// New typed node definition using NodeBuilder
 export const createBoxNodeDefinition = () => {
-  return NodePatterns.geometryGenerator('box', 'Box')
-    .parameterCategory('general', createGeneralParams('Box', 'Creates a 3D box geometry'))
-    .parameterCategory('geometry', {
-      width: createParameterMetadata('number', 1, {
-        displayName: 'Width',
+  return NodePatterns.geometryGenerator("box", "Box")
+    .parameterCategory("general", createGeneralParams("Box", "Creates a 3D box geometry"))
+    .parameterCategory("geometry", {
+      width: createParameterMetadata("number", 1, {
+        displayName: "Width",
         min: 0.01,
         max: 100,
         step: 0.1,
       }),
-      height: createParameterMetadata('number', 1, {
-        displayName: 'Height', 
+      height: createParameterMetadata("number", 1, {
+        displayName: "Height",
         min: 0.01,
         max: 100,
         step: 0.1,
       }),
-      depth: createParameterMetadata('number', 1, {
-        displayName: 'Depth',
+      depth: createParameterMetadata("number", 1, {
+        displayName: "Depth",
         min: 0.01,
         max: 100,
         step: 0.1,
       }),
-      widthSegments: createParameterMetadata('number', 1, {
-        displayName: 'Width Segments',
+      widthSegments: createParameterMetadata("number", 1, {
+        displayName: "Width Segments",
         min: 1,
         max: 512,
         step: 1,
       }),
-      heightSegments: createParameterMetadata('number', 1, {
-        displayName: 'Height Segments',
+      heightSegments: createParameterMetadata("number", 1, {
+        displayName: "Height Segments",
         min: 1,
         max: 512,
         step: 1,
       }),
-      depthSegments: createParameterMetadata('number', 1, {
-        displayName: 'Depth Segments',
+      depthSegments: createParameterMetadata("number", 1, {
+        displayName: "Depth Segments",
         min: 1,
         max: 512,
         step: 1,
       }),
     })
-    .parameterCategory('rendering', createRenderingParams())
+    .parameterCategory("rendering", createRenderingParams())
     .compute(async (params, _inputs, _context) => {
-      // Create box geometry with clamped segments
-      const { width, height, depth, widthSegments, heightSegments, depthSegments } = params.geometry;
-      
+      const { width, height, depth, widthSegments, heightSegments, depthSegments } =
+        params.geometry;
       const clampedWidthSegments = Math.max(1, Math.min(512, Math.round(widthSegments)));
       const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
       const clampedDepthSegments = Math.max(1, Math.min(512, Math.round(depthSegments)));
-
       const geometry = new BoxGeometry(
         width,
         height,
@@ -184,8 +170,6 @@ export const createBoxNodeDefinition = () => {
         clampedHeightSegments,
         clampedDepthSegments
       );
-
-      // Create data structure for existing mesh creation logic
       const data: BoxNodeData = {
         general: params.general,
         transform: {
@@ -196,14 +180,10 @@ export const createBoxNodeDefinition = () => {
         geometry: params.geometry,
         rendering: params.rendering,
       };
-
-      // Use existing mesh creation logic
       const result = createGeometryMesh(data, geometry, undefined);
-      
-      // Return typed containers
       return {
         geometry: ContainerFactory.geometry(geometry),
-        object: ContainerFactory.object3d(result.object)
+        object: ContainerFactory.object3d(result.object),
       };
     })
     .build();

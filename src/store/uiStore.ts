@@ -1,13 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { GraphContext } from "../engine/graphStore";
-
 type Theme = "dark" | "light" | "system";
 type ConnectionLineStyle = "bezier" | "straight" | "step" | "simpleBezier";
 type FocusedCanvas = "flow" | "render" | null;
 type FlowViewMode = "graph" | "list";
 type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
-
 interface UIState {
   theme: Theme;
   isDarkTheme: boolean;
@@ -41,7 +39,6 @@ interface UIState {
   isRendererMaximized: boolean;
   flowViewModes: Record<string, FlowViewMode>;
 }
-
 interface UIActions {
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -91,22 +88,18 @@ interface UIActions {
   setFlowViewMode: (contextKey: string, mode: FlowViewMode) => void;
   getFlowViewMode: (contextKey: string) => FlowViewMode;
 }
-
 type UIStore = UIState & UIActions;
-
 const getIsDarkTheme = (theme: Theme): boolean => {
   if (theme === "system") {
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   }
   return theme === "dark";
 };
-
 const updateBodyTheme = (theme: Theme) => {
   document.body.classList.remove("dark-theme", "light-theme");
   const isDark = getIsDarkTheme(theme);
   document.body.classList.add(isDark ? "dark-theme" : "light-theme");
 };
-
 export const useUIStore = create<UIStore>()(
   persist(
     (set, get) => ({
@@ -141,25 +134,21 @@ export const useUIStore = create<UIStore>()(
       nodePositions: {},
       isRendererMaximized: false,
       flowViewModes: {},
-
       setTheme: (theme: Theme) => {
         const isDarkTheme = getIsDarkTheme(theme);
         updateBodyTheme(theme);
         set({ theme, isDarkTheme });
       },
-
       toggleTheme: () => {
         const { theme } = get();
         const nextTheme = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
         get().setTheme(nextTheme);
       },
-
       updateLayout: (layout) => {
         set((state) => ({
           leftPaneWidth: layout.leftPaneWidth ?? state.leftPaneWidth,
         }));
       },
-
       setSelectedNode: (nodeId) => set({ selectedNodeId: nodeId }),
       setSelectedNodes: (nodeIds) => set({ 
         selectedNodeIds: nodeIds,
@@ -167,7 +156,6 @@ export const useUIStore = create<UIStore>()(
       }),
       setHoveredNode: (nodeId) => set({ hoveredNodeId: nodeId }),
       clearSelection: () => set({ selectedNodeId: null, selectedNodeIds: [] }),
-
       openPalette: () => set({ isPaletteOpen: true }),
       closePalette: () => set({ isPaletteOpen: false }),
       togglePalette: () => set((state) => ({ isPaletteOpen: !state.isPaletteOpen })),
@@ -175,14 +163,12 @@ export const useUIStore = create<UIStore>()(
       togglePalettePinned: () => set((state) => ({ isPalettePinned: !state.isPalettePinned })),
       setPalettePosition: (position: { x: number; y: number }) =>
         set({ palettePosition: position }),
-
       toggleGridInFlowCanvas: () =>
         set((state) => ({ showGridInFlowCanvas: !state.showGridInFlowCanvas })),
       toggleGridInRenderView: () =>
         set((state) => ({ showGridInRenderView: !state.showGridInRenderView })),
       toggleMinimap: () => set((state) => ({ showMinimap: !state.showMinimap })),
       toggleFlowControls: () => set((state) => ({ showFlowControls: !state.showFlowControls })),
-
       setConnectionLineStyle: (style) => set({ connectionLineStyle: style }),
       cycleConnectionLineStyle: () => {
         const styles: ConnectionLineStyle[] = ["bezier", "straight", "simpleBezier", "step"];
@@ -191,10 +177,8 @@ export const useUIStore = create<UIStore>()(
         const nextIndex = (currentIndex + 1) % styles.length;
         set({ connectionLineStyle: styles[nextIndex] });
       },
-
       toggleDrawer: () => set((state) => ({ collapsed: !state.collapsed })),
       setBottomPaneHeight: (height: number) => set({ bottomPaneHeight: height }),
-
       resetToDefaults: () => {
         set({
           leftPaneWidth: 50,
@@ -212,7 +196,6 @@ export const useUIStore = create<UIStore>()(
           showAxisGizmo: true,
         });
       },
-
       toggleWireframe: () => set((state) => ({ wireframe: !state.wireframe })),
       toggleXRay: () => set((state) => ({ xRay: !state.xRay })),
       setFocusedCanvas: (canvas: FocusedCanvas) => set({ focusedCanvas: canvas }),
@@ -246,7 +229,6 @@ export const useUIStore = create<UIStore>()(
       setCurrentCameraView: (view: CameraView) => {
         set({ currentCameraView: view });
       },
-
       setSelectedCategoryIndex: (index: number) => set({ selectedCategoryIndex: index }),
       setSelectedNodeIndex: (index: number) => set({ selectedNodeIndex: index }),
       setPaletteSearchQuery: (query: string) => set({ paletteSearchQuery: query }),
@@ -258,7 +240,6 @@ export const useUIStore = create<UIStore>()(
           paletteSearchQuery: "",
           keyboardNavigationMode: false,
         }),
-
       setCurrentContext: (context: GraphContext) => {
         set((state) => ({
           ...state,
@@ -266,15 +247,12 @@ export const useUIStore = create<UIStore>()(
           currentContext: context,
         }));
       },
-
       navigateToRoot: () => {
         get().setCurrentContext({ type: "root" });
       },
-
       navigateToSubFlow: (geoNodeId: string) => {
         get().setCurrentContext({ type: "subflow", geoNodeId });
       },
-
       saveViewportState: (contextKey: string, viewport: { x: number; y: number; zoom: number }) => {
         set((state) => ({
           ...state,
@@ -284,12 +262,10 @@ export const useUIStore = create<UIStore>()(
           },
         }));
       },
-
       getViewportState: (contextKey: string) => {
         const state = get();
         return state.viewportStates[contextKey] || null;
       },
-
       saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => {
         set((state) => ({
           ...state,
@@ -299,22 +275,17 @@ export const useUIStore = create<UIStore>()(
           },
         }));
       },
-
       getNodePositions: (contextKey: string) => {
         const state = get();
         return state.nodePositions[contextKey] || null;
       },
-
       toggleRendererMaximized: () => {
-        // Save current viewport state before toggling
         window.dispatchEvent(new CustomEvent("minimystx:saveCurrentViewport"));
         set((state) => ({ isRendererMaximized: !state.isRendererMaximized }));
-        // Restore state after layout change
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent("minimystx:restoreViewportAfterMaximize"));
         }, 100);
       },
-
       setFlowViewMode: (contextKey: string, mode: FlowViewMode) => {
         set((state) => ({
           ...state,
@@ -324,7 +295,6 @@ export const useUIStore = create<UIStore>()(
           },
         }));
       },
-
       getFlowViewMode: (contextKey: string) => {
         const state = get();
         return state.flowViewModes[contextKey] || "graph";
@@ -359,7 +329,6 @@ export const useUIStore = create<UIStore>()(
     }
   )
 );
-
 if (typeof window !== "undefined") {
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
   mediaQuery.addEventListener("change", () => {
@@ -368,16 +337,13 @@ if (typeof window !== "undefined") {
       store.setTheme("system");
     }
   });
-
   const initialTheme = useUIStore.getState().theme;
   updateBodyTheme(initialTheme);
 }
-
 export const useDrawerCollapsed = () => useUIStore((state) => state.collapsed);
 export const useDrawerHeight = () => useUIStore((state) => state.bottomPaneHeight);
 export const useToggleDrawer = () => useUIStore((state) => state.toggleDrawer);
 export const useSetDrawerHeight = () => useUIStore((state) => state.setBottomPaneHeight);
-
 export const usePaletteOpen = () => useUIStore((state) => state.isPaletteOpen);
 export const usePalettePinned = () => useUIStore((state) => state.isPalettePinned);
 export const usePalettePosition = () => useUIStore((state) => state.palettePosition);
@@ -386,7 +352,6 @@ export const useOpenPalette = () => useUIStore((state) => state.openPalette);
 export const useClosePalette = () => useUIStore((state) => state.closePalette);
 export const useTogglePalettePinned = () => useUIStore((state) => state.togglePalettePinned);
 export const useSetPalettePosition = () => useUIStore((state) => state.setPalettePosition);
-
 export const useWireframe = () => useUIStore((state) => state.wireframe);
 export const useXRay = () => useUIStore((state) => state.xRay);
 export const useFocusedCanvas = () => useUIStore((state) => state.focusedCanvas);
@@ -403,7 +368,6 @@ export const useToggleAxisGizmo = () => useUIStore((state) => state.toggleAxisGi
 export const useSetCameraView = () => useUIStore((state) => state.setCameraView);
 export const useCurrentCameraView = () => useUIStore((state) => state.currentCameraView);
 export const useSetCurrentCameraView = () => useUIStore((state) => state.setCurrentCameraView);
-
 export const useSelectedCategoryIndex = () => useUIStore((state) => state.selectedCategoryIndex);
 export const useSelectedNodeIndex = () => useUIStore((state) => state.selectedNodeIndex);
 export const usePaletteSearchQuery = () => useUIStore((state) => state.paletteSearchQuery);
@@ -415,24 +379,18 @@ export const useSetPaletteSearchQuery = () => useUIStore((state) => state.setPal
 export const useSetKeyboardNavigationMode = () =>
   useUIStore((state) => state.setKeyboardNavigationMode);
 export const useResetPaletteNavigation = () => useUIStore((state) => state.resetPaletteNavigation);
-
 export const useCurrentContext = () => useUIStore((state) => state.currentContext);
 export const useSetCurrentContext = () => useUIStore((state) => state.setCurrentContext);
 export const useNavigateToRoot = () => useUIStore((state) => state.navigateToRoot);
 export const useNavigateToSubFlow = () => useUIStore((state) => state.navigateToSubFlow);
-
 export const useSaveViewportState = () => useUIStore((state) => state.saveViewportState);
 export const useGetViewportState = () => useUIStore((state) => state.getViewportState);
-
 export const useSaveNodePositions = () => useUIStore((state) => state.saveNodePositions);
 export const useGetNodePositions = () => useUIStore((state) => state.getNodePositions);
-
 export const useIsRendererMaximized = () => useUIStore((state) => state.isRendererMaximized);
 export const useToggleRendererMaximized = () => useUIStore((state) => state.toggleRendererMaximized);
-
 export const useSetFlowViewMode = () => useUIStore((state) => state.setFlowViewMode);
 export const useGetFlowViewMode = () => useUIStore((state) => state.getFlowViewMode);
-
 export const getContextKey = (context: GraphContext): string => {
   return context.type === "root" ? "root" : `subflow-${context.geoNodeId}`;
 };

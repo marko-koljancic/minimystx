@@ -10,14 +10,12 @@ import {
 import { getAssetCache } from "../../../io/mxscene/opfs-cache";
 import { hashBytesSHA256 } from "../../../io/mxscene/crypto";
 import { BaseContainer, Object3DContainer } from "../../../engine/containers/BaseContainer";
-
 export interface SerializableObjFile {
   name: string;
   size: number;
   lastModified: number;
   content: string; // Base64 encoded OBJ content
 }
-
 export interface ImportObjNodeData extends Record<string, unknown> {
   general: GeneralProps;
   object: {
@@ -28,19 +26,14 @@ export interface ImportObjNodeData extends Record<string, unknown> {
   transform: TransformProps;
   rendering: RenderingProps;
 }
-
 function validateFile(file: File | SerializableObjFile | null): { valid: boolean; error?: string } {
   if (!file) return { valid: false, error: "No file selected" };
-
   if (!file.name) return { valid: false, error: "File name is missing" };
-
   const extension = file.name.toLowerCase().split(".").pop();
   if (extension !== "obj")
     return { valid: false, error: "Unsupported file type. Only .obj files are supported." };
-
   return { valid: true };
 }
-
 async function fileToSerializableObjFile(file: File): Promise<SerializableObjFile> {
   const content = await file.text();
   return {
@@ -50,23 +43,16 @@ async function fileToSerializableObjFile(file: File): Promise<SerializableObjFil
     content: btoa(content),
   };
 }
-
 async function getFileContent(file: File | SerializableObjFile): Promise<string> {
-  // Check if it's a native File object
   if (file instanceof File) {
     return await file.text();
   }
-  
-  // Check if it has File-like properties (might be File that lost prototype)
   if ('text' in file && typeof (file as any).text === 'function') {
     try {
       return await (file as any).text();
     } catch (error) {
-      console.warn('Failed to read file content using text() method:', error);
     }
   }
-  
-  // Check if it's a SerializableObjFile with base64 content
   if ('content' in file && file.content && typeof file.content === "string") {
     try {
       return atob(file.content);
@@ -74,58 +60,40 @@ async function getFileContent(file: File | SerializableObjFile): Promise<string>
       throw new Error("Failed to decode SerializableObjFile content: Invalid base64 encoding");
     }
   }
-  
-  // Check if it has direct content property as string (maybe already decoded)
   if (typeof file === 'object' && 'content' in file && typeof (file as any).content === 'string') {
     return (file as any).content;
   }
-  
   throw new Error(`Unsupported file format: ${typeof file}, constructor: ${file?.constructor?.name}, keys: ${Object.keys(file || {})}`);
 }
-
 function centerObject(object: Object3D): void {
   const box = new Box3().setFromObject(object);
   const center = box.getCenter(new Vector3());
   object.position.sub(center);
 }
-
 const objCache = new Map<string, Object3D>();
-
 async function getAssetHash(file: File | SerializableObjFile): Promise<string> {
   const content = await getFileContent(file);
   const encoder = new TextEncoder();
   const data = encoder.encode(content);
   return hashBytesSHA256(data.buffer);
 }
-
 function getCacheKey(file: File | SerializableObjFile): string {
   return `${file.name}_${file.lastModified}_${file.size}`;
 }
-
 async function loadObjFile(file: File | SerializableObjFile): Promise<Object3D> {
-  // Loading OBJ file
-  
   const memoryCacheKey = getCacheKey(file);
   if (objCache.has(memoryCacheKey)) {
     const cached = objCache.get(memoryCacheKey)!;
-    // Found in memory cache
     return cached.clone();
   }
-
   const loader = new OBJLoader();
-  console.log(`📖 Reading file content for: ${file.name}`);
   const text = await getFileContent(file);
-  console.log(`📖 File content length: ${text.length}`);
-
   try {
     const object = loader.parse(text);
-    
     objCache.set(memoryCacheKey, object);
-    
     try {
       const assetHash = await getAssetHash(file);
       const assetCache = getAssetCache();
-      
       if (!(await assetCache.has(assetHash))) {
         const encoder = new TextEncoder();
         const data = encoder.encode(text);
@@ -133,69 +101,53 @@ async function loadObjFile(file: File | SerializableObjFile): Promise<Object3D> 
       }
     } catch (cacheError) {
     }
-    
     return object.clone();
   } catch (error) {
     throw error;
   }
 }
-
 async function loadObjFromCache(hash: string): Promise<Object3D | null> {
   try {
     const assetCache = getAssetCache();
     const data = await assetCache.get(hash);
-    
     if (!data) {
       return null;
     }
-    
     const decoder = new TextDecoder();
     const text = decoder.decode(data);
-    
     const loader = new OBJLoader();
     const object = loader.parse(text);
-    
     return object;
   } catch (error) {
     return null;
   }
 }
-
 export const processor: NodeProcessor<
   ImportObjNodeData,
   { object: Object3D; geometry?: BufferGeometry; shouldSetAsActiveOutput?: boolean }
 > = (data: ImportObjNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
-  
   if (!data.object.file) {
     const emptyGroup = new Group();
     emptyGroup.name = "EmptyImportObjGroup";
     return { object: emptyGroup, geometry: undefined };
   }
-
   const validation = validateFile(data.object.file);
   if (!validation.valid) {
     return { object: new Group(), geometry: undefined };
   }
-  
-
   const cacheKey = getCacheKey(data.object.file);
-
   if (!objCache.has(cacheKey)) {
     return { object: new Group(), geometry: undefined };
   }
-
   let loadedObject: Object3D;
   try {
     loadedObject = objCache.get(cacheKey)!.clone();
   } catch (error) {
     return { object: new Group(), geometry: undefined };
   }
-
   const validScale = data.object.scale <= 0 ? 0.001 : data.object.scale;
-
   if (validScale !== 1) loadedObject.scale.multiplyScalar(validScale);
   if (data.object.centerToOrigin) centerObject(loadedObject);
-
   loadedObject.position.add(
     new Vector3(data.transform.position.x, data.transform.position.y, data.transform.position.z)
   );
@@ -212,23 +164,19 @@ export const processor: NodeProcessor<
       data.transform.scale.z * scaleFactor
     )
   );
-
   loadedObject.visible = data.rendering.visible;
-
   loadedObject.traverse((child) => {
     if (child instanceof Mesh) {
       child.castShadow = data.rendering.castShadow ?? false;
       child.receiveShadow = data.rendering.receiveShadow ?? false;
     }
   });
-
   let geometry: BufferGeometry | undefined;
   if (loadedObject instanceof Mesh && loadedObject.geometry) {
     geometry = loadedObject.geometry;
   } else if (loadedObject.children.length === 1 && loadedObject.children[0] instanceof Mesh) {
     geometry = (loadedObject.children[0] as Mesh).geometry;
   }
-
   if (input && input.object) {
     const isValidObject3D = (obj: any): obj is Object3D => {
       return obj && 
@@ -240,7 +188,6 @@ export const processor: NodeProcessor<
         obj.matrixWorld !== null &&
         obj.matrixWorld !== undefined;
     };
-
     if (isValidObject3D(input.object)) {
       try {
         input.object.updateMatrixWorld(true);
@@ -251,15 +198,11 @@ export const processor: NodeProcessor<
       } catch (error) {
       }
     } else {
-      // const _inputObj = input?.object;
     }
   }
-
   return { object: loadedObject, geometry };
 };
-
 export { loadObjFile, fileToSerializableObjFile, loadObjFromCache, getAssetHash };
-
 export const importObjNodeParams: NodeParams = {
   general: createGeneralParams("Import OBJ", "Load geometry from .obj file"),
   object: {
@@ -274,11 +217,8 @@ export const importObjNodeParams: NodeParams = {
   },
   rendering: createRenderingParams(),
 };
-
 export const importObjNodeCompute = (params: Record<string, unknown>, inputs?: unknown, context?: { nodeId?: string }) => {
-  
   const defaultParams = extractDefaultValues(importObjNodeParams);
-
   const data: ImportObjNodeData = {
     general: (params.general as ImportObjNodeData["general"]) || defaultParams.general,
     object: (params.object as ImportObjNodeData["object"]) || defaultParams.object,
@@ -291,10 +231,8 @@ export const importObjNodeCompute = (params: Record<string, unknown>, inputs?: u
   };
   const inputObject =
     inputs && Object.keys(inputs).length > 0 ? (Object.values(inputs)[0] as { object: Object3D; geometry?: BufferGeometry }) : undefined;
-  
   const result = processor(data, inputObject);
   if (result?.object && context?.nodeId) {
-    
     const finalResult = { ...result, shouldSetAsActiveOutput: true };
     return finalResult;
   } else {
@@ -303,25 +241,19 @@ export const importObjNodeCompute = (params: Record<string, unknown>, inputs?: u
     if (!context?.nodeId) {
     }
   }
-  
   return result;
 };
-
 export const importObjNodeComputeTyped = async (
   params: Record<string, any>,
   inputs: Record<string, BaseContainer>,
   context: ComputeContext
 ): Promise<Record<string, BaseContainer>> => {
   const defaultParams = extractDefaultValues(importObjNodeParams);
-
-  // Create plain objects to avoid Zustand proxy issues, but preserve File objects
   const originalObjectParams = (params.object as ImportObjNodeData["object"]) || defaultParams.object;
   const data: ImportObjNodeData = {
     general: JSON.parse(JSON.stringify((params.general as ImportObjNodeData["general"]) || defaultParams.general)),
     object: {
-      // Preserve the original File object without JSON serialization
       file: originalObjectParams.file,
-      // JSON serialize the other properties
       ...JSON.parse(JSON.stringify({
         scale: originalObjectParams.scale,
         centerToOrigin: originalObjectParams.centerToOrigin,
@@ -334,41 +266,24 @@ export const importObjNodeComputeTyped = async (
     },
     rendering: JSON.parse(JSON.stringify((params.rendering as ImportObjNodeData["rendering"]) || defaultParams.rendering)),
   };
-
-  // CRITICAL FIX: Load the file first if it exists and is not in cache
-  // ImportOBJ computeTyped - checking file
-  
   if (data.object.file) {
     const cacheKey = getCacheKey(data.object.file);
     const inCache = objCache.has(cacheKey);
-    // Cache check for file
-    
     if (!inCache) {
-      // Loading OBJ file into cache
       try {
         await loadObjFile(data.object.file);
-        // OBJ file loaded into cache successfully
       } catch (error) {
-        console.error(`❌ Failed to load OBJ file:`, error);
         return { default: new Object3DContainer(new Group()) };
       }
     } else {
-      // OBJ file already in cache
     }
   } else {
-    console.log(`❌ No file provided for ImportOBJ node`);
   }
-
-  // Get input container if present
   const inputContainer = inputs.default as Object3DContainer | undefined;
   const inputObject = inputContainer ? { object: inputContainer.value } : undefined;
-
   const result = processor(data, inputObject);
-  
   if (!result?.object) {
-    // Return empty container for failed loads
     return { default: new Object3DContainer(new Group()) };
   }
-
   return { default: new Object3DContainer(result.object) };
 };

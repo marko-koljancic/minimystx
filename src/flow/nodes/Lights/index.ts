@@ -5,7 +5,6 @@ export {
   type PointLightNodeData,
 } from "./PointLight";
 export { default as PointLightNode } from "./PointLightNode";
-
 export {
   processor as ambientLightProcessor,
   ambientLightNodeParams,
@@ -13,7 +12,6 @@ export {
   type AmbientLightNodeData,
 } from "./AmbientLight";
 export { default as AmbientLightNode } from "./AmbientLightNode";
-
 export {
   processor as directionalLightProcessor,
   directionalLightNodeParams,
@@ -21,7 +19,6 @@ export {
   type DirectionalLightNodeData,
 } from "./DirectionalLight";
 export { default as DirectionalLightNode } from "./DirectionalLightNode";
-
 export {
   processor as spotLightProcessor,
   spotLightNodeParams,
@@ -29,7 +26,6 @@ export {
   type SpotLightNodeData,
 } from "./SpotLight";
 export { default as SpotLightNode } from "./SpotLightNode";
-
 export {
   processor as hemisphereLightProcessor,
   hemisphereLightNodeParams,
@@ -37,7 +33,6 @@ export {
   type HemisphereLightNodeData,
 } from "./HemisphereLight";
 export { default as HemisphereLightNode } from "./HemisphereLightNode";
-
 export {
   processor as rectAreaLightProcessor,
   rectAreaLightNodeParams,

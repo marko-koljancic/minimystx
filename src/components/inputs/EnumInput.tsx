@@ -2,14 +2,12 @@ import React, { useState } from "react";
 import { ParameterMetadata } from "../../engine/graphStore";
 import { validateParameterValue } from "../../engine/parameterUtils";
 import styles from "./InputStyles.module.css";
-
 interface EnumInputProps {
   value: string;
   metadata: ParameterMetadata;
   onChange: (value: string) => void;
   disabled?: boolean;
 }
-
 export const EnumInput: React.FC<EnumInputProps> = ({
   value,
   metadata,
@@ -18,11 +16,9 @@ export const EnumInput: React.FC<EnumInputProps> = ({
 }) => {
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;
     const validation = validateParameterValue(newValue, metadata);
-
     if (validation.valid) {
       onChange(newValue);
       setHasError(false);
@@ -32,9 +28,7 @@ export const EnumInput: React.FC<EnumInputProps> = ({
       setErrorMessage(validation.error || "Invalid selection");
     }
   };
-
   const options = metadata.enumValues || [];
-
   return (
     <div className={styles.inputContainer}>
       <select
@@ -49,7 +43,6 @@ export const EnumInput: React.FC<EnumInputProps> = ({
           </option>
         ))}
       </select>
-
       {hasError && errorMessage && <div className={styles.errorMessage}>{errorMessage}</div>}
     </div>
   );

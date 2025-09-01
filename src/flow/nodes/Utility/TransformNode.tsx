@@ -4,14 +4,11 @@ import BaseGeometryNodeDesign from "../../../common/BaseGeometryNodeDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
 import { TransformNodeData } from "./Transform";
-
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
-
 export default function TransformNode(props: NodeProps) {
   const { data, selected, id } = props;
   const nodeData = data as TransformNodeData;
-
   return (
     <div className={styles.nodeContainer}>
       <BaseGeometryNodeDesign

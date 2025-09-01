@@ -2,29 +2,23 @@ import React from "react";
 import { useCurrentContext, useNavigateToRoot } from "../store/uiStore";
 import { useGraphStore } from "../engine/graphStore";
 import styles from "./Breadcrumb.module.css";
-
 export const Breadcrumb: React.FC = () => {
   const currentContext = useCurrentContext();
   const navigateToRoot = useNavigateToRoot();
   const { rootNodeRuntime } = useGraphStore();
-
   const handleNavigateToRoot = () => {
     const saveViewportEvent = new CustomEvent("minimystx:saveCurrentViewport");
     window.dispatchEvent(saveViewportEvent);
-
     navigateToRoot();
   };
-
   if (currentContext.type === "root") {
     return null;
   }
-
   const geoNodeId = currentContext.geoNodeId;
   const geoNodeName =
     geoNodeId && rootNodeRuntime[geoNodeId]
       ? rootNodeRuntime[geoNodeId].params.general?.name || "GeoNode"
       : "GeoNode";
-
   return (
     <div className={styles.breadcrumb}>
       <button className={styles.breadcrumbButton} onClick={handleNavigateToRoot}>

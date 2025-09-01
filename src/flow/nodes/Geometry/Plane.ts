@@ -5,7 +5,6 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
 import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 import { BaseContainer } from "../../../engine/containers/BaseContainer";
-
 export interface PlaneNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     width: number;
@@ -14,18 +13,14 @@ export interface PlaneNodeData extends BaseGeometryData, Record<string, unknown>
     heightSegments: number;
   };
 }
-
 function createPlaneGeometry(data: PlaneNodeData): BufferGeometry {
   let { width, height, widthSegments, heightSegments } = data.geometry;
   if (width <= 0) width = 0.1;
   if (height <= 0) height = 0.1;
-
   const clampedWidthSegments = Math.max(1, Math.min(1024, Math.round(widthSegments)));
   const clampedHeightSegments = Math.max(1, Math.min(1024, Math.round(heightSegments)));
-
   return new PlaneGeometry(width, height, clampedWidthSegments, clampedHeightSegments);
 }
-
 export const processor: NodeProcessor<
   PlaneNodeData,
   { object: Object3D; geometry: BufferGeometry }
@@ -33,7 +28,6 @@ export const processor: NodeProcessor<
   const geometry = createPlaneGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };
-
 export const planeNodeParams: NodeParams = {
   general: createGeneralParams("Plane", "Creates a plane geometry"),
   geometry: {
@@ -64,7 +58,6 @@ export const planeNodeParams: NodeParams = {
   },
   rendering: createRenderingParams(),
 };
-
 export const planeNodeCompute = (params: Record<string, any>) => {
   const data: PlaneNodeData = {
     general: params.general,
@@ -79,7 +72,6 @@ export const planeNodeCompute = (params: Record<string, any>) => {
   const inputObject = undefined;
   return processor(data, inputObject);
 };
-
 export const planeNodeComputeTyped = (
   params: Record<string, any>,
   inputs: Record<string, BaseContainer>,
@@ -95,9 +87,7 @@ export const planeNodeComputeTyped = (
     geometry: params.geometry,
     rendering: params.rendering,
   } as PlaneNodeData;
-
   const geometry = createPlaneGeometry(data);
   const container = createGeometryMesh(data, geometry);
-  
   return { default: container };
 };

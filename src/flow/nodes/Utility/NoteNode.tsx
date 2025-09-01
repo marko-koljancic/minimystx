@@ -4,34 +4,27 @@ import { useGraphStore } from "../../../engine/graphStore";
 import { useCurrentContext } from "../../../store/uiStore";
 import { NoteNodeData, NOTE_COLORS } from "./Note";
 import styles from "../Styles/NoteNode.module.css";
-
 const MIN_WIDTH = 120;
 const MIN_HEIGHT = 60;
-
 export default function NoteNode(props: NodeProps) {
   const { data, selected, id } = props;
   const nodeData = data as NoteNodeData;
   const { setParams } = useGraphStore();
   const currentContext = useCurrentContext();
-
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(nodeData.note?.text || "");
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-
   const currentWidth = nodeData.note?.width || MIN_WIDTH;
   const currentHeight = nodeData.note?.height || MIN_HEIGHT;
   const currentColor = nodeData.note?.color || NOTE_COLORS[0];
   const colorIndex = NOTE_COLORS.indexOf(currentColor);
-
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
   }, []);
-
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
   }, []);
-
   const handleTextBlur = useCallback(() => {
     setIsEditing(false);
     setParams(id, {
@@ -41,7 +34,6 @@ export default function NoteNode(props: NodeProps) {
       },
     }, currentContext);
   }, [id, nodeData.note, setParams, text, currentContext]);
-
   const handleTextKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       setIsEditing(false);
@@ -51,7 +43,6 @@ export default function NoteNode(props: NodeProps) {
     }
     e.stopPropagation();
   }, [handleTextBlur, nodeData.note?.text]);
-
   const handleColorClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const nextIndex = (colorIndex + 1) % NOTE_COLORS.length;
@@ -63,7 +54,6 @@ export default function NoteNode(props: NodeProps) {
       },
     }, currentContext);
   }, [colorIndex, id, nodeData.note, setParams, currentContext]);
-
   const handleResize = useCallback((_event: unknown, data: { width: number; height: number }) => {
     setParams(id, {
       note: {
@@ -73,21 +63,16 @@ export default function NoteNode(props: NodeProps) {
       },
     }, currentContext);
   }, [id, nodeData.note, setParams, currentContext]);
-
-
   useEffect(() => {
     if (isEditing && textAreaRef.current) {
       textAreaRef.current.focus();
       textAreaRef.current.select();
     }
   }, [isEditing]);
-
   useEffect(() => {
     setText(nodeData.note?.text || "");
   }, [nodeData.note?.text]);
-
   const colorClassName = `color${colorIndex >= 0 ? colorIndex : 0}`;
-
   return (
     <div
       className={`${styles.noteContainer} ${styles[colorClassName]} ${
@@ -128,14 +113,12 @@ export default function NoteNode(props: NodeProps) {
           {nodeData.note?.text || "Double-click to edit"}
         </div>
       )}
-
       <div
         className={styles.colorSwitcher}
         onClick={handleColorClick}
         title="Change note color"
         data-nodrag
       />
-
     </div>
   );
 }

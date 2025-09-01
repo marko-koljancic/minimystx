@@ -6,32 +6,24 @@ import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
 import { ImportObjNodeData, loadObjFile, SerializableObjFile } from "./ImportObj";
 import { useGraphStore } from "../../../engine/graphStore";
-// import { useCurrentContext } from "../../../store/uiStore";
-
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
-
 export default function ImportObjNode(props: NodeProps) {
   const { data, selected, id } = props;
   const nodeData = data as ImportObjNodeData;
   const recomputeFrom = useGraphStore(state => state.recomputeFrom);
   const markDirty = useGraphStore(state => state.markDirty);
-  // const currentContext = useCurrentContext();
   const lastFileRef = useRef<File | SerializableObjFile | null>(null);
-
   useEffect(() => {
     const currentFile = nodeData.object?.file;
-    
     const filesAreDifferent = currentFile && (
       !lastFileRef.current ||
       currentFile.name !== lastFileRef.current.name ||
       currentFile.size !== lastFileRef.current.size ||
       currentFile.lastModified !== lastFileRef.current.lastModified
     );
-    
     if (filesAreDifferent) {
       lastFileRef.current = currentFile;
-      
       loadObjFile(currentFile)
         .then(() => {
           markDirty(id);
@@ -43,7 +35,6 @@ export default function ImportObjNode(props: NodeProps) {
       lastFileRef.current = null;
     }
   }, [nodeData.object?.file, id, recomputeFrom, markDirty]);
-
   return (
     <div className={styles.nodeContainer}>
       <BaseGeometryNodeDesign

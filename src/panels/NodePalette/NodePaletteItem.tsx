@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { NodeDefinition } from "../../engine/graphStore";
 import styles from "./NodePaletteItem.module.css";
-
 interface NodePaletteItemProps {
   node: NodeDefinition;
   onDrop: () => void;
   isSelected?: boolean;
   onMouseEnter?: () => void;
 }
-
 export default function NodePaletteItem({
   node,
   onDrop,
@@ -16,7 +14,6 @@ export default function NodePaletteItem({
   onMouseEnter,
 }: NodePaletteItemProps) {
   const [isDragging, setIsDragging] = useState(false);
-
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
     e.dataTransfer.setData(
@@ -28,12 +25,10 @@ export default function NodePaletteItem({
     );
     e.dataTransfer.effectAllowed = "move";
   };
-
   const handleDragEnd = () => {
     setIsDragging(false);
     onDrop();
   };
-
   return (
     <div
       draggable

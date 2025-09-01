@@ -9,14 +9,12 @@ import {
   StringInput,
   FileInput,
 } from "./index";
-
 interface ParameterInputProps {
   value: any;
   metadata: ParameterMetadata;
   onChange: (value: any) => void;
   disabled?: boolean;
 }
-
 export const ParameterInput: React.FC<ParameterInputProps> = ({
   value,
   metadata,
@@ -40,7 +38,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
       </div>
     );
   }
-
   switch (metadata.type) {
     case "number":
       return (
@@ -51,7 +48,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           disabled={disabled}
         />
       );
-
     case "vector2":
     case "vector3":
     case "vector4":
@@ -63,7 +59,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           disabled={disabled}
         />
       );
-
     case "boolean":
       return (
         <BooleanInput
@@ -73,7 +68,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           disabled={disabled}
         />
       );
-
     case "enum":
       return (
         <EnumInput
@@ -83,7 +77,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           disabled={disabled}
         />
       );
-
     case "color":
       return (
         <ColorInput
@@ -93,7 +86,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           disabled={disabled}
         />
       );
-
     case "string":
       if (metadata.displayMode === "name") {
         return (
@@ -113,7 +105,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           disabled={disabled}
         />
       );
-
     case "file":
       return (
         <FileInput
@@ -123,7 +114,6 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           disabled={disabled}
         />
       );
-
     default:
       return (
         <div style={{ color: "var(--text-quaternary)", fontStyle: "italic" }}>

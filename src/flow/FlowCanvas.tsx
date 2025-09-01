@@ -37,7 +37,6 @@ import FlowListView from "./FlowListView";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { edgeTypes, initialEdges, initialNodes, nodeTypes } from "../constants";
 import { v4 as uuid } from "uuid";
-
 export default function FlowCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -48,7 +47,6 @@ export default function FlowCanvas() {
   const { setSelectedNode, setSelectedNodes: setUISelectedNodes, clearSelection } = useUIStore();
   const currentContext = useCurrentContext();
   const getFlowViewMode = useGetFlowViewMode();
-  
   const contextKey = getContextKey(currentContext);
   const currentViewMode = getFlowViewMode(contextKey);
   const { applyDagre, applyELK, applyDagreToSelection, applyELKToSelection } = useAutoLayout();
@@ -57,17 +55,14 @@ export default function FlowCanvas() {
     nodes,
     edges
   );
-
   const handleAutoLayoutCycle = useCallback(
     (forceAllNodes = false) => {
       const selectedNodeIds = selectedNodes.map((node) => node.id);
       const hasSelection = selectedNodeIds.length > 0;
       const shouldUseSelection = hasSelection && !forceAllNodes;
-
       const algorithmToUse = currentLayoutAlgorithm;
       const nextAlgorithm = currentLayoutAlgorithm === "dagre" ? "elk" : "dagre";
       setCurrentLayoutAlgorithm(nextAlgorithm);
-
       if (shouldUseSelection) {
         if (algorithmToUse === "dagre") {
           applyDagreToSelection(selectedNodeIds);
@@ -91,12 +86,9 @@ export default function FlowCanvas() {
       applyELKToSelection,
     ]
   );
-
   const handleDeleteSelectedEdges = useCallback(() => {
     if (selectedEdges.length === 0) return;
-
     const { removeEdge } = useGraphStore.getState();
-
     selectedEdges.forEach((edge) => {
       const result = removeEdge(
         edge.source,
@@ -105,17 +97,13 @@ export default function FlowCanvas() {
         edge.sourceHandle || undefined,
         edge.targetHandle || undefined
       );
-
       if (!result.ok) {
         return;
       }
-
       setEdges((eds) => eds.filter((e) => e.id !== edge.id));
     });
-
     setSelectedEdges([]);
   }, [selectedEdges, setEdges, currentContext]);
-
   const { containerRef } = useKeyboardShortcuts({
     context: "flow",
     onDeleteSelectedEdges: handleDeleteSelectedEdges,
@@ -138,49 +126,35 @@ export default function FlowCanvas() {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance<any, any> | null>(
     null
   );
-
   const getVisibleCenter = useCallback(() => {
     if (!reactFlowInstance) return { x: 0, y: 0 };
-
     const viewport = reactFlowInstance.getViewport();
-
     const reactFlowElement = reactFlowRef.current;
     if (!reactFlowElement) return { x: 0, y: 0 };
-
     const rect = reactFlowElement.getBoundingClientRect();
-
     const visibleCenterX = -viewport.x + rect.width / 2 / viewport.zoom;
     const visibleCenterY = -viewport.y + rect.height / 2 / viewport.zoom;
-
     return { x: visibleCenterX, y: visibleCenterY };
   }, [reactFlowInstance]);
-
   useEffect(() => {
     initialNodes.forEach((node) => {
       syncNodeChanges([{ type: "add", item: node }]);
     });
-
     setNodes(initialNodes);
   }, []);
-
   useEffect(() => {
     const currentNodeIds = new Set(nodes.map((n) => n.id));
     const contextNodeIds = new Set(contextNodes.map((n) => n.id));
-
     const needsSync =
       contextNodeIds.size !== currentNodeIds.size ||
       [...contextNodeIds].some((id) => !currentNodeIds.has(id)) ||
       [...currentNodeIds].some((id) => !contextNodeIds.has(id));
-
     if (needsSync) {
       const contextKey = getContextKey(currentContext);
       const savedPositions = getNodePositions(contextKey);
-
       const newNodes = contextNodes.map((contextNode, index) => {
         const existingNode = nodes.find((n) => n.id === contextNode.id);
-
         const initialNode = initialNodes.find((n) => n.id === contextNode.id);
-
         const savedPosition = savedPositions?.[contextNode.id];
         const fallbackPosition = initialNode?.position || {
           x: (index % 3) * 200,
@@ -193,20 +167,16 @@ export default function FlowCanvas() {
         };
       });
       setNodes(newNodes as any);
-
       setEdges(contextEdges);
     }
   }, [contextNodes, setNodes, contextEdges, setEdges]);
-
   useEffect(() => {
     setEdges(contextEdges);
   }, [contextEdges, setEdges]);
-
   const lastContextNodesRef = useRef(contextNodes);
   useEffect(() => {
     if (lastContextNodesRef.current !== contextNodes) {
       lastContextNodesRef.current = contextNodes;
-
       setNodes((currentNodes) =>
         currentNodes.map((node) => {
           const contextNode = contextNodes.find((n) => n.id === node.id);
@@ -224,21 +194,17 @@ export default function FlowCanvas() {
       );
     }
   }, [contextNodes, setNodes]);
-
   useEffect(() => {
     const handleFitNodes = () => {
       if (reactFlowInstance) {
         reactFlowInstance.fitView({ padding: 0.2 });
       }
     };
-
     window.addEventListener("minimystx:fitNodes", handleFitNodes);
-
     return () => {
       window.removeEventListener("minimystx:fitNodes", handleFitNodes);
     };
   }, [reactFlowInstance]);
-
   useEffect(() => {
     const handleGetViewport = (event: CustomEvent) => {
       if (reactFlowInstance) {
@@ -246,14 +212,12 @@ export default function FlowCanvas() {
         (event as unknown as { viewportData?: typeof viewport }).viewportData = viewport;
       }
     };
-
     const handleSetViewport = (event: CustomEvent) => {
       const viewport = event.detail;
       if (viewport && reactFlowInstance) {
         reactFlowInstance.setViewport(viewport, { duration: 0 });
       }
     };
-
     const handleGetNodePositions = (event: CustomEvent) => {
       const nodePositions: Record<string, { x: number; y: number }> = {};
       nodes.forEach((node) => {
@@ -261,11 +225,9 @@ export default function FlowCanvas() {
       });
       (event as unknown as { nodePositions?: typeof nodePositions }).nodePositions = nodePositions;
     };
-
     window.addEventListener("minimystx:getViewport", handleGetViewport as EventListener);
     window.addEventListener("minimystx:setViewport", handleSetViewport as EventListener);
     window.addEventListener("minimystx:getNodePositions", handleGetNodePositions as EventListener);
-
     return () => {
       window.removeEventListener("minimystx:getViewport", handleGetViewport as EventListener);
       window.removeEventListener("minimystx:setViewport", handleSetViewport as EventListener);
@@ -275,38 +237,30 @@ export default function FlowCanvas() {
       );
     };
   }, [reactFlowInstance, nodes]);
-
   useEffect(() => {
     const handleCreateNode = (event: CustomEvent) => {
       const { nodeType, position } = event.detail;
       if (!reactFlowInstance || !nodeType) return;
-
       const flowPosition = position
         ? reactFlowInstance.screenToFlowPosition(position)
         : getVisibleCenter();
-
       const newNode = {
         id: uuid(),
         type: nodeType,
         position: flowPosition,
       };
-
       syncNodeChanges([{ type: "add", item: newNode }]);
     };
-
     window.addEventListener("minimystx:createNode", handleCreateNode as EventListener);
-
     return () => {
       window.removeEventListener("minimystx:createNode", handleCreateNode as EventListener);
     };
   }, [reactFlowInstance, syncNodeChanges, getVisibleCenter]);
-
   useEffect(() => {
     const handleRebuildGraph = (event: CustomEvent) => {
       const savedPositions = event.detail?.positions as
         | Record<string, { x: number; y: number }>
         | undefined;
-
       const visibleCenter = getVisibleCenter();
       const graphNodes = contextNodes.map((contextNode, index) => ({
         id: contextNode.id,
@@ -319,13 +273,10 @@ export default function FlowCanvas() {
         },
         data: contextNode.data,
       }));
-
       const graphEdges = contextEdges;
-
       if (graphNodes.length > 0) {
         setNodes(graphNodes as any);
         setEdges(graphEdges);
-
         if (!savedPositions) {
           setTimeout(() => {
             if (reactFlowInstance) {
@@ -335,14 +286,11 @@ export default function FlowCanvas() {
         }
       }
     };
-
     window.addEventListener("minimystx:rebuildFlowGraph", handleRebuildGraph as EventListener);
-
     return () => {
       window.removeEventListener("minimystx:rebuildFlowGraph", handleRebuildGraph as EventListener);
     };
   }, [contextNodes, contextEdges, setNodes, setEdges, reactFlowInstance, getVisibleCenter]);
-
   useEffect(() => {
     const handleApplyLayout = (event: CustomEvent) => {
       const {
@@ -351,11 +299,9 @@ export default function FlowCanvas() {
         selectedOnly,
         selectedCount: _selectedCount,
       } = event.detail;
-
       if (!layoutedNodes || layoutedNodes.length === 0) {
         return;
       }
-
       setNodes((currentNodes) =>
         currentNodes.map((node) => {
           const layoutedNode = layoutedNodes.find((n: any) => n.id === node.id);
@@ -368,39 +314,27 @@ export default function FlowCanvas() {
           return node;
         })
       );
-
       if (reactFlowInstance && !selectedOnly) {
         setTimeout(() => {
           reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
         }, 100);
       }
-
-      // Message logging disabled
-      // const message = selectedOnly
-      //   ? `Applied ${algorithm} layout to ${selectedCount} selected nodes`
-      //   : `Applied ${algorithm} layout to ${layoutedNodes.length} nodes`;
     };
-
     window.addEventListener("minimystx:applyLayout", handleApplyLayout as EventListener);
-
     return () => {
       window.removeEventListener("minimystx:applyLayout", handleApplyLayout as EventListener);
     };
   }, [setNodes, reactFlowInstance]);
-
   useEffect(() => {
     const handleAutoLayoutTrigger = (event: CustomEvent) => {
       const { algorithm } = event.detail;
-
       if (algorithm === "dagre") {
         applyDagre();
       } else if (algorithm === "elk") {
         applyELK();
       }
     };
-
     window.addEventListener("minimystx:applyAutoLayout", handleAutoLayoutTrigger as EventListener);
-
     return () => {
       window.removeEventListener(
         "minimystx:applyAutoLayout",
@@ -408,7 +342,6 @@ export default function FlowCanvas() {
       );
     };
   }, [applyDagre, applyELK]);
-
   const handleNodesChange = useCallback(
     (changes: any) => {
       onNodesChange(changes);
@@ -416,10 +349,8 @@ export default function FlowCanvas() {
     },
     [onNodesChange, syncNodeChanges]
   );
-
   const handleEdgesChange = useCallback(
     (changes: any) => {
-      // Pass current edges to sync function before they're modified
       const results = syncEdgeChanges(changes, undefined, edges);
       onEdgesChange(changes);
       results.forEach((result) => {
@@ -429,15 +360,12 @@ export default function FlowCanvas() {
     },
     [onEdgesChange, syncEdgeChanges, edges]
   );
-
   const handleSelectionChange = useCallback(
     ({ nodes: selectedNodesList, edges: selectedEdgesList }: { nodes: any[]; edges: any[] }) => {
       setSelectedEdges(selectedEdgesList || []);
       setSelectedNodes(selectedNodesList || []);
-
       const selectedNodeIds = (selectedNodesList || []).map((node: any) => node.id);
       setUISelectedNodes(selectedNodeIds);
-
       if (selectedNodesList.length === 1) {
         setSelectedNode(selectedNodesList[0].id);
       } else if (selectedNodesList.length === 0) {
@@ -448,19 +376,15 @@ export default function FlowCanvas() {
     },
     [setSelectedNode, setUISelectedNodes, clearSelection]
   );
-
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   }, []);
-
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-
       const data = e.dataTransfer.getData("application/reactflow");
       if (!data) return;
-
       try {
         const nodeData = JSON.parse(data);
         if (!reactFlowInstance) return;
@@ -468,23 +392,19 @@ export default function FlowCanvas() {
           x: e.clientX,
           y: e.clientY,
         });
-
         const newNode = {
           id: uuid(),
           type: nodeData.type,
           position,
         };
-
         syncNodeChanges([{ type: "add", item: newNode }]);
       } catch (error) {}
     },
     [syncNodeChanges, reactFlowInstance]
   );
-
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     setMousePosition({ x: e.clientX, y: e.clientY });
   }, []);
-
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Tab" && !e.ctrlKey && !e.altKey && !e.metaKey) {
@@ -503,11 +423,9 @@ export default function FlowCanvas() {
       resetPaletteNavigation,
     ]
   );
-
   const onInit = useCallback(
     (instance: ReactFlowInstance<any, any>) => {
       setReactFlowInstance(instance);
-
       const contextKey = getContextKey(currentContext);
       const savedViewport = getViewportState(contextKey);
       if (savedViewport) {
@@ -518,20 +436,17 @@ export default function FlowCanvas() {
     },
     [currentContext, getViewportState]
   );
-
   const handleNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: any) => {
       if (node.type === "geoNode" && currentContext.type === "root" && reactFlowInstance) {
         const currentViewport = reactFlowInstance.getViewport();
         const contextKey = getContextKey(currentContext);
         saveViewportState(contextKey, currentViewport);
-
         const nodePositions: Record<string, { x: number; y: number }> = {};
         nodes.forEach((n) => {
           nodePositions[n.id] = { x: n.position.x, y: n.position.y };
         });
         saveNodePositions(contextKey, nodePositions);
-
         navigateToSubFlow(node.id);
       }
     },
@@ -544,24 +459,20 @@ export default function FlowCanvas() {
       nodes,
     ]
   );
-
   useEffect(() => {
     if (reactFlowInstance && prevContextRef.current !== currentContext) {
       if (prevContextRef.current) {
         const currentViewport = reactFlowInstance.getViewport();
         const prevContextKey = getContextKey(prevContextRef.current);
         saveViewportState(prevContextKey, currentViewport);
-
         const nodePositions: Record<string, { x: number; y: number }> = {};
         nodes.forEach((n) => {
           nodePositions[n.id] = { x: n.position.x, y: n.position.y };
         });
         saveNodePositions(prevContextKey, nodePositions);
       }
-
       const newContextKey = getContextKey(currentContext);
       const savedViewport = getViewportState(newContextKey);
-
       if (savedViewport) {
         reactFlowInstance.setViewport(savedViewport, { duration: 0 });
       } else {
@@ -569,7 +480,6 @@ export default function FlowCanvas() {
           reactFlowInstance.fitView({ padding: 0.2, duration: 300 });
         }, 100);
       }
-
       prevContextRef.current = currentContext;
     }
   }, [
@@ -580,14 +490,12 @@ export default function FlowCanvas() {
     saveNodePositions,
     nodes,
   ]);
-
   useEffect(() => {
     const handleSaveCurrentViewport = () => {
       if (reactFlowInstance) {
         const currentViewport = reactFlowInstance.getViewport();
         const contextKey = getContextKey(currentContext);
         saveViewportState(contextKey, currentViewport);
-
         const nodePositions: Record<string, { x: number; y: number }> = {};
         nodes.forEach((n) => {
           nodePositions[n.id] = { x: n.position.x, y: n.position.y };
@@ -595,17 +503,14 @@ export default function FlowCanvas() {
         saveNodePositions(contextKey, nodePositions);
       }
     };
-
     const handleRestoreViewportAfterMaximize = () => {
       if (reactFlowInstance) {
         const contextKey = getContextKey(currentContext);
         const savedViewport = getViewportState(contextKey);
         const savedPositions = getNodePositions(contextKey);
-
         if (savedViewport) {
           reactFlowInstance.setViewport(savedViewport, { duration: 0 });
         }
-
         if (savedPositions) {
           setNodes((currentNodes) =>
             currentNodes.map((node) => {
@@ -622,13 +527,11 @@ export default function FlowCanvas() {
         }
       }
     };
-
     window.addEventListener("minimystx:saveCurrentViewport", handleSaveCurrentViewport);
     window.addEventListener(
       "minimystx:restoreViewportAfterMaximize",
       handleRestoreViewportAfterMaximize
     );
-
     return () => {
       window.removeEventListener("minimystx:saveCurrentViewport", handleSaveCurrentViewport);
       window.removeEventListener(
@@ -646,7 +549,6 @@ export default function FlowCanvas() {
     getNodePositions,
     setNodes,
   ]);
-
   return (
     <div
       ref={containerRef}

@@ -1,20 +1,17 @@
 import type { AssetReference } from "./types";
 import { hashBytesSHA256 } from "./crypto";
-
 interface SerializableObjFile {
   name: string;
   size: number;
   lastModified: number;
   content: string;
 }
-
 interface SerializableGltfFile {
   name: string;
   size: number;
   lastModified: number;
   content: string;
 }
-
 export interface AssetProvider {
   getAssetReferences(
     nodeId: string,
@@ -22,25 +19,19 @@ export interface AssetProvider {
     params: Record<string, unknown>
   ): Promise<AssetReference[]>;
 }
-
 class AssetProviderRegistry {
   private providers = new Map<string, AssetProvider>();
-
   register(nodeType: string, provider: AssetProvider): void {
     this.providers.set(nodeType, provider);
   }
-
   get(nodeType: string): AssetProvider | undefined {
     return this.providers.get(nodeType);
   }
-
   getRegisteredTypes(): string[] {
     return Array.from(this.providers.keys());
   }
 }
-
 const assetProviderRegistry = new AssetProviderRegistry();
-
 class ImportObjAssetProvider implements AssetProvider {
   async getAssetReferences(
     _nodeId: string,
@@ -55,12 +46,10 @@ class ImportObjAssetProvider implements AssetProvider {
     if (!objectParams?.file) {
       return [];
     }
-
     const file = objectParams.file;
     let data: ArrayBuffer;
     let originalName: string;
     let size: number;
-
     try {
       if (file instanceof File) {
         data = await file.arrayBuffer();
@@ -74,11 +63,8 @@ class ImportObjAssetProvider implements AssetProvider {
       } else {
         return [];
       }
-
       const hash = await hashBytesSHA256(data);
-
       const mime = this.getMimeType(originalName);
-
       return [
         {
           hash,
@@ -98,7 +84,6 @@ class ImportObjAssetProvider implements AssetProvider {
       return [];
     }
   }
-
   private isSerializableObjFile(obj: unknown): obj is SerializableObjFile {
     return (
       obj !== null &&
@@ -113,7 +98,6 @@ class ImportObjAssetProvider implements AssetProvider {
       typeof (obj as SerializableObjFile).content === "string"
     );
   }
-
   private getMimeType(filename: string): string {
     const ext = filename.toLowerCase().split(".").pop();
     switch (ext) {
@@ -126,7 +110,6 @@ class ImportObjAssetProvider implements AssetProvider {
     }
   }
 }
-
 class ImportGltfAssetProvider implements AssetProvider {
   async getAssetReferences(
     _nodeId: string,
@@ -142,12 +125,10 @@ class ImportGltfAssetProvider implements AssetProvider {
     if (!objectParams?.file) {
       return [];
     }
-
     const file = objectParams.file;
     let data: ArrayBuffer;
     let originalName: string;
     let size: number;
-
     try {
       if (file instanceof File) {
         data = await file.arrayBuffer();
@@ -165,10 +146,8 @@ class ImportGltfAssetProvider implements AssetProvider {
       } else {
         return [];
       }
-
       const hash = await hashBytesSHA256(data);
       const mime = this.getMimeType(originalName);
-
       const assets: AssetReference[] = [
         {
           hash,
@@ -185,121 +164,85 @@ class ImportGltfAssetProvider implements AssetProvider {
           },
         },
       ];
-
-      // Extract textures from glTF
       const textureAssets = await this.extractTexturesFromGltf(data, originalName);
       assets.push(...textureAssets);
-
       return assets;
     } catch (error) {
       return [];
     }
   }
-
   private async extractTexturesFromGltf(data: ArrayBuffer, filename: string): Promise<AssetReference[]> {
     const textureAssets: AssetReference[] = [];
-    
     try {
       const isGlb = filename.toLowerCase().endsWith('.glb');
-      
       if (isGlb) {
-        // Handle GLB (binary) format
         const texturesFromGlb = await this.extractTexturesFromGlb(data);
         textureAssets.push(...texturesFromGlb);
       } else {
-        // Handle GLTF (JSON) format
         const texturesFromGltf = await this.extractTexturesFromGltfJson(data);
         textureAssets.push(...texturesFromGltf);
       }
     } catch (error) {
-      // Texture extraction failure shouldn't fail the entire asset discovery
-      console.warn('Failed to extract textures from glTF:', error);
     }
-
     return textureAssets;
   }
-
   private async extractTexturesFromGltfJson(data: ArrayBuffer): Promise<AssetReference[]> {
     const decoder = new TextDecoder();
     const jsonString = decoder.decode(data);
     const gltf = JSON.parse(jsonString);
-    
     return await this.extractEmbeddedTextures(gltf);
   }
-
   private async extractTexturesFromGlb(data: ArrayBuffer): Promise<AssetReference[]> {
     const view = new DataView(data);
-    
-    // GLB header: magic (4 bytes) + version (4 bytes) + length (4 bytes)
     const magic = view.getUint32(0, true);
     if (magic !== 0x46546C67) { // "glTF" in little-endian
       return [];
     }
-    
-    // Skip to JSON chunk
     let offset = 12; // Skip GLB header
     const jsonChunkLength = view.getUint32(offset, true);
     const jsonChunkType = view.getUint32(offset + 4, true);
-    
     if (jsonChunkType !== 0x4E4F534A) { // "JSON" in little-endian
       return [];
     }
-    
-    // Extract JSON
     const jsonBytes = new Uint8Array(data, offset + 8, jsonChunkLength);
     const decoder = new TextDecoder();
     const jsonString = decoder.decode(jsonBytes);
     const gltf = JSON.parse(jsonString);
-    
-    // Extract embedded textures
     const embeddedTextures = await this.extractEmbeddedTextures(gltf);
-    
-    // Extract binary buffer textures
     const binaryOffset = offset + 8 + jsonChunkLength;
     if (binaryOffset < data.byteLength) {
       const binaryChunkLength = view.getUint32(binaryOffset, true);
       const binaryChunkType = view.getUint32(binaryOffset + 4, true);
-      
       if (binaryChunkType === 0x004E4942) { // "BIN\0" in little-endian
         const binaryData = new Uint8Array(data, binaryOffset + 8, binaryChunkLength);
         const binaryTextures = await this.extractTexturesFromBinaryBuffer(gltf, binaryData);
         embeddedTextures.push(...binaryTextures);
       }
     }
-    
     return embeddedTextures;
   }
-
   private async extractEmbeddedTextures(gltf: any): Promise<AssetReference[]> {
     const textures: AssetReference[] = [];
-    
     if (!gltf.images || !Array.isArray(gltf.images)) {
       return textures;
     }
-    
     for (let index = 0; index < gltf.images.length; index++) {
       const image = gltf.images[index];
-      
       if (image.uri && image.uri.startsWith('data:')) {
-        // Data URI embedded texture
         const dataUri = image.uri;
         const [header, base64Data] = dataUri.split(',');
-        
         if (base64Data) {
           const mimeMatch = header.match(/data:([^;]+)/);
           const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-          
           try {
             const binaryString = atob(base64Data);
             const uint8Array = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
               uint8Array[i] = binaryString.charCodeAt(i);
             }
-            
             const textureData = uint8Array.buffer;
             const extension = this.getExtensionFromMime(mime);
             const textureName = `texture_${index}.${extension}`;
-            
             try {
               const hash = await hashBytesSHA256(textureData);
               textures.push({
@@ -313,41 +256,31 @@ class ImportGltfAssetProvider implements AssetProvider {
                 importSettings: {},
               });
             } catch (error) {
-              // Handle hash generation error silently
             }
           } catch (error) {
-            // Skip invalid base64 data
           }
         }
       }
     }
-    
     return textures;
   }
-
   private async extractTexturesFromBinaryBuffer(gltf: any, binaryData: Uint8Array): Promise<AssetReference[]> {
     const textures: AssetReference[] = [];
-    
     if (!gltf.images || !Array.isArray(gltf.images) || !gltf.bufferViews) {
       return textures;
     }
-    
     for (let i = 0; i < gltf.images.length; i++) {
       const image = gltf.images[i];
-      
       if (typeof image.bufferView === 'number') {
         const bufferView = gltf.bufferViews[image.bufferView];
-        
         if (bufferView && typeof bufferView.byteOffset === 'number' && typeof bufferView.byteLength === 'number') {
           const start = bufferView.byteOffset || 0;
           const length = bufferView.byteLength;
-          
           if (start + length <= binaryData.length) {
             const textureData = binaryData.slice(start, start + length).buffer;
             const mime = image.mimeType || 'image/png';
             const extension = this.getExtensionFromMime(mime);
             const textureName = `texture_${i}.${extension}`;
-            
             try {
               const hash = await hashBytesSHA256(textureData);
               textures.push({
@@ -361,16 +294,13 @@ class ImportGltfAssetProvider implements AssetProvider {
                 importSettings: {},
               });
             } catch (error) {
-              // Skip texture if hash generation fails
             }
           }
         }
       }
     }
-    
     return textures;
   }
-
   private getExtensionFromMime(mime: string): string {
     switch (mime.toLowerCase()) {
       case 'image/jpeg':
@@ -387,7 +317,6 @@ class ImportGltfAssetProvider implements AssetProvider {
         return 'png';
     }
   }
-
   private isSerializableGltfFile(obj: unknown): obj is SerializableGltfFile {
     return (
       obj !== null &&
@@ -402,7 +331,6 @@ class ImportGltfAssetProvider implements AssetProvider {
       typeof (obj as SerializableGltfFile).content === "string"
     );
   }
-
   private getMimeType(filename: string): string {
     const ext = filename.toLowerCase().split(".").pop();
     switch (ext) {
@@ -415,10 +343,8 @@ class ImportGltfAssetProvider implements AssetProvider {
     }
   }
 }
-
 assetProviderRegistry.register("importObjNode", new ImportObjAssetProvider());
 assetProviderRegistry.register("importGltfNode", new ImportGltfAssetProvider());
-
 export async function discoverAssets(graphData: {
   nodes: Array<{ id: string; type: string; params?: Record<string, unknown> }>;
   subFlows?: Record<
@@ -430,13 +356,11 @@ export async function discoverAssets(graphData: {
 }): Promise<AssetReference[]> {
   const allAssets: AssetReference[] = [];
   const seenHashes = new Set<string>();
-
   for (const node of graphData.nodes) {
     const provider = assetProviderRegistry.get(node.type);
     if (provider && node.params) {
       try {
         const assets = await provider.getAssetReferences(node.id, node.type, node.params);
-
         for (const asset of assets) {
           if (!seenHashes.has(asset.hash)) {
             allAssets.push(asset);
@@ -447,7 +371,6 @@ export async function discoverAssets(graphData: {
       }
     }
   }
-
   if (graphData.subFlows) {
     for (const [, subFlow] of Object.entries(graphData.subFlows)) {
       for (const node of subFlow.nodes) {
@@ -455,7 +378,6 @@ export async function discoverAssets(graphData: {
         if (provider && node.params) {
           try {
             const assets = await provider.getAssetReferences(node.id, node.type, node.params);
-
             for (const asset of assets) {
               if (!seenHashes.has(asset.hash)) {
                 allAssets.push(asset);
@@ -468,37 +390,30 @@ export async function discoverAssets(graphData: {
       }
     }
   }
-
   return allAssets;
 }
-
 export function registerAssetProvider(nodeType: string, provider: AssetProvider): void {
   assetProviderRegistry.register(nodeType, provider);
 }
-
 export function getRegisteredAssetProviders(): string[] {
   return assetProviderRegistry.getRegisteredTypes();
 }
-
 export async function validateAssets(assets: AssetReference[]): Promise<{
   valid: AssetReference[];
   invalid: Array<{ asset: AssetReference; error: string }>;
 }> {
   const valid: AssetReference[] = [];
   const invalid: Array<{ asset: AssetReference; error: string }> = [];
-
   for (const asset of assets) {
     try {
       if (!/^[a-f0-9]{64}$/i.test(asset.hash)) {
         invalid.push({ asset, error: "Invalid hash format" });
         continue;
       }
-
       if (!asset.data || asset.data.byteLength === 0) {
         invalid.push({ asset, error: "Empty or missing data" });
         continue;
       }
-
       if (asset.size !== asset.data.byteLength) {
         invalid.push({
           asset,
@@ -506,7 +421,6 @@ export async function validateAssets(assets: AssetReference[]): Promise<{
         });
         continue;
       }
-
       const computedHash = await hashBytesSHA256(asset.data);
       if (computedHash !== asset.hash) {
         invalid.push({
@@ -515,7 +429,6 @@ export async function validateAssets(assets: AssetReference[]): Promise<{
         });
         continue;
       }
-
       valid.push(asset);
     } catch (error) {
       invalid.push({
@@ -524,6 +437,5 @@ export async function validateAssets(assets: AssetReference[]): Promise<{
       });
     }
   }
-
   return { valid, invalid };
 }

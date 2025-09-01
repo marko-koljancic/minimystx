@@ -1,18 +1,14 @@
 import { Position } from "@xyflow/react";
-
 export type PositionType = Position | "top" | "bottom" | "left" | "right";
-
 export interface RelativePositionOptions {
   offset?: number;
   position: PositionType;
 }
-
 export function getRelativePositionStyles(
   position: PositionType,
   offset: number = 8
 ): React.CSSProperties {
   const normalizedPosition = normalizePosition(position);
-
   switch (normalizedPosition) {
     case "top":
       return {
@@ -51,7 +47,6 @@ export function getRelativePositionStyles(
       };
   }
 }
-
 export function getAbsolutePositionStyles(
   x: number,
   y: number,
@@ -59,12 +54,10 @@ export function getAbsolutePositionStyles(
   offset: number = 10
 ): React.CSSProperties {
   const normalizedPosition = normalizePosition(position);
-
   const baseStyles: React.CSSProperties = {
     position: "fixed",
     zIndex: 9999,
   };
-
   switch (normalizedPosition) {
     case "top":
       return {
@@ -103,12 +96,10 @@ export function getAbsolutePositionStyles(
       };
   }
 }
-
 function normalizePosition(position: PositionType): "top" | "bottom" | "left" | "right" {
   if (typeof position === "string") {
     return position as "top" | "bottom" | "left" | "right";
   }
-
   switch (position) {
     case Position.Top:
       return "top";
@@ -122,21 +113,18 @@ function normalizePosition(position: PositionType): "top" | "bottom" | "left" | 
       return "bottom";
   }
 }
-
 export function getArrowStyles(
   position: PositionType,
   arrowSize: number = 6,
   color: string = "#1f2937"
 ): React.CSSProperties {
   const normalizedPosition = normalizePosition(position);
-
   const baseArrowStyle: React.CSSProperties = {
     position: "absolute",
     width: 0,
     height: 0,
     borderStyle: "solid",
   };
-
   switch (normalizedPosition) {
     case "top":
       return {

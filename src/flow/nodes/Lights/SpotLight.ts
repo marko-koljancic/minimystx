@@ -9,7 +9,6 @@ import type {
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
 import { validateAndFixShadowCamera } from "../../../utils/shadowValidation";
-
 export interface SpotLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
   transform: {
@@ -20,7 +19,6 @@ export interface SpotLightNodeData extends Record<string, unknown> {
   shadow: SpotLightShadowProps;
   rendering: SpotLightRenderingProps;
 }
-
 export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> = (
   data: SpotLightNodeData
 ) => {
@@ -32,19 +30,16 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
     data.light.penumbra,
     data.light.decay
   );
-
   light.position.set(
     data.transform.position.x,
     data.transform.position.y,
     data.transform.position.z
   );
-
   light.target.position.set(
     data.transform.target.x,
     data.transform.target.y,
     data.transform.target.z
   );
-
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
     const mapSize = parseInt(data.shadow.mapSize);
@@ -52,25 +47,19 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
     light.shadow.mapSize.height = mapSize;
     light.shadow.bias = data.shadow.bias;
     light.shadow.normalBias = data.shadow.normalBias;
-
     light.shadow.camera.near = data.shadow.cameraNear;
     light.shadow.camera.far = data.shadow.cameraFar;
   }
-
   light.visible = data.rendering.visible;
-
   const lightGroup = new Group();
   lightGroup.add(light);
   lightGroup.add(light.target);
-
   if (data.rendering.showHelper) {
     const helper = new SpotLightHelper(light, data.light.color);
     lightGroup.add(helper);
   }
-
   return { object: lightGroup };
 };
-
 export const spotLightNodeParams: NodeParams = {
   general: {
     name: createParameterMetadata("string", "Spot Light", {
@@ -164,13 +153,11 @@ export const spotLightNodeParams: NodeParams = {
     showHelper: createParameterMetadata("boolean", false, { displayName: "Show Helper" }),
   },
 };
-
 export const spotLightNodeCompute = (params: Record<string, unknown>) => {
   const shadowParams = params.shadow as SpotLightShadowProps;
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
   }
-
   const lightParams = params.light as SpotLightProps;
   if (lightParams?.angle) {
     if (lightParams.angle <= 0) {
@@ -180,7 +167,6 @@ export const spotLightNodeCompute = (params: Record<string, unknown>) => {
       lightParams.angle = Math.PI / 2;
     }
   }
-
   const data: SpotLightNodeData = {
     general: params.general as GeneralProps,
     transform: {
@@ -191,6 +177,5 @@ export const spotLightNodeCompute = (params: Record<string, unknown>) => {
     shadow: shadowParams,
     rendering: params.rendering as SpotLightRenderingProps,
   };
-
   return processor(data);
 };

@@ -5,7 +5,6 @@ import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
 import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 import { BaseContainer } from "../../../engine/containers/BaseContainer";
-
 export interface TorusKnotNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
     radius: number;
@@ -16,21 +15,16 @@ export interface TorusKnotNodeData extends BaseGeometryData, Record<string, unkn
     radialSegments: number;
   };
 }
-
 function createTorusKnotGeometry(data: TorusKnotNodeData): BufferGeometry {
   let { radius, tube, p, q, tubularSegments, radialSegments } = data.geometry;
   if (radius <= 0) radius = 0.1;
   if (tube <= 0) tube = 0.1;
-
   p = Math.round(Math.max(1, Math.min(10, p)));
   q = Math.round(Math.max(1, Math.min(10, q)));
-
   const clampedTubularSegments = Math.max(3, Math.min(2048, Math.round(tubularSegments)));
   const clampedRadialSegments = Math.max(3, Math.min(2048, Math.round(radialSegments)));
-
   return new TorusKnotGeometry(radius, tube, clampedTubularSegments, clampedRadialSegments, p, q);
 }
-
 export const processor: NodeProcessor<
   TorusKnotNodeData,
   { object: Object3D; geometry: BufferGeometry }
@@ -38,7 +32,6 @@ export const processor: NodeProcessor<
   const geometry = createTorusKnotGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };
-
 export const torusKnotNodeParams: NodeParams = {
   general: createGeneralParams("TorusKnot", "Creates a 3D torus knot geometry"),
   geometry: {
@@ -71,7 +64,6 @@ export const torusKnotNodeParams: NodeParams = {
   },
   rendering: createRenderingParams(),
 };
-
 export const torusKnotNodeCompute = (params: Record<string, any>) => {
   const data: TorusKnotNodeData = {
     general: params.general,
@@ -86,7 +78,6 @@ export const torusKnotNodeCompute = (params: Record<string, any>) => {
   const inputObject = undefined;
   return processor(data, inputObject);
 };
-
 export const torusKnotNodeComputeTyped = (
   params: Record<string, any>,
   inputs: Record<string, BaseContainer>,
@@ -102,9 +93,7 @@ export const torusKnotNodeComputeTyped = (
     geometry: params.geometry,
     rendering: params.rendering,
   } as TorusKnotNodeData;
-
   const geometry = createTorusKnotGeometry(data);
   const container = createGeometryMesh(data, geometry);
-  
   return { default: container };
 };
