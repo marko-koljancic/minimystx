@@ -419,14 +419,15 @@ export default function FlowCanvas() {
 
   const handleEdgesChange = useCallback(
     (changes: any) => {
+      // Pass current edges to sync function before they're modified
+      const results = syncEdgeChanges(changes, undefined, edges);
       onEdgesChange(changes);
-      const results = syncEdgeChanges(changes);
       results.forEach((result) => {
         if (!result.success && result.error) {
         }
       });
     },
-    [onEdgesChange, syncEdgeChanges]
+    [onEdgesChange, syncEdgeChanges, edges]
   );
 
   const handleSelectionChange = useCallback(

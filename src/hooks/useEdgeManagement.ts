@@ -15,15 +15,60 @@ export function useEdgeManagement(
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      // Debug: Log connection attempt details
+      console.log(`🔗 Connection attempt:`, {
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle,
+        targetHandle: connection.targetHandle,
+        targetHandleType: typeof connection.targetHandle,
+        targetHandleIsNull: connection.targetHandle === null,
+        targetHandleIsUndefined: connection.targetHandle === undefined,
+        targetHandleIsEmptyString: connection.targetHandle === "",
+      });
+
+      // CRITICAL FIX: Validate connection before allowing it
+      if (!isValidConnection(connection, nodes, edges, currentContext)) {
+        console.log(`🚫 Connection blocked: ${connection.source} → ${connection.target} (validation failed)`);
+        return;
+      }
+
+      // CRITICAL FIX: Ensure targetHandle is explicitly preserved, never set to undefined
       const edge = {
         ...connection,
-        sourceHandle: connection.sourceHandle || undefined,
-        targetHandle: connection.targetHandle || undefined,
+        sourceHandle: connection.sourceHandle ?? null,
+        targetHandle: connection.targetHandle ?? null,
         type: "wire",
         id: uuid(),
       };
+      
+      // Debug: Log edge creation details
+      console.log(`🔗 Creating edge:`, {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle
+      });
 
-      setEdges((eds) => eds.concat(edge));
+      // CRITICAL DEBUGGING: Log the state of edges after adding this edge
+      setEdges((eds) => {
+        const newEdges = eds.concat(edge);
+        console.log(`🔗 Updated edges array:`, {
+          totalEdges: newEdges.length,
+          targetNodeEdges: newEdges.filter(e => e.target === edge.target).map(e => ({
+            id: e.id,
+            targetHandle: e.targetHandle,
+            targetHandleType: typeof e.targetHandle,
+            sourceHandle: e.sourceHandle,
+            source: e.source,
+            target: e.target
+          })),
+          // Raw edge data for debugging
+          rawTargetEdges: newEdges.filter(e => e.target === edge.target)
+        });
+        return newEdges;
+      });
 
       if (connection.source && connection.target) {
         const result = addEdge(
@@ -35,10 +80,13 @@ export function useEdgeManagement(
         );
 
         if (!result.ok) {
+          console.warn(`Failed to add edge to graph: ${result.error}`);
+          // Remove the visual edge if graph addition failed
+          setEdges((eds) => eds.filter((e) => e.id !== edge.id));
         }
       }
     },
-    [setEdges, addEdge, currentContext]
+    [setEdges, addEdge, currentContext, nodes, edges]
   );
 
   const onReconnect = useCallback(

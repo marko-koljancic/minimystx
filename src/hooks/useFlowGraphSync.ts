@@ -6,7 +6,7 @@ import { EdgeChange } from "@xyflow/react";
 
 export const useFlowGraphSync = () => {
   const currentContext = useCurrentContext();
-  const { addNode, removeNode, setParams, addEdge, resetEdges } = useGraphStore();
+  const { addNode, removeNode, setParams, addEdge, removeEdge, resetEdges } = useGraphStore();
 
   const syncNodeChanges = useCallback(
     (changes: any[]) => {
@@ -43,7 +43,7 @@ export const useFlowGraphSync = () => {
   );
 
   const syncEdgeChanges = useCallback(
-    (changes: EdgeChange[], customResetEdges?: EdgeData[]) => {
+    (changes: EdgeChange[], customResetEdges?: EdgeData[], currentEdges?: any[]) => {
       const results: Array<{ success: boolean; error?: string; edgeId?: string }> = [];
 
       changes.forEach((change) => {
@@ -75,7 +75,30 @@ export const useFlowGraphSync = () => {
             break;
 
           case "remove":
-            if ("id" in change) results.push({ success: true, edgeId: change.id });
+            if ("id" in change && currentEdges) {
+              // CRITICAL FIX: Find the edge data before removal and call removeEdge
+              const edgeToRemove = currentEdges.find(edge => edge.id === change.id);
+              if (edgeToRemove) {
+                console.log(`🔌 Edge removal detected: ${edgeToRemove.source} → ${edgeToRemove.target}`);
+                const result = removeEdge(
+                  edgeToRemove.source,
+                  edgeToRemove.target,
+                  currentContext,
+                  edgeToRemove.sourceHandle,
+                  edgeToRemove.targetHandle
+                );
+                results.push({
+                  success: result.ok,
+                  error: result.ok ? undefined : result.error,
+                  edgeId: change.id
+                });
+              } else {
+                console.warn(`🔌 Could not find edge data for removal: ${change.id}`);
+                results.push({ success: false, error: "Edge data not found", edgeId: change.id });
+              }
+            } else {
+              results.push({ success: false, error: "No current edges provided", edgeId: (change as any).id });
+            }
             break;
 
           case "select":
@@ -96,7 +119,7 @@ export const useFlowGraphSync = () => {
 
       return results;
     },
-    [addEdge, resetEdges, currentContext]
+    [addEdge, removeEdge, resetEdges, currentContext]
   );
 
   return { syncNodeChanges, syncEdgeChanges };

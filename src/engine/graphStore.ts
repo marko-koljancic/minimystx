@@ -6,8 +6,9 @@ import { GraphLibAdapter } from "./graph/GraphLibAdapter";
 import { RenderConeScheduler, type SchedulerEvent } from "./scheduler/RenderConeScheduler";
 import { ContentCache } from "./cache/ContentCache";
 import { SubflowManager } from "./subflow/SubflowManager";
-import { BaseContainer } from './containers/BaseContainer';
+import { BaseContainer, Object3DContainer } from './containers/BaseContainer';
 import { NodeInput, NodeOutput } from './types/NodeIO';
+import { Object3D } from 'three';
 
 export type Result<T = void> =
   | {
@@ -713,7 +714,61 @@ export const useGraphStore = create<GraphState>()(
             sourceHandle,
             targetHandle
           );
-          // Subflow connection result
+          
+          // CRITICAL FIX: Trigger recomputation of target node after connection
+          if (connected) {
+            set((state) => {
+              const subflow = state.subFlows[context.geoNodeId];
+              if (subflow?.nodeRuntime[target]) {
+                const nodeState = subflow.nodeState[target];
+                if (nodeState) {
+                  try {
+                    const nodeDefinition = nodeRegistry[nodeState.type];
+                    if (nodeDefinition?.computeTyped) {
+                      // Get inputs from connected nodes for immediate recomputation
+                      const inputs: Record<string, BaseContainer> = {};
+                      
+                      // Get subflow internal graph and find predecessor nodes
+                      const subflowManager = state.subflowManager.getSubflow(context.geoNodeId);
+                      if (subflowManager) {
+                        try {
+                          const predecessors = subflowManager.internalGraph.getAllPredecessors(target);
+                          
+                          if (predecessors.length > 0) {
+                            // Use first predecessor as default input (typical for Transform nodes)
+                            const inputNodeId = predecessors[0].id;
+                            const inputNodeRuntime = subflow.nodeRuntime[inputNodeId];
+                            if (inputNodeRuntime?.output) {
+                              inputs.default = inputNodeRuntime.output.default || new Object3DContainer(new Object3D());
+                            }
+                          }
+                        } catch (error) {
+                          console.warn(`Could not get predecessors for ${target}:`, error);
+                        }
+                      }
+                      
+                      const result = nodeDefinition.computeTyped(nodeState.params, inputs, { nodeId: target });
+                      
+                      // Handle both sync and async results
+                      if (result && typeof result.then === 'function') {
+                        result.then((resolvedResult: any) => {
+                          set((draft) => {
+                            if (draft.subFlows[context.geoNodeId]?.nodeRuntime[target]) {
+                              draft.subFlows[context.geoNodeId].nodeRuntime[target].output = resolvedResult;
+                            }
+                          });
+                        });
+                      } else {
+                        subflow.nodeRuntime[target].output = result;
+                      }
+                    }
+                  } catch (error) {
+                    console.warn(`Could not recompute node ${target} after connection:`, error);
+                  }
+                }
+              }
+            });
+          }
         }
 
         return { ok: true };
@@ -744,6 +799,45 @@ export const useGraphStore = create<GraphState>()(
         } else if (context.type === "subflow" && context.geoNodeId) {
           // Remove connection from subflow
           get().subflowManager.removeSubflowConnection(context.geoNodeId, source, target);
+          
+          // CRITICAL FIX: Trigger recomputation of target node after disconnection
+          console.log(`🔌 Disconnecting ${source} → ${target}, triggering recomputation of target`);
+          set((state) => {
+            const subflow = state.subFlows[context.geoNodeId];
+            if (subflow?.nodeRuntime[target]) {
+              const nodeState = subflow.nodeState[target];
+              if (nodeState) {
+                try {
+                  const nodeDefinition = nodeRegistry[nodeState.type];
+                  if (nodeDefinition?.computeTyped) {
+                    // Recompute target node with no inputs (disconnected)
+                    const inputs: Record<string, BaseContainer> = {};
+                    console.log(`🔌 Recomputing ${target} with empty inputs after disconnection`);
+                    const result = nodeDefinition.computeTyped(nodeState.params, inputs, { nodeId: target });
+                    
+                    console.log(`🔌 Disconnection recomputation result for ${target}:`, result);
+                    
+                    // Handle both sync and async results
+                    if (result && typeof result.then === 'function') {
+                      result.then((resolvedResult: any) => {
+                        console.log(`🔌 Disconnection async resolved for ${target}:`, resolvedResult);
+                        set((draft) => {
+                          if (draft.subFlows[context.geoNodeId]?.nodeRuntime[target]) {
+                            draft.subFlows[context.geoNodeId].nodeRuntime[target].output = resolvedResult;
+                          }
+                        });
+                      });
+                    } else {
+                      subflow.nodeRuntime[target].output = result;
+                      console.log(`🔌 Disconnection recomputation stored for ${target}`);
+                    }
+                  }
+                } catch (error) {
+                  console.warn(`Could not recompute node ${target} after disconnection:`, error);
+                }
+              }
+            }
+          });
         }
 
         return { ok: true };

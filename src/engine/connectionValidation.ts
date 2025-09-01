@@ -60,15 +60,48 @@ export const isValidConnection = (
   currentContext?: { type: "root" | "subflow"; geoNodeId?: string }
 ): boolean => {
   const { source, target, targetHandle } = connection;
+  
+  // Debug: Log the incoming connection details
+  console.log(`🔍 Validating connection:`, {
+    source,
+    target, 
+    targetHandle,
+    connectionType: typeof targetHandle,
+    totalEdges: edges.length,
+    edgeIds: edges.map(e => e.id)
+  });
+  
+  // Early validation cache to reduce repeated calls during drag (unused for now)
+  // const connectionKey = `${source}-${target}-${targetHandle}`;
+  
   const sourceNode = nodes.find((node) => node.id === source);
   const targetNode = nodes.find((node) => node.id === target);
-  const existingTargetConnection = edges.find(
-    (edge) => edge.target === target && edge.targetHandle === targetHandle
-  );
+  
+  // CRITICAL FIX: Handle undefined/null targetHandle by treating it as a default handle
+  const normalizedTargetHandle = targetHandle ?? "default";
+  
+  // CRITICAL FIX: Count existing connections to the same target handle more robustly
+  // This addresses React Flow edge state timing issues
+  const existingConnectionsToHandle = edges.filter((edge) => {
+    const edgeTargetHandle = edge.targetHandle ?? "default";
+    return edge.target === target && edgeTargetHandle === normalizedTargetHandle;
+  });
+  
+  const existingTargetConnection = existingConnectionsToHandle.length > 0 ? existingConnectionsToHandle[0] : undefined;
 
-  if (!source || !target) return false;
-  if (source === target) return false;
-  if (!sourceNode || !targetNode) return false;
+  // Basic validation
+  if (!source || !target) {
+    console.log(`🚫 Connection validation failed: missing source/target`);
+    return false;
+  }
+  if (source === target) {
+    console.log(`🚫 Connection validation failed: self-connection`);
+    return false;
+  }
+  if (!sourceNode || !targetNode) {
+    console.log(`🚫 Connection validation failed: node not found`);
+    return false;
+  }
 
   if (currentContext && sourceNode.type && targetNode.type) {
     const sourceNodeDef = nodeRegistry[sourceNode.type as keyof typeof nodeRegistry];
@@ -83,8 +116,41 @@ export const isValidConnection = (
     }
   }
 
-  if (existingTargetConnection) return false;
-  if (wouldCreateCycle(edges, source, target)) return false;
+  // Check for existing connection to same target handle
+  console.log(`🔍 Checking for existing connections to ${target}.${normalizedTargetHandle}:`, {
+    totalEdges: edges.length,
+    edgesToTarget: edges.filter(edge => edge.target === target),
+    edgesToTargetHandle: edges.filter(edge => {
+      const edgeTargetHandle = edge.targetHandle ?? "default";
+      return edge.target === target && edgeTargetHandle === normalizedTargetHandle;
+    }),
+    existingConnection: existingTargetConnection,
+    // Debug: Show actual targetHandle values from existing edges
+    existingEdgesHandles: edges.filter(edge => edge.target === target).map(edge => ({
+      id: edge.id,
+      targetHandle: edge.targetHandle,
+      targetHandleType: typeof edge.targetHandle,
+      normalizedTargetHandle: edge.targetHandle ?? "default",
+      sourceHandle: edge.sourceHandle,
+      source: edge.source,
+      target: edge.target
+    })),
+    currentConnectionTargetHandle: targetHandle,
+    normalizedCurrentTargetHandle: normalizedTargetHandle
+  });
+  
+  if (existingTargetConnection) {
+    console.log(`🚫 Connection validation failed: target handle already connected (${target}.${targetHandle})`);
+    return false;
+  }
+  
+  // Check for cycles
+  if (wouldCreateCycle(edges, source, target)) {
+    console.log(`🚫 Connection validation failed: would create cycle`);
+    return false;
+  }
+  
+  console.log(`✅ Connection validation passed: ${source} → ${target}.${targetHandle}`);
   return true;
 };
 
