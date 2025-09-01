@@ -35,7 +35,7 @@ export const processor: NodeProcessor<
 };
 
 export const planeNodeParams: NodeParams = {
-  general: createGeneralParams("Plane 1", "Creates a plane geometry"),
+  general: createGeneralParams("Plane", "Creates a plane geometry"),
   geometry: {
     width: createParameterMetadata("number", 1, {
       displayName: "Width",

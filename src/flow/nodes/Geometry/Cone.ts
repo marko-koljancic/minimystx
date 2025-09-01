@@ -35,7 +35,7 @@ export const processor: NodeProcessor<
 };
 
 export const coneNodeParams: NodeParams = {
-  general: createGeneralParams("Cone 1", "Creates a 3D cone geometry"),
+  general: createGeneralParams("Cone", "Creates a 3D cone geometry"),
   geometry: {
     radius: createParameterMetadata("number", 0.5, {
       displayName: "Radius",

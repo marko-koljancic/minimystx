@@ -32,7 +32,7 @@ export const processor: NodeProcessor<
 };
 
 export const sphereNodeParams: NodeParams = {
-  general: createGeneralParams("Sphere 1", "Creates a 3D sphere geometry"),
+  general: createGeneralParams("Sphere", "Creates a 3D sphere geometry"),
   geometry: {
     radius: createParameterMetadata("number", 0.5, {
       displayName: "Radius",

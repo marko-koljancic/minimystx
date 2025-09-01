@@ -45,7 +45,7 @@ export const processor: NodeProcessor<
 };
 
 export const boxNodeParams: NodeParams = {
-  general: createGeneralParams("Box 1", "Creates a 3D box geometry"),
+  general: createGeneralParams("Box", "Creates a 3D box geometry"),
   geometry: {
     width: createParameterMetadata("number", 1, {
       displayName: "Width",

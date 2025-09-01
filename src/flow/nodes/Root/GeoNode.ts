@@ -25,7 +25,7 @@ export interface GeoNodeData extends Record<string, unknown> {
 }
 
 export const geoNodeParams: NodeParams = {
-  general: createGeneralParams("Geo1", "Container for sub-flow geometry"),
+  general: createGeneralParams("Geo", "Container for sub-flow geometry"),
   transform: createTransformParams(),
   rendering: createRenderingParams(),
 };

@@ -44,7 +44,7 @@ export const processor: NodeProcessor<
 };
 
 export const cylinderNodeParams: NodeParams = {
-  general: createGeneralParams("Cylinder 1", "Creates a 3D cylinder geometry"),
+  general: createGeneralParams("Cylinder", "Creates a 3D cylinder geometry"),
   geometry: {
     radiusTop: createParameterMetadata("number", 0.5, {
       displayName: "Top Radius",

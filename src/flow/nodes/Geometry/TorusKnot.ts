@@ -40,7 +40,7 @@ export const processor: NodeProcessor<
 };
 
 export const torusKnotNodeParams: NodeParams = {
-  general: createGeneralParams("TorusKnot 1", "Creates a 3D torus knot geometry"),
+  general: createGeneralParams("TorusKnot", "Creates a 3D torus knot geometry"),
   geometry: {
     radius: createParameterMetadata("number", 0.5, {
       displayName: "Radius",

@@ -312,7 +312,7 @@ export const processor: NodeProcessor<
 export { loadGltfFile, fileToSerializableGltfFile, loadGltfFromCache, getAssetHash };
 
 export const importGltfNodeParams: NodeParams = {
-  general: createGeneralParams("Import glTF 1", "Load geometry from .gltf/.glb file"),
+  general: createGeneralParams("Import glTF", "Load geometry from .gltf/.glb file"),
   object: {
     file: createParameterMetadata("file", null, {
       displayName: "File",

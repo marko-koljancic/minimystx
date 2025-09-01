@@ -35,7 +35,7 @@ export const processor: NodeProcessor<
 };
 
 export const torusNodeParams: NodeParams = {
-  general: createGeneralParams("Torus 1", "Creates a 3D torus geometry"),
+  general: createGeneralParams("Torus", "Creates a 3D torus geometry"),
   geometry: {
     radius: createParameterMetadata("number", 0.5, {
       displayName: "Radius",

@@ -261,7 +261,7 @@ export const processor: NodeProcessor<
 export { loadObjFile, fileToSerializableObjFile, loadObjFromCache, getAssetHash };
 
 export const importObjNodeParams: NodeParams = {
-  general: createGeneralParams("Import OBJ 1", "Load geometry from .obj file"),
+  general: createGeneralParams("Import OBJ", "Load geometry from .obj file"),
   object: {
     file: createParameterMetadata("file", null, { displayName: "File", accept: ".obj" }),
     scale: createParameterMetadata("number", 1, {
