@@ -64,7 +64,7 @@ export const cylinderNodeParams: NodeParams = {
       max: 100,
       step: 0.1,
     }),
-    radialSegments: createParameterMetadata("number", 8, {
+    radialSegments: createParameterMetadata("number", 32, {
       displayName: "Radial Segments",
       min: 3,
       max: 512,
@@ -113,6 +113,6 @@ export const cylinderNodeComputeTyped = (
 
   const geometry = createCylinderGeometry(data);
   const container = createGeometryMesh(data, geometry);
-  
+
   return { default: container };
 };

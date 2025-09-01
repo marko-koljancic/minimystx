@@ -49,13 +49,13 @@ export const torusNodeParams: NodeParams = {
       max: 100,
       step: 0.1,
     }),
-    radialSegments: createParameterMetadata("number", 8, {
+    radialSegments: createParameterMetadata("number", 16, {
       displayName: "Radial Segments",
       min: 3,
       max: 1024,
       step: 1,
     }),
-    tubularSegments: createParameterMetadata("number", 6, {
+    tubularSegments: createParameterMetadata("number", 32, {
       displayName: "Tubular Segments",
       min: 3,
       max: 1024,

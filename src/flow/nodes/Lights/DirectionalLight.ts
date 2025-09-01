@@ -112,7 +112,7 @@ export const directionalLightNodeParams: NodeParams = {
       displayName: "Shadow Map Size",
       enumValues: ["512", "1024", "2048"],
     }),
-    bias: createParameterMetadata("number", 0.001, {
+    bias: createParameterMetadata("number", 0.0001, {
       displayName: "Shadow Bias",
       min: -0.01,
       max: 0.01,

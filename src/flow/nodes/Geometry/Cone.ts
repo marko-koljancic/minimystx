@@ -49,7 +49,7 @@ export const coneNodeParams: NodeParams = {
       max: 100,
       step: 0.1,
     }),
-    radialSegments: createParameterMetadata("number", 8, {
+    radialSegments: createParameterMetadata("number", 32, {
       displayName: "Radial Segments",
       min: 3,
       max: 512,
@@ -118,6 +118,6 @@ export const coneNodeComputeTyped = (
 
   const geometry = createConeGeometry(data);
   const container = createGeometryMesh(data, geometry);
-  
+
   return { default: container };
 };
