@@ -30,7 +30,7 @@ import { noteNodeParams, noteNodeCompute } from "../flow/nodes/Utility/Note";
 export const nodeRegistry: Record<string, NodeDefinition> = {
   geoNode: {
     type: "geoNode",
-    category: "Root",
+    category: "Geometry",
     displayName: "Geo",
     allowedContexts: ["root"],
     params: geoNodeParams,
@@ -38,7 +38,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   boxNode: {
     type: "boxNode",
-    category: "Geometry", 
+    category: "3D Primitives", 
     displayName: "Box",
     allowedContexts: ["subflow"],
     params: boxNodeParams,
@@ -47,7 +47,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   sphereNode: {
     type: "sphereNode",
-    category: "Geometry",
+    category: "3D Primitives",
     displayName: "Sphere",
     allowedContexts: ["subflow"],
     params: sphereNodeParams,
@@ -56,7 +56,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   cylinderNode: {
     type: "cylinderNode",
-    category: "Geometry",
+    category: "3D Primitives",
     displayName: "Cylinder",
     allowedContexts: ["subflow"],
     params: cylinderNodeParams,
@@ -65,7 +65,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   planeNode: {
     type: "planeNode",
-    category: "Geometry",
+    category: "3D Primitives",
     displayName: "Plane",
     allowedContexts: ["subflow"],
     params: planeNodeParams,
@@ -74,7 +74,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   coneNode: {
     type: "coneNode",
-    category: "Geometry",
+    category: "3D Primitives",
     displayName: "Cone",
     allowedContexts: ["subflow"],
     params: coneNodeParams,
@@ -83,7 +83,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   torusNode: {
     type: "torusNode",
-    category: "Geometry",
+    category: "3D Primitives",
     displayName: "Torus",
     allowedContexts: ["subflow"],
     params: torusNodeParams,
@@ -92,7 +92,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   torusKnotNode: {
     type: "torusKnotNode",
-    category: "Geometry",
+    category: "3D Primitives",
     displayName: "TorusKnot",
     allowedContexts: ["subflow"],
     params: torusKnotNodeParams,

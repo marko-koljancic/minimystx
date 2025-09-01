@@ -205,10 +205,16 @@ export default function Header() {
       submenu?: Array<{ label: string; onClick: () => void }>;
     }> = [];
 
-    categories.forEach((category) => {
+    // Sort categories alphabetically
+    const sortedCategories = [...categories].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+    sortedCategories.forEach((category) => {
       const nodes = nodesByCategory[category] || [];
 
-      const submenuItems = nodes.map((node) => ({
+      // Sort nodes within each category alphabetically
+      const sortedNodes = [...nodes].sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' }));
+
+      const submenuItems = sortedNodes.map((node) => ({
         label: node.displayName,
         onClick: () => handleCreateNodeAtCenter(node.type),
       }));
