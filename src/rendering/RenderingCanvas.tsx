@@ -39,8 +39,7 @@ export default function RenderingCanvas() {
         imageUrl,
         filename,
       });
-    } catch (error) {
-    }
+    } catch (error) {}
   }, [generateFilename]);
   const handleCloseModal = useCallback(() => {
     setScreenshotModal({

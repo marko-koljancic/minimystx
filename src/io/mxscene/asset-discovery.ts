@@ -171,10 +171,13 @@ class ImportGltfAssetProvider implements AssetProvider {
       return [];
     }
   }
-  private async extractTexturesFromGltf(data: ArrayBuffer, filename: string): Promise<AssetReference[]> {
+  private async extractTexturesFromGltf(
+    data: ArrayBuffer,
+    filename: string
+  ): Promise<AssetReference[]> {
     const textureAssets: AssetReference[] = [];
     try {
-      const isGlb = filename.toLowerCase().endsWith('.glb');
+      const isGlb = filename.toLowerCase().endsWith(".glb");
       if (isGlb) {
         const texturesFromGlb = await this.extractTexturesFromGlb(data);
         textureAssets.push(...texturesFromGlb);
@@ -182,8 +185,7 @@ class ImportGltfAssetProvider implements AssetProvider {
         const texturesFromGltf = await this.extractTexturesFromGltfJson(data);
         textureAssets.push(...texturesFromGltf);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
     return textureAssets;
   }
   private async extractTexturesFromGltfJson(data: ArrayBuffer): Promise<AssetReference[]> {
@@ -195,13 +197,15 @@ class ImportGltfAssetProvider implements AssetProvider {
   private async extractTexturesFromGlb(data: ArrayBuffer): Promise<AssetReference[]> {
     const view = new DataView(data);
     const magic = view.getUint32(0, true);
-    if (magic !== 0x46546C67) { // "glTF" in little-endian
+    if (magic !== 0x46546c67) {
+      // "glTF" in little-endian
       return [];
     }
     let offset = 12; // Skip GLB header
     const jsonChunkLength = view.getUint32(offset, true);
     const jsonChunkType = view.getUint32(offset + 4, true);
-    if (jsonChunkType !== 0x4E4F534A) { // "JSON" in little-endian
+    if (jsonChunkType !== 0x4e4f534a) {
+      // "JSON" in little-endian
       return [];
     }
     const jsonBytes = new Uint8Array(data, offset + 8, jsonChunkLength);
@@ -213,7 +217,8 @@ class ImportGltfAssetProvider implements AssetProvider {
     if (binaryOffset < data.byteLength) {
       const binaryChunkLength = view.getUint32(binaryOffset, true);
       const binaryChunkType = view.getUint32(binaryOffset + 4, true);
-      if (binaryChunkType === 0x004E4942) { // "BIN\0" in little-endian
+      if (binaryChunkType === 0x004e4942) {
+        // "BIN\0" in little-endian
         const binaryData = new Uint8Array(data, binaryOffset + 8, binaryChunkLength);
         const binaryTextures = await this.extractTexturesFromBinaryBuffer(gltf, binaryData);
         embeddedTextures.push(...binaryTextures);
@@ -228,12 +233,12 @@ class ImportGltfAssetProvider implements AssetProvider {
     }
     for (let index = 0; index < gltf.images.length; index++) {
       const image = gltf.images[index];
-      if (image.uri && image.uri.startsWith('data:')) {
+      if (image.uri && image.uri.startsWith("data:")) {
         const dataUri = image.uri;
-        const [header, base64Data] = dataUri.split(',');
+        const [header, base64Data] = dataUri.split(",");
         if (base64Data) {
           const mimeMatch = header.match(/data:([^;]+)/);
-          const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+          const mime = mimeMatch ? mimeMatch[1] : "image/png";
           try {
             const binaryString = atob(base64Data);
             const uint8Array = new Uint8Array(binaryString.length);
@@ -255,30 +260,35 @@ class ImportGltfAssetProvider implements AssetProvider {
                 role: "texture",
                 importSettings: {},
               });
-            } catch (error) {
-            }
-          } catch (error) {
-          }
+            } catch (error) {}
+          } catch (error) {}
         }
       }
     }
     return textures;
   }
-  private async extractTexturesFromBinaryBuffer(gltf: any, binaryData: Uint8Array): Promise<AssetReference[]> {
+  private async extractTexturesFromBinaryBuffer(
+    gltf: any,
+    binaryData: Uint8Array
+  ): Promise<AssetReference[]> {
     const textures: AssetReference[] = [];
     if (!gltf.images || !Array.isArray(gltf.images) || !gltf.bufferViews) {
       return textures;
     }
     for (let i = 0; i < gltf.images.length; i++) {
       const image = gltf.images[i];
-      if (typeof image.bufferView === 'number') {
+      if (typeof image.bufferView === "number") {
         const bufferView = gltf.bufferViews[image.bufferView];
-        if (bufferView && typeof bufferView.byteOffset === 'number' && typeof bufferView.byteLength === 'number') {
+        if (
+          bufferView &&
+          typeof bufferView.byteOffset === "number" &&
+          typeof bufferView.byteLength === "number"
+        ) {
           const start = bufferView.byteOffset || 0;
           const length = bufferView.byteLength;
           if (start + length <= binaryData.length) {
             const textureData = binaryData.slice(start, start + length).buffer;
-            const mime = image.mimeType || 'image/png';
+            const mime = image.mimeType || "image/png";
             const extension = this.getExtensionFromMime(mime);
             const textureName = `texture_${i}.${extension}`;
             try {
@@ -293,8 +303,7 @@ class ImportGltfAssetProvider implements AssetProvider {
                 role: "texture",
                 importSettings: {},
               });
-            } catch (error) {
-            }
+            } catch (error) {}
           }
         }
       }
@@ -303,18 +312,18 @@ class ImportGltfAssetProvider implements AssetProvider {
   }
   private getExtensionFromMime(mime: string): string {
     switch (mime.toLowerCase()) {
-      case 'image/jpeg':
-        return 'jpg';
-      case 'image/png':
-        return 'png';
-      case 'image/webp':
-        return 'webp';
-      case 'image/gif':
-        return 'gif';
-      case 'image/bmp':
-        return 'bmp';
+      case "image/jpeg":
+        return "jpg";
+      case "image/png":
+        return "png";
+      case "image/webp":
+        return "webp";
+      case "image/gif":
+        return "gif";
+      case "image/bmp":
+        return "bmp";
       default:
-        return 'png';
+        return "png";
     }
   }
   private isSerializableGltfFile(obj: unknown): obj is SerializableGltfFile {
@@ -367,8 +376,7 @@ export async function discoverAssets(graphData: {
             seenHashes.add(asset.hash);
           }
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
   }
   if (graphData.subFlows) {
@@ -384,8 +392,7 @@ export async function discoverAssets(graphData: {
                 seenHashes.add(asset.hash);
               }
             }
-          } catch (error) {
-          }
+          } catch (error) {}
         }
       }
     }

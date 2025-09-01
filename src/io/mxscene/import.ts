@@ -1,14 +1,14 @@
-import type { 
-  ImportResult, 
-  ProgressUpdate, 
+import type {
+  ImportResult,
+  ProgressUpdate,
   WorkerMessage,
   ImportRequest,
-  AssetReference
-} from './types';
-import { getAssetCache } from './opfs-cache';
-import { createZipReader, parseAssetFilename } from './zip';
-import { hashBytesSHA256 } from './crypto';
-import { v4 as uuidv4 } from 'uuid';
+  AssetReference,
+} from "./types";
+import { getAssetCache } from "./opfs-cache";
+import { createZipReader, parseAssetFilename } from "./zip";
+import { hashBytesSHA256 } from "./crypto";
+import { v4 as uuidv4 } from "uuid";
 export interface ImportOptions {
   onProgress?: (progress: ProgressUpdate) => void;
   onError?: (error: Error) => void;
@@ -20,17 +20,17 @@ export async function importFromMxScene(
 ): Promise<ImportResult> {
   const { onProgress, onError, signal } = options;
   if (signal?.aborted) {
-    throw new Error('Import was cancelled');
+    throw new Error("Import was cancelled");
   }
   try {
     onProgress?.({
-      phase: 'reading',
+      phase: "reading",
       percentage: 0,
-      message: 'Reading .mxscene file...'
+      message: "Reading .mxscene file...",
     });
     const fileBuffer = await file.arrayBuffer();
     if (signal?.aborted) {
-      throw new Error('Import was cancelled');
+      throw new Error("Import was cancelled");
     }
     const importRequest: ImportRequest = {
       fileBuffer,
@@ -40,7 +40,7 @@ export async function importFromMxScene(
     await storeAssetsInCache(result, file, onProgress);
     return result;
   } catch (error) {
-    const importError = error instanceof Error ? error : new Error('Unknown import error');
+    const importError = error instanceof Error ? error : new Error("Unknown import error");
     onError?.(importError);
     throw importError;
   }
@@ -51,57 +51,57 @@ function executeImportInWorker(
   signal?: AbortSignal
 ): Promise<ImportResult> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('./worker.ts', import.meta.url), {
-      type: 'module'
+    const worker = new Worker(new URL("./worker.ts", import.meta.url), {
+      type: "module",
     });
     const messageId = uuidv4();
     let isResolved = false;
     const abortHandler = () => {
       if (!isResolved) {
         worker.terminate();
-        reject(new Error('Import was cancelled'));
+        reject(new Error("Import was cancelled"));
         isResolved = true;
       }
     };
-    signal?.addEventListener('abort', abortHandler);
-    worker.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
+    signal?.addEventListener("abort", abortHandler);
+    worker.addEventListener("message", (event: MessageEvent<WorkerMessage>) => {
       const message = event.data;
       if (message.id !== messageId) return;
       switch (message.type) {
-        case 'progress':
+        case "progress":
           onProgress?.(message.data as ProgressUpdate);
           break;
-        case 'success':
+        case "success":
           if (!isResolved) {
             const result = message.data as ImportResult;
             worker.terminate();
-            signal?.removeEventListener('abort', abortHandler);
+            signal?.removeEventListener("abort", abortHandler);
             resolve(result);
             isResolved = true;
           }
           break;
-        case 'error':
+        case "error":
           if (!isResolved) {
-            const error = new Error(message.error?.message || 'Import failed');
+            const error = new Error(message.error?.message || "Import failed");
             worker.terminate();
-            signal?.removeEventListener('abort', abortHandler);
+            signal?.removeEventListener("abort", abortHandler);
             reject(error);
             isResolved = true;
           }
           break;
       }
     });
-    worker.addEventListener('error', (error) => {
+    worker.addEventListener("error", (error) => {
       if (!isResolved) {
         worker.terminate();
-        signal?.removeEventListener('abort', abortHandler);
+        signal?.removeEventListener("abort", abortHandler);
         reject(new Error(`Worker error: ${error.message}`));
         isResolved = true;
       }
     });
     const workerMessage: WorkerMessage = {
       id: messageId,
-      type: 'import',
+      type: "import",
       data: request,
     };
     worker.postMessage(workerMessage);
@@ -114,9 +114,9 @@ async function storeAssetsInCache(
 ): Promise<void> {
   try {
     onProgress?.({
-      phase: 'extracting',
+      phase: "extracting",
       percentage: 90,
-      message: 'Storing assets in cache...'
+      message: "Storing assets in cache...",
     });
     const assetCache = getAssetCache();
     const zipReader = createZipReader(await originalFile.arrayBuffer());
@@ -127,7 +127,7 @@ async function storeAssetsInCache(
       }
       try {
         const assetFiles = await zipReader.list();
-        const matchingFile = assetFiles.find(f => {
+        const matchingFile = assetFiles.find((f) => {
           const parsed = parseAssetFilename(f);
           return parsed?.hash === assetEntry.id;
         });
@@ -140,29 +140,30 @@ async function storeAssetsInCache(
           continue;
         }
         await assetCache.put(assetEntry.id, assetData.buffer);
-      } catch (error) {
-      }
+      } catch (error) {}
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 }
 export async function applyImportedScene(result: ImportResult): Promise<void> {
   const { scene } = result;
   try {
-    const { syncAllSceneState, waitForSceneReady } = await import('../sceneStateBridge');
+    const { syncAllSceneState, waitForSceneReady } = await import("../sceneStateBridge");
     await ensureAssetsReady(result);
-    const restoredGraph = await restoreAssetsFromReferences({
-      nodes: scene.graph.nodes,
-      subFlows: scene.graph.subFlows,
-    }, result);
+    const restoredGraph = await restoreAssetsFromReferences(
+      {
+        nodes: scene.graph.nodes,
+        subFlows: scene.graph.subFlows,
+      },
+      result
+    );
     const restoredNodeRuntime = updateNodeRuntimeWithRestoredAssets(
-      scene.graph.nodeRuntime, 
-      restoredGraph.nodes, 
+      scene.graph.nodeRuntime,
+      restoredGraph.nodes,
       restoredGraph.subFlows
     );
-    const { useGraphStore } = await import('../../engine/graphStore');
+    const { useGraphStore } = await import("../../engine/graphStore");
     const graphStore = useGraphStore.getState();
-    window.dispatchEvent(new CustomEvent('minimystx:sceneLoadingStart'));
+    window.dispatchEvent(new CustomEvent("minimystx:sceneLoadingStart"));
     await graphStore.importGraph({
       nodes: restoredGraph.nodes,
       edges: scene.graph.edges,
@@ -172,43 +173,49 @@ export async function applyImportedScene(result: ImportResult): Promise<void> {
       rootRenderTarget: null,
     });
     await waitForSceneReady(3000);
-    const syncResults = await syncAllSceneState(
-      scene.camera,
-      scene.ui,
-      scene.renderer,
-      { delayMs: 150, retries: 2 }
-    );
+    const syncResults = await syncAllSceneState(scene.camera, scene.ui, scene.renderer, {
+      delayMs: 150,
+      retries: 2,
+    });
     const failedSyncs = [];
-    if (!syncResults.camera.success) failedSyncs.push('camera');
-    if (!syncResults.ui.success) failedSyncs.push('ui');
-    if (!syncResults.renderer.success) failedSyncs.push('renderer');
+    if (!syncResults.camera.success) failedSyncs.push("camera");
+    if (!syncResults.ui.success) failedSyncs.push("ui");
+    if (!syncResults.renderer.success) failedSyncs.push("renderer");
     if (failedSyncs.length > 0) {
     }
-    if (scene.meta.name && scene.meta.name !== 'Untitled Project') {
+    if (scene.meta.name && scene.meta.name !== "Untitled Project") {
       document.title = `${scene.meta.name} - Minimystx`;
     } else {
-      document.title = 'Minimystx';
+      document.title = "Minimystx";
     }
-    window.dispatchEvent(new CustomEvent('minimystx:sceneLoadingComplete', {
-      detail: {
-        nodesTotalCount: scene.graph.nodes.length,
-        assetsCount: result.manifest.assets.length
-      }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("minimystx:sceneLoadingComplete", {
+        detail: {
+          nodesTotalCount: scene.graph.nodes.length,
+          assetsCount: result.manifest.assets.length,
+        },
+      })
+    );
   } catch (error) {
-    window.dispatchEvent(new CustomEvent('minimystx:sceneLoadingError', {
-      detail: { error: error instanceof Error ? error.message : 'Unknown error' }
-    }));
-    throw new Error(`Failed to restore scene: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    window.dispatchEvent(
+      new CustomEvent("minimystx:sceneLoadingError", {
+        detail: { error: error instanceof Error ? error.message : "Unknown error" },
+      })
+    );
+    throw new Error(
+      `Failed to restore scene: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
-export function selectAndImportMxSceneFile(options: ImportOptions = {}): Promise<ImportResult | null> {
+export function selectAndImportMxSceneFile(
+  options: ImportOptions = {}
+): Promise<ImportResult | null> {
   return new Promise((resolve, reject) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.mxscene';
-    input.style.display = 'none';
-    input.addEventListener('change', async (event) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".mxscene";
+    input.style.display = "none";
+    input.addEventListener("change", async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
       if (!file) {
         resolve(null);
@@ -216,7 +223,11 @@ export function selectAndImportMxSceneFile(options: ImportOptions = {}): Promise
       }
       const maxSize = 500 * 1024 * 1024;
       if (file.size > maxSize) {
-        reject(new Error(`File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Maximum size is 500MB.`));
+        reject(
+          new Error(
+            `File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Maximum size is 500MB.`
+          )
+        );
         return;
       }
       try {
@@ -226,7 +237,7 @@ export function selectAndImportMxSceneFile(options: ImportOptions = {}): Promise
         reject(error);
       }
     });
-    input.addEventListener('cancel', () => {
+    input.addEventListener("cancel", () => {
       resolve(null);
     });
     document.body.appendChild(input);
@@ -245,7 +256,7 @@ export async function createAssetReferencesFromImport(
       if (!assetData) {
         continue;
       }
-      const sceneAsset = result.scene.assets.find(a => a.id === manifestAsset.id);
+      const sceneAsset = result.scene.assets.find((a) => a.id === manifestAsset.id);
       const assetReference: AssetReference = {
         hash: manifestAsset.id,
         originalName: manifestAsset.name,
@@ -253,12 +264,11 @@ export async function createAssetReferencesFromImport(
         mime: manifestAsset.mime,
         size: manifestAsset.size,
         data: assetData,
-        role: sceneAsset?.role || 'unknown',
+        role: sceneAsset?.role || "unknown",
         importSettings: sceneAsset?.importSettings,
       };
       assetReferences.push(assetReference);
-    } catch (error) {
-    }
+    } catch (error) {}
   }
   return assetReferences;
 }
@@ -275,12 +285,19 @@ async function restoreAssetsFromReferences(
   const assetCache = getAssetCache();
   const restoredNodes = await Promise.all(
     graphData.nodes.map(async (node) => {
-      if ((node.type === 'importObjNode' || node.type === 'importGltfNode') && node.params?.object) {
+      if (
+        (node.type === "importObjNode" || node.type === "importGltfNode") &&
+        node.params?.object
+      ) {
         const updatedParams = { ...node.params };
         const objectParams = updatedParams.object as any;
         if (objectParams?.assetHash && !objectParams?.file) {
           try {
-            const restoredFile = await restoreAssetFromHash(objectParams.assetHash, importResult, assetCache);
+            const restoredFile = await restoreAssetFromHash(
+              objectParams.assetHash,
+              importResult,
+              assetCache
+            );
             if (restoredFile) {
               updatedParams.object = {
                 ...objectParams,
@@ -311,25 +328,32 @@ async function restoreAssetsFromReferences(
   for (const [geoNodeId, subFlow] of Object.entries(graphData.subFlows)) {
     const restoredSubFlowNodes = await Promise.all(
       subFlow.nodes.map(async (node: any) => {
-        if ((node.type === 'importObjNode' || node.type === 'importGltfNode') && node.params?.object) {
+        if (
+          (node.type === "importObjNode" || node.type === "importGltfNode") &&
+          node.params?.object
+        ) {
           const updatedParams = { ...node.params };
           const objectParams = updatedParams.object as any;
           if (objectParams?.assetHash && !objectParams?.file) {
             try {
-              const restoredFile = await restoreAssetFromHash(objectParams.assetHash, importResult, assetCache);
+              const restoredFile = await restoreAssetFromHash(
+                objectParams.assetHash,
+                importResult,
+                assetCache
+              );
               if (restoredFile) {
-                  updatedParams.object = {
+                updatedParams.object = {
                   ...objectParams,
                   file: restoredFile,
-                  };
+                };
               } else {
-                  updatedParams.object = {
+                updatedParams.object = {
                   ...objectParams,
                   assetHash: null,
                 };
               }
             } catch (error) {
-                updatedParams.object = {
+              updatedParams.object = {
                 ...objectParams,
                 assetHash: null,
               };
@@ -359,8 +383,8 @@ function updateNodeRuntimeWithRestoredAssets(
   restoredSubFlows: Record<string, any>
 ): Record<string, any> {
   const updatedNodeRuntime = { ...originalNodeRuntime };
-  restoredNodes.forEach(node => {
-    if (node.type === 'importObjNode' && updatedNodeRuntime[node.id]) {
+  restoredNodes.forEach((node) => {
+    if (node.type === "importObjNode" && updatedNodeRuntime[node.id]) {
       updatedNodeRuntime[node.id] = {
         ...updatedNodeRuntime[node.id],
         params: node.params,
@@ -369,7 +393,7 @@ function updateNodeRuntimeWithRestoredAssets(
   });
   Object.entries(restoredSubFlows).forEach(([, subFlow]) => {
     subFlow.nodes.forEach((node: any) => {
-      if (node.type === 'importObjNode' && subFlow.nodeRuntime[node.id]) {
+      if (node.type === "importObjNode" && subFlow.nodeRuntime[node.id]) {
         subFlow.nodeRuntime[node.id] = {
           ...subFlow.nodeRuntime[node.id],
           params: node.params,
@@ -380,8 +404,8 @@ function updateNodeRuntimeWithRestoredAssets(
   return updatedNodeRuntime;
 }
 async function restoreAssetFromHash(
-  assetHash: string, 
-  importResult: ImportResult, 
+  assetHash: string,
+  importResult: ImportResult,
   assetCache: any
 ): Promise<{ name: string; size: number; lastModified: number; content: string } | null> {
   try {
@@ -389,20 +413,20 @@ async function restoreAssetFromHash(
     if (!assetData) {
       return null;
     }
-    const manifestAsset = importResult.manifest.assets.find(a => a.id === assetHash);
+    const manifestAsset = importResult.manifest.assets.find((a) => a.id === assetHash);
     if (!manifestAsset) {
       return null;
     }
     let encodedContent: string;
     try {
       const uint8Array = new Uint8Array(assetData);
-      const binaryString = Array.from(uint8Array, byte => String.fromCharCode(byte)).join('');
+      const binaryString = Array.from(uint8Array, (byte) => String.fromCharCode(byte)).join("");
       encodedContent = btoa(binaryString);
-      if (manifestAsset.name.toLowerCase().endsWith('.obj')) {
+      if (manifestAsset.name.toLowerCase().endsWith(".obj")) {
         try {
           const decoder = new TextDecoder();
           const textContent = decoder.decode(assetData);
-          if (!textContent.includes('v ') && !textContent.includes('f ')) {
+          if (!textContent.includes("v ") && !textContent.includes("f ")) {
             return null;
           }
         } catch (error) {
@@ -424,7 +448,7 @@ async function restoreAssetFromHash(
   }
 }
 async function ensureAssetsReady(result: ImportResult): Promise<void> {
-  const { getAssetCache } = await import('./opfs-cache');
+  const { getAssetCache } = await import("./opfs-cache");
   const assetCache = getAssetCache();
   const missingAssets: string[] = [];
   for (const manifestAsset of result.manifest.assets) {
@@ -443,6 +467,5 @@ async function ensureAssetsReady(result: ImportResult): Promise<void> {
     const isHealthy = await assetCache.isHealthy();
     if (!isHealthy) {
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 }

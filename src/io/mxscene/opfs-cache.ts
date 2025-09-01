@@ -83,11 +83,10 @@ export class OpfsAssetCache implements AssetCache {
     this.memoryCache.clear();
     if (this.isOpfsSupported && this.assetsDir) {
       try {
-        for await (const [name] of (this.assetsDir as any)) {
+        for await (const [name] of this.assetsDir as any) {
           try {
             await this.assetsDir.removeEntry(name);
-          } catch (error) {
-          }
+          } catch (error) {}
         }
       } catch (error) {
         throw new OpfsError(
@@ -101,7 +100,7 @@ export class OpfsAssetCache implements AssetCache {
     if (this.isOpfsSupported && this.assetsDir) {
       try {
         let count = 0;
-        for await (const _ of (this.assetsDir as any)) {
+        for await (const _ of this.assetsDir as any) {
           count++;
         }
         return count;
@@ -149,11 +148,10 @@ export class OpfsAssetCache implements AssetCache {
     const assets: string[] = [];
     if (this.isOpfsSupported && this.assetsDir) {
       try {
-        for await (const [name] of (this.assetsDir as any)) {
+        for await (const [name] of this.assetsDir as any) {
           assets.push(name);
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
     const allAssets = new Set([...assets, ...this.memoryCache.keys()]);
     return Array.from(allAssets);

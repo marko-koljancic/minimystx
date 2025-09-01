@@ -1,4 +1,4 @@
-import type { CameraData, UIData } from './mxscene/types';
+import type { CameraData, UIData } from "./mxscene/types";
 export interface StateSyncOptions {
   delayMs?: number;
   retries?: number;
@@ -15,10 +15,10 @@ export interface UISyncResult {
 const DEFAULT_SYNC_OPTIONS: Required<StateSyncOptions> = {
   delayMs: 100,
   retries: 3,
-  timeout: 5000
+  timeout: 5000,
 };
 export async function syncCameraState(
-  cameraData: CameraData, 
+  cameraData: CameraData,
   options: StateSyncOptions = {}
 ): Promise<CameraSyncResult> {
   const opts = { ...DEFAULT_SYNC_OPTIONS, ...options };
@@ -27,9 +27,11 @@ export async function syncCameraState(
     const attemptSync = () => {
       attempts++;
       try {
-        window.dispatchEvent(new CustomEvent('minimystx:setCameraData', {
-          detail: cameraData
-        }));
+        window.dispatchEvent(
+          new CustomEvent("minimystx:setCameraData", {
+            detail: cameraData,
+          })
+        );
         setTimeout(() => {
           resolve({ success: true });
         }, opts.delayMs);
@@ -39,7 +41,9 @@ export async function syncCameraState(
         } else {
           resolve({
             success: false,
-            error: `Failed to sync camera after ${opts.retries} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`
+            error: `Failed to sync camera after ${opts.retries} attempts: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`,
           });
         }
       }
@@ -47,7 +51,7 @@ export async function syncCameraState(
     setTimeout(() => {
       resolve({
         success: false,
-        error: `Camera sync timed out after ${opts.timeout}ms`
+        error: `Camera sync timed out after ${opts.timeout}ms`,
       });
     }, opts.timeout);
     attemptSync();
@@ -61,15 +65,19 @@ export async function syncUIState(
   return new Promise(async (resolve) => {
     try {
       if (uiData.gridVisible !== undefined) {
-        window.dispatchEvent(new CustomEvent('minimystx:setGridVisibility', {
-          detail: { visible: uiData.gridVisible }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("minimystx:setGridVisibility", {
+            detail: { visible: uiData.gridVisible },
+          })
+        );
       }
       if (uiData.viewportStates?.root) {
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('minimystx:setViewport', {
-            detail: uiData.viewportStates.root
-          }));
+          window.dispatchEvent(
+            new CustomEvent("minimystx:setViewport", {
+              detail: uiData.viewportStates.root,
+            })
+          );
         }, opts.delayMs);
       }
       setTimeout(() => {
@@ -78,28 +86,38 @@ export async function syncUIState(
     } catch (error) {
       resolve({
         success: false,
-        error: `Failed to sync UI state: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error: `Failed to sync UI state: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       });
     }
   });
 }
-export async function syncRendererState(rendererData: any): Promise<{ success: boolean; error?: string }> {
+export async function syncRendererState(
+  rendererData: any
+): Promise<{ success: boolean; error?: string }> {
   try {
     if (rendererData.background) {
-      window.dispatchEvent(new CustomEvent('minimystx:setBackground', {
-        detail: { color: rendererData.background }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("minimystx:setBackground", {
+          detail: { color: rendererData.background },
+        })
+      );
     }
     if (rendererData.exposure !== undefined) {
-      window.dispatchEvent(new CustomEvent('minimystx:setExposure', {
-        detail: { exposure: rendererData.exposure }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("minimystx:setExposure", {
+          detail: { exposure: rendererData.exposure },
+        })
+      );
     }
     return { success: true };
   } catch (error) {
     return {
       success: false,
-      error: `Failed to sync renderer state: ${error instanceof Error ? error.message : 'Unknown error'}`
+      error: `Failed to sync renderer state: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
     };
   }
 }
@@ -114,7 +132,10 @@ export async function waitForSceneReady(timeoutMs: number = 5000): Promise<boole
     }, timeoutMs);
     const checkReady = () => {
       try {
-        if ((window as any).minimystx || document.querySelector('[data-testid="rendering-canvas"]')) {
+        if (
+          (window as any).minimystx ||
+          document.querySelector('[data-testid="rendering-canvas"]')
+        ) {
           if (!isResolved) {
             isResolved = true;
             clearTimeout(timeout);
@@ -141,8 +162,7 @@ export function createStateSyncQueue() {
       if (task) {
         try {
           await task();
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     }
     isProcessing = false;
@@ -155,13 +175,13 @@ export function createStateSyncQueue() {
     clear: () => {
       queue.length = 0;
     },
-    size: () => queue.length
+    size: () => queue.length,
   };
 }
 const globalSyncQueue = createStateSyncQueue();
 export async function syncAllSceneState(
   cameraData: CameraData,
-  uiData: UIData, 
+  uiData: UIData,
   rendererData: any,
   options: StateSyncOptions = {}
 ): Promise<{
@@ -171,17 +191,17 @@ export async function syncAllSceneState(
 }> {
   const sceneReady = await waitForSceneReady();
   if (!sceneReady) {
-    const error = 'Scene not ready for state synchronization';
+    const error = "Scene not ready for state synchronization";
     return {
       camera: { success: false, error },
       ui: { success: false, error },
-      renderer: { success: false, error }
+      renderer: { success: false, error },
     };
   }
   const results = {
     camera: await syncCameraState(cameraData, options),
     ui: await syncUIState(uiData, options),
-    renderer: await syncRendererState(rendererData)
+    renderer: await syncRendererState(rendererData),
   };
   return results;
 }

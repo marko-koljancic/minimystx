@@ -70,8 +70,7 @@ export const MXSCENE_VERSION = "1.0";
 export const ENGINE_VERSION = "0.1.0";
 export async function initializeMxScene(): Promise<void> {
   try {
-  } catch (error) {
-  }
+  } catch (error) {}
 }
 export async function getSystemHealth(): Promise<{
   opfsSupported: boolean;

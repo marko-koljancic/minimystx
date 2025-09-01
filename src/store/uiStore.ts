@@ -82,7 +82,10 @@ interface UIActions {
   navigateToSubFlow: (geoNodeId: string) => void;
   saveViewportState: (contextKey: string, viewport: { x: number; y: number; zoom: number }) => void;
   getViewportState: (contextKey: string) => { x: number; y: number; zoom: number } | null;
-  saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => void;
+  saveNodePositions: (
+    contextKey: string,
+    positions: Record<string, { x: number; y: number }>
+  ) => void;
   getNodePositions: (contextKey: string) => Record<string, { x: number; y: number }> | null;
   toggleRendererMaximized: () => void;
   setFlowViewMode: (contextKey: string, mode: FlowViewMode) => void;
@@ -150,10 +153,11 @@ export const useUIStore = create<UIStore>()(
         }));
       },
       setSelectedNode: (nodeId) => set({ selectedNodeId: nodeId }),
-      setSelectedNodes: (nodeIds) => set({ 
-        selectedNodeIds: nodeIds,
-        selectedNodeId: nodeIds.length > 0 ? nodeIds[0] : null 
-      }),
+      setSelectedNodes: (nodeIds) =>
+        set({
+          selectedNodeIds: nodeIds,
+          selectedNodeId: nodeIds.length > 0 ? nodeIds[0] : null,
+        }),
       setHoveredNode: (nodeId) => set({ hoveredNodeId: nodeId }),
       clearSelection: () => set({ selectedNodeId: null, selectedNodeIds: [] }),
       openPalette: () => set({ isPaletteOpen: true }),
@@ -266,7 +270,10 @@ export const useUIStore = create<UIStore>()(
         const state = get();
         return state.viewportStates[contextKey] || null;
       },
-      saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => {
+      saveNodePositions: (
+        contextKey: string,
+        positions: Record<string, { x: number; y: number }>
+      ) => {
         set((state) => ({
           ...state,
           nodePositions: {
@@ -388,7 +395,8 @@ export const useGetViewportState = () => useUIStore((state) => state.getViewport
 export const useSaveNodePositions = () => useUIStore((state) => state.saveNodePositions);
 export const useGetNodePositions = () => useUIStore((state) => state.getNodePositions);
 export const useIsRendererMaximized = () => useUIStore((state) => state.isRendererMaximized);
-export const useToggleRendererMaximized = () => useUIStore((state) => state.toggleRendererMaximized);
+export const useToggleRendererMaximized = () =>
+  useUIStore((state) => state.toggleRendererMaximized);
 export const useSetFlowViewMode = () => useUIStore((state) => state.setFlowViewMode);
 export const useGetFlowViewMode = () => useUIStore((state) => state.getFlowViewMode);
 export const getContextKey = (context: GraphContext): string => {

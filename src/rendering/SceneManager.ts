@@ -545,7 +545,7 @@ export class SceneManager {
       }
       if (runtime.isDirty) {
       }
-      if (runtime.type.includes('Light')) {
+      if (runtime.type.includes("Light")) {
         const lightVisible = runtime.params?.rendering?.visible !== false;
         if (!lightVisible) continue;
         if (runtime.output && typeof runtime.output === "object") {
@@ -561,8 +561,7 @@ export class SceneManager {
             try {
               const clonedLight = lightObject.clone();
               renderableObjects.push(clonedLight);
-            } catch (error) {
-            }
+            } catch (error) {}
           }
         }
         continue;
@@ -597,13 +596,11 @@ export class SceneManager {
             if (container.value && typeof container.value.clone === "function") {
               object3D = container.value;
             }
-          }
-          else if ("isObject3D" in subFlowOutput && subFlowOutput.isObject3D) {
+          } else if ("isObject3D" in subFlowOutput && subFlowOutput.isObject3D) {
             if (typeof subFlowOutput.clone === "function") {
               object3D = subFlowOutput;
             }
-          }
-          else if (
+          } else if (
             "object" in subFlowOutput &&
             subFlowOutput.object &&
             typeof subFlowOutput.object === "object" &&

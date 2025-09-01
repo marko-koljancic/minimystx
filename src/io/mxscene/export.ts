@@ -65,8 +65,7 @@ export async function exportToMxScene(
           await assetCache.put(asset.hash, asset.data);
         }
       }
-    } catch (cacheError) {
-    }
+    } catch (cacheError) {}
     return result;
   } catch (error) {
     const exportError = error instanceof Error ? error : new Error("Unknown export error");
@@ -172,8 +171,7 @@ export async function getCurrentSceneData(): Promise<SceneJson> {
       if (eventData.nodePositions) {
         rootPositions = eventData.nodePositions;
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
   const { exportGraphWithMeta: exportGraph } = await import("../../engine/graphStore");
   const existingData = await exportGraph();
@@ -218,7 +216,7 @@ export async function getCurrentSceneData(): Promise<SceneJson> {
       fov: 50,
     },
     renderer: {
-      background: "#101014", 
+      background: "#101014",
       exposure: 1.0,
     },
     ui: {
@@ -250,7 +248,10 @@ async function replaceAssetsWithReferences(graphData: {
 }> {
   const processedNodes = await Promise.all(
     graphData.nodes.map(async (node) => {
-      if ((node.type === "importObjNode" || node.type === "importGltfNode") && node.params?.object) {
+      if (
+        (node.type === "importObjNode" || node.type === "importGltfNode") &&
+        node.params?.object
+      ) {
         const updatedParams = { ...node.params };
         const objectParams = updatedParams.object as any;
         if (objectParams?.file) {
@@ -273,7 +274,10 @@ async function replaceAssetsWithReferences(graphData: {
   for (const [geoNodeId, subFlow] of Object.entries(graphData.subFlows)) {
     const processedSubFlowNodes = await Promise.all(
       subFlow.nodes.map(async (node: any) => {
-        if ((node.type === "importObjNode" || node.type === "importGltfNode") && node.params?.object) {
+        if (
+          (node.type === "importObjNode" || node.type === "importGltfNode") &&
+          node.params?.object
+        ) {
           const updatedParams = { ...node.params };
           const objectParams = updatedParams.object as any;
           if (objectParams?.file) {
