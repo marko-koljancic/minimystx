@@ -5,6 +5,7 @@
   background-color: var(--light-node-background);
   border: none;
   border-radius: 0.6rem;
+  box-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.2), 0 0.1rem 0.2rem rgba(0, 0, 0, 0.1);
   transition: border-color 0.2s ease;
 }
 

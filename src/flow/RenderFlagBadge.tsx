@@ -39,6 +39,7 @@ export default function RenderFlagBadge({
 
   const isLightNode = nodeWidth === 90 && nodeHeight === 30;
   const isGeometryNode = nodeWidth === 90 && nodeHeight === 30 && !isLightNode;
+  const isGeoNode = nodeWidth === 48 && nodeHeight === 48;
 
   const badgeLeft = isLightNode
     ? `${-2.5}rem`
@@ -52,10 +53,10 @@ export default function RenderFlagBadge({
         <div
           className={styles.renderHalo}
           style={{
-            width: `${(nodeWidth + 16) / 10}rem`,
-            height: `${(nodeHeight + 16) / 10}rem`,
-            left: `${-8 / 10}rem`,
-            top: `${-8 / 10}rem`,
+            width: `${(nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 10}rem`,
+            height: `${(nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 10}rem`,
+            left: `${((nodeWidth - nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 2) / 10}rem`,
+            top: `${((nodeHeight - nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 2) / 10}rem`,
           }}
         />
       )}
