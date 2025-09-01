@@ -4,65 +4,58 @@ import { useCurrentContext } from "../store/uiStore";
 
 export const useContextNodes = () => {
   const currentContext = useCurrentContext();
-  const { rootNodeRuntime, subFlows } = useGraphStore();
+  const { rootNodeState, subFlows } = useGraphStore();
 
   return useMemo(() => {
     if (currentContext.type === "root") {
-      return Object.entries(rootNodeRuntime).map(([id, runtime]) => ({
+      return Object.entries(rootNodeState).map(([id, nodeState]) => ({
         id,
-        type: runtime.type,
-        data: runtime.params,
+        type: nodeState.type || 'unknown',
+        data: nodeState.params || {},
       }));
     } else if (currentContext.type === "subflow" && currentContext.geoNodeId) {
       const subFlow = subFlows[currentContext.geoNodeId];
       if (!subFlow) return [];
 
-      return Object.entries(subFlow.nodeRuntime).map(([id, runtime]) => ({
+      return Object.entries(subFlow.nodeState).map(([id, nodeState]) => ({
         id,
-        type: runtime.type,
-        data: runtime.params,
+        type: nodeState.type || 'unknown', 
+        data: nodeState.params || {},
       }));
     }
 
     return [];
-  }, [currentContext, rootNodeRuntime, subFlows]);
+  }, [currentContext, rootNodeState, subFlows]);
 };
 
 export const useContextEdges = () => {
   const currentContext = useCurrentContext();
-  const { connectionManager, rootNodeRuntime, subFlows } = useGraphStore();
+  const { graph, rootNodeState, subFlows } = useGraphStore();
 
   return useMemo(() => {
-    const edges = [];
     let contextNodeIds: string[];
 
     if (currentContext.type === "root") {
-      contextNodeIds = Object.keys(rootNodeRuntime);
+      contextNodeIds = Object.keys(rootNodeState);
     } else if (currentContext.type === "subflow" && currentContext.geoNodeId) {
       const subFlow = subFlows[currentContext.geoNodeId];
       if (!subFlow) return [];
-      contextNodeIds = Object.keys(subFlow.nodeRuntime);
+      contextNodeIds = Object.keys(subFlow.nodeState);
     } else {
       return [];
     }
 
-    for (const nodeId of contextNodeIds) {
-      const connections = connectionManager.getOutputConnections(nodeId);
+    // Get all edges from the graph and filter to context
+    const allEdges = graph.getAllEdges();
+    const contextEdges = allEdges.filter(edge => 
+      contextNodeIds.includes(edge.source) && contextNodeIds.includes(edge.target)
+    );
 
-      for (const connection of connections) {
-        if (contextNodeIds.includes(connection.targetNodeId)) {
-          edges.push({
-            id: connection.id,
-            source: connection.sourceNodeId,
-            target: connection.targetNodeId,
-            sourceHandle: connection.sourceHandle,
-            targetHandle: connection.targetHandle,
-            type: "wire",
-          });
-        }
-      }
-    }
-
-    return edges;
-  }, [currentContext.type, currentContext.geoNodeId, connectionManager, rootNodeRuntime, subFlows]);
+    return contextEdges.map((edge, index) => ({
+      id: `${edge.source}->${edge.target}-${index}`,
+      source: edge.source,
+      target: edge.target,
+      type: "wire",
+    }));
+  }, [currentContext.type, currentContext.geoNodeId, graph, rootNodeState, subFlows]);
 };

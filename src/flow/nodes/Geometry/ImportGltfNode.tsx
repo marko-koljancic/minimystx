@@ -34,8 +34,8 @@ export default function ImportGltfNode(props: NodeProps) {
       
       loadGltfFile(currentFile)
         .then(() => {
-          markDirty(id, currentContext);
-          recomputeFrom(id, currentContext);
+          markDirty(id);
+          recomputeFrom(id);
         })
         .catch(() => {
           // Handle error silently, node will show empty state
@@ -53,7 +53,7 @@ export default function ImportGltfNode(props: NodeProps) {
       />
       <RenderFlagBadge
         nodeId={id}
-        render={nodeData.rendering?.visible || false}
+        render={nodeData.rendering?.visible ?? true}
         nodeWidth={NODE_WIDTH}
         nodeHeight={NODE_HEIGHT}
       />

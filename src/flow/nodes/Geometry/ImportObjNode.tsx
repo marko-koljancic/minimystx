@@ -6,7 +6,7 @@ import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
 import { ImportObjNodeData, loadObjFile, SerializableObjFile } from "./ImportObj";
 import { useGraphStore } from "../../../engine/graphStore";
-import { useCurrentContext } from "../../../store/uiStore";
+// import { useCurrentContext } from "../../../store/uiStore";
 
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
@@ -16,7 +16,7 @@ export default function ImportObjNode(props: NodeProps) {
   const nodeData = data as ImportObjNodeData;
   const recomputeFrom = useGraphStore(state => state.recomputeFrom);
   const markDirty = useGraphStore(state => state.markDirty);
-  const currentContext = useCurrentContext();
+  // const currentContext = useCurrentContext();
   const lastFileRef = useRef<File | SerializableObjFile | null>(null);
 
   useEffect(() => {
@@ -34,8 +34,8 @@ export default function ImportObjNode(props: NodeProps) {
       
       loadObjFile(currentFile)
         .then(() => {
-          markDirty(id, currentContext);
-          recomputeFrom(id, currentContext);
+          markDirty(id);
+          recomputeFrom(id);
         })
         .catch((_error) => {
         });
@@ -52,7 +52,7 @@ export default function ImportObjNode(props: NodeProps) {
       />
       <RenderFlagBadge
         nodeId={id}
-        render={nodeData.rendering?.visible || false}
+        render={nodeData.rendering?.visible ?? true}
         nodeWidth={NODE_WIDTH}
         nodeHeight={NODE_HEIGHT}
       />

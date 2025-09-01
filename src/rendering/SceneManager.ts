@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { useGraphStore } from "../engine/graphStore";
 import { useUIStore } from "../store";
+import { Object3DContainer } from "../engine/containers/BaseContainer";
 
 export class SceneManager {
   private scene!: THREE.Scene;
@@ -640,23 +641,66 @@ export class SceneManager {
         // Skip dirty nodes during rendering
       }
 
+      // Handle light nodes (root-level)
+      if (runtime.type.includes('Light')) {
+        const lightVisible = runtime.params?.rendering?.visible !== false;
+        if (!lightVisible) continue;
+
+        // Check if light has output (computed result)
+        if (runtime.output && typeof runtime.output === "object") {
+          let lightObject = null;
+          
+          // Extract light from container or direct format
+          if (runtime.output.default instanceof Object3DContainer) {
+            lightObject = runtime.output.default.value;
+          } else if (runtime.output.isObject3D) {
+            lightObject = runtime.output;
+          } else if (runtime.output.object?.isObject3D) {
+            lightObject = runtime.output.object;
+          }
+
+          if (lightObject && typeof lightObject.clone === "function") {
+            try {
+              const clonedLight = lightObject.clone();
+              renderableObjects.push(clonedLight);
+              console.log(`✅ Added light to scene:`, runtime.type, lightObject);
+            } catch (error) {
+              console.warn(`Could not clone light ${nodeId}:`, error);
+            }
+          }
+        }
+        continue;
+      }
+
       if (runtime.type === "geoNode") {
         const geoNodeVisible = runtime.params?.rendering?.visible !== false;
         if (!geoNodeVisible) continue;
 
         const subFlow = state.subFlows[nodeId];
+        // Debug logging removed for production
         if (!subFlow || !subFlow.activeOutputNodeId) continue;
 
         const outputNodeRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
+        console.log(`🔍 OutputNodeRuntime for ${subFlow.activeOutputNodeId}:`, {
+          exists: !!outputNodeRuntime,
+          hasOutput: !!outputNodeRuntime?.output,
+          outputType: typeof outputNodeRuntime?.output,
+          outputKeys: outputNodeRuntime?.output ? Object.keys(outputNodeRuntime.output) : [],
+          output: outputNodeRuntime?.output
+        });
+        
         if (!outputNodeRuntime) {
+          console.log(`❌ No outputNodeRuntime found for ${subFlow.activeOutputNodeId}`);
           continue;
         }
 
         if (outputNodeRuntime.error) {
+          console.log(`❌ OutputNodeRuntime has error:`, outputNodeRuntime.error);
           continue;
         }
 
         if (!outputNodeRuntime.output) {
+          console.log(`❌ OutputNodeRuntime has no output`);
           continue;
         }
 
@@ -675,26 +719,53 @@ export class SceneManager {
 
         let object3D = null;
         if (subFlowOutput && typeof subFlowOutput === "object") {
-          if ("isObject3D" in subFlowOutput && subFlowOutput.isObject3D) {
+          console.log(`🔧 Container extraction attempt:`, {
+            hasDefault: 'default' in subFlowOutput,
+            defaultType: subFlowOutput.default?.constructor?.name,
+            isContainer: subFlowOutput.default instanceof Object3DContainer,
+            hasObject: 'object' in subFlowOutput,
+            isDirectObject3D: 'isObject3D' in subFlowOutput,
+            keys: Object.keys(subFlowOutput)
+          });
+          
+          // Handle new container format first
+          if (subFlowOutput.default instanceof Object3DContainer) {
+            const container = subFlowOutput.default;
+            console.log(`✅ Found Object3DContainer:`, {
+              hasValue: !!container.value,
+              valueType: container.value?.constructor?.name,
+              canClone: typeof container.value?.clone === 'function'
+            });
+            if (container.value && typeof container.value.clone === "function") {
+              object3D = container.value;
+              console.log(`✅ Extracted Object3D from container:`, object3D);
+            }
+          }
+          // Handle direct Object3D (legacy/direct format)
+          else if ("isObject3D" in subFlowOutput && subFlowOutput.isObject3D) {
+            console.log(`✅ Found direct Object3D`);
             if (typeof subFlowOutput.clone === "function") {
               object3D = subFlowOutput;
             } else {
-              // Object3D cannot be cloned, skip
+              console.log(`❌ Direct Object3D cannot be cloned`);
             }
-          } else if (
+          }
+          // Handle legacy wrapped format
+          else if (
             "object" in subFlowOutput &&
             subFlowOutput.object &&
             typeof subFlowOutput.object === "object" &&
             "isObject3D" in subFlowOutput.object &&
             subFlowOutput.object.isObject3D
           ) {
+            console.log(`✅ Found legacy wrapped Object3D`);
             if (typeof subFlowOutput.object.clone === "function") {
               object3D = subFlowOutput.object;
             } else {
-              // Subflow object cannot be cloned, skip
+              console.log(`❌ Legacy wrapped Object3D cannot be cloned`);
             }
           } else {
-            // Subflow output is not a valid Object3D
+            console.log(`❌ No valid Object3D or container found in subFlowOutput`);
           }
         }
 

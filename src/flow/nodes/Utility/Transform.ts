@@ -2,7 +2,8 @@ import { Object3D, BufferGeometry, Vector3, Mesh, Group } from "three";
 import type { GeneralProps, TransformProps, RenderingProps, NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createGeneralParams, createTransformParams } from "../../../engine/nodeParameterFactories";
-import type { NodeParams } from "../../../engine/graphStore";
+import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
+import { BaseContainer, Object3DContainer } from "../../../engine/containers/BaseContainer";
 
 export interface TransformNodeData extends Record<string, unknown> {
   general: GeneralProps;
@@ -119,4 +120,41 @@ export const transformNodeCompute = (params: Record<string, any>, inputs: Record
   
   
   return processor(data, inputObject);
+};
+
+export const transformNodeComputeTyped = (
+  params: Record<string, any>,
+  inputs: Record<string, BaseContainer>,
+  context: ComputeContext
+): Record<string, BaseContainer> => {
+  // Get the input container (transform nodes typically take one geometry input)
+  const inputContainer = inputs.default as Object3DContainer | undefined;
+  
+  if (!inputContainer) {
+    // Return empty container if no input
+    return { default: new Object3DContainer(new Object3D()) };
+  }
+
+  const data: TransformNodeData = {
+    general: params.general || {},
+    transform: {
+      position: params.transform?.position || { x: 0, y: 0, z: 0 },
+      rotation: params.transform?.rotation || { x: 0, y: 0, z: 0 },
+      scale: { 
+        ...params.transform?.scale,
+        factor: params.transform?.scaleFactor || 1
+      },
+      rotationOrder: params.transform?.rotationOrder || "XYZ",
+    },
+    rendering: {
+      visible: params.rendering?.visible !== false,
+      ...params.rendering
+    },
+  };
+
+  // Convert container back to legacy format for processor
+  const inputObject = { object: inputContainer.value };
+  const result = processor(data, inputObject);
+  
+  return { default: new Object3DContainer(result.object) };
 };

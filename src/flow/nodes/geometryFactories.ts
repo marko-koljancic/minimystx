@@ -1,5 +1,6 @@
 import { BufferGeometry, Mesh, MeshStandardMaterial, Object3D } from "three";
 import type { GeneralProps, TransformProps, RenderingProps } from "./props";
+import { Object3DContainer } from "../../engine/containers/BaseContainer";
 
 export interface BaseGeometryData {
   general: GeneralProps;
@@ -11,7 +12,7 @@ export function createGeometryMesh<T extends BaseGeometryData>(
   data: T,
   geometry: BufferGeometry,
   _input?: Object3D
-): { object: Object3D; geometry: BufferGeometry } {
+): Object3DContainer {
   const material = data.rendering.material || new MeshStandardMaterial();
 
   if (material instanceof MeshStandardMaterial) {
@@ -28,5 +29,5 @@ export function createGeometryMesh<T extends BaseGeometryData>(
   mesh.castShadow = data.rendering.castShadow ?? false;
   mesh.receiveShadow = data.rendering.receiveShadow ?? false;
 
-  return { object: mesh, geometry };
+  return new Object3DContainer(mesh);
 }

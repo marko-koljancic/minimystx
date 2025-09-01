@@ -1,18 +1,13 @@
-import React from "react";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-import * as computeEngine from "./computeEngine";
 import { nodeRegistry } from "./nodeRegistry";
-import { GRAPH_SCHEMA } from "../constants";
-import { extractDefaultValues, validateAndNormalizeParams } from "./parameterUtils";
-import {
-  CoreGraph,
-  ConnectionManager,
-  Cooker,
-  DirtyController,
-  type Connection,
-  type GraphNode,
-} from "./graph";
+import { validateAndNormalizeParams } from "./parameterUtils";
+import { GraphLibAdapter } from "./graph/GraphLibAdapter";
+import { RenderConeScheduler, type SchedulerEvent } from "./scheduler/RenderConeScheduler";
+import { ContentCache } from "./cache/ContentCache";
+import { SubflowManager } from "./subflow/SubflowManager";
+import { BaseContainer } from './containers/BaseContainer';
+import { NodeInput, NodeOutput } from './types/NodeIO';
 
 export type Result<T = void> =
   | {
@@ -61,13 +56,35 @@ export interface NodeParams {
   [category: string]: CategoryParams;
 }
 
+export interface ComputeContext {
+  nodeId: string;
+  renderTarget: string | null;
+  isInRenderCone: boolean;
+  abortSignal?: AbortSignal;
+}
+
+export enum InputCloneMode {
+  ALWAYS = 'always',      // Always clone inputs
+  NEVER = 'never',        // Never clone (performance)
+  FROM_NODE = 'from_node' // Node decides based on params
+}
+
 export type NodeDefinition = {
   type: string;
   category: string;
   displayName: string;
   allowedContexts: ("root" | "subflow")[];
   params: NodeParams;
-  compute: (params: any, inputs?: any) => any;
+  inputs?: NodeInput[];
+  outputs?: NodeOutput[];
+  compute?: (params: any, inputs?: any) => any;
+  computeTyped?: (
+    params: Record<string, any>,
+    inputs: Record<string, BaseContainer>,
+    context: ComputeContext
+  ) => Promise<Record<string, BaseContainer>> | Record<string, BaseContainer>;
+  inputCloneMode?: InputCloneMode;
+  description?: string;
 };
 
 export type GraphContext = {
@@ -89,30 +106,43 @@ export type EdgeData = {
   targetHandle?: string;
 };
 
-export type NodeRuntime = {
+// Modern render-cone node state
+export type NodeState = {
+  id: string;
   type: string;
   params: Record<string, any>;
   inputs: Record<string, any>;
   output: any;
-  isDirty: boolean;
   error?: string;
-  dirtyController?: DirtyController;
+  isInRenderCone: boolean;
+  isRenderTarget: boolean;
 };
 
 export type SubFlowGraph = {
-  nodeRuntime: Record<string, NodeRuntime>;
+  nodeState: Record<string, NodeState>;
   activeOutputNodeId: string | null;
+  // Compatibility property for legacy UI components
+  nodeRuntime: Record<string, any>;
 };
 
 export type GraphState = {
-  rootNodeRuntime: Record<string, NodeRuntime>;
+  rootNodeState: Record<string, NodeState>;
   subFlows: Record<string, SubFlowGraph>;
   evaluationMode: "eager" | "lazy";
   isImporting: boolean;
+  rootRenderTarget: string | null;
 
-  graph: CoreGraph;
-  connectionManager: ConnectionManager;
-  cooker: Cooker;
+  // Modern render-cone architecture
+  graph: GraphLibAdapter;
+  scheduler: RenderConeScheduler;
+  cache: ContentCache;
+  subflowManager: SubflowManager;
+
+  // Compatibility properties for legacy UI components
+  rootNodeRuntime: Record<string, any>;
+  connectionManager: any;
+  recomputeFrom: (nodeId: string) => void;
+  markDirty: (nodeId: string) => void;
 
   addNode: (node: NodeInitData, context: GraphContext) => void;
   removeNode: (nodeId: string, context: GraphContext) => void;
@@ -134,8 +164,10 @@ export type GraphState = {
   ) => Result;
   resetEdges: (edges: EdgeData[], context: GraphContext) => Result;
 
-  recomputeFrom: (nodeId: string, context: GraphContext) => void;
-  markDirty: (nodeId: string, context: GraphContext) => void;
+  // Render-cone specific methods
+  setRenderTarget: (nodeId: string | null, context: GraphContext) => void;
+  getRenderTarget: (context: GraphContext) => string | null;
+  isInRenderCone: (nodeId: string, context: GraphContext) => boolean;
 
   clear: () => void;
   importGraph: (serialized: SerializedGraph) => Promise<void>;
@@ -145,22 +177,18 @@ export type GraphState = {
   setSubFlowActiveOutput: (geoNodeId: string, nodeId: string) => void;
 
   preloadImportObjAssets: () => Promise<void>;
-  preloadAssetForNode: (
-    nodeId: string,
-    runtime: NodeRuntime,
-    context: GraphContext
-  ) => Promise<void>;
-  markAllNodesAsDirty: () => void;
+  preloadAssetForNode: (nodeId: string, state: NodeState, context: GraphContext) => Promise<void>;
   validatePostImportComputation: () => Promise<void>;
-  clearRecomputationTracking: () => void;
   forceResetImportedNodeTracking: (nodeIds: string[], contexts: GraphContext[]) => void;
-  recomputeFromSync: (nodeId: string, context: GraphContext) => Promise<void>;
 };
 
 export type SerializedSubFlow = {
   nodes: NodeInitData[];
   edges: EdgeData[];
-  nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">>;
+  nodeRuntime: Record<
+    string,
+    Omit<NodeState, "output" | "error" | "isInRenderCone" | "isRenderTarget">
+  >;
   positions: Record<string, { x: number; y: number }>;
   activeOutputNodeId: string | null;
 };
@@ -168,1188 +196,832 @@ export type SerializedSubFlow = {
 export type SerializedGraph = {
   nodes: NodeInitData[];
   edges: EdgeData[];
-  nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">>;
+  nodeRuntime: Record<
+    string,
+    Omit<NodeState, "output" | "error" | "isInRenderCone" | "isRenderTarget">
+  >;
   positions: Record<string, { x: number; y: number }>;
   subFlows: Record<string, SerializedSubFlow>;
+  rootRenderTarget: string | null;
 };
 
 export { nodeRegistry } from "./nodeRegistry";
 
-const coreGraph = new CoreGraph();
-const connectionManager = new ConnectionManager();
-const cooker = new Cooker(coreGraph);
-
-cooker.setComputeFunction(async (nodeId: string) => {
-  const state = useGraphStore.getState();
-
-  let nodeRuntime: NodeRuntime | undefined;
-  let context: GraphContext | undefined;
-
-  if (state.rootNodeRuntime[nodeId]) {
-    nodeRuntime = state.rootNodeRuntime[nodeId];
-    context = { type: "root" };
-  } else {
-    for (const [geoNodeId, subFlow] of Object.entries(state.subFlows)) {
-      if (subFlow.nodeRuntime[nodeId]) {
-        nodeRuntime = subFlow.nodeRuntime[nodeId];
-        context = { type: "subflow", geoNodeId };
-        break;
-      }
-    }
-  }
-
-  if (!nodeRuntime || !context) {
-    return;
-  }
-
-  if (!nodeRuntime.isDirty) {
-    return;
-  }
-
-  const nodeDef = nodeRegistry[nodeRuntime.type];
-  if (!nodeDef) {
-    return;
-  }
-
-  const inputConnections = connectionManager.getInputConnections(nodeId);
-  const inputs: Record<string, any> = {};
-
-  const sourceRuntime =
-    context.type === "root"
-      ? state.rootNodeRuntime
-      : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-  if (sourceRuntime) {
-    for (const connection of inputConnections) {
-      const sourceNode = sourceRuntime[connection.sourceNodeId];
-      if (sourceNode && sourceNode.output !== undefined) {
-        const inputHandle = connection.targetHandle || connection.sourceNodeId;
-        inputs[inputHandle] = sourceNode.output;
-      }
-    }
-  }
-
-  try {
-    const result = computeEngine.evaluateNode(nodeId, nodeRuntime.params, inputs, nodeDef.compute);
-
-    useGraphStore.setState((state) => {
-      const targetRuntime =
-        context.type === "root"
-          ? state.rootNodeRuntime[nodeId]
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-
-      if (targetRuntime) {
-        targetRuntime.output = result;
-        targetRuntime.isDirty = false;
-        targetRuntime.error = undefined;
-      }
-    });
-  } catch (err) {
-    useGraphStore.setState((state) => {
-      const targetRuntime =
-        context.type === "root"
-          ? state.rootNodeRuntime[nodeId]
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-
-      if (targetRuntime) {
-        targetRuntime.error = err instanceof Error ? err.message : String(err);
-        targetRuntime.isDirty = false;
-      }
-    });
-  }
-});
+// Initialize render-cone architecture
+const graphLibAdapter = new GraphLibAdapter();
+const renderConeScheduler = new RenderConeScheduler(graphLibAdapter);
+const contentCache = new ContentCache();
+const subflowManager = new SubflowManager(graphLibAdapter);
 
 export const useGraphStore = create<GraphState>()(
-  immer((set, get) => ({
-    rootNodeRuntime: {},
-    subFlows: {},
-    evaluationMode: "eager",
-    isImporting: false,
-
-    graph: coreGraph,
-    connectionManager: connectionManager,
-    cooker: cooker,
-
-    addNode: (node: NodeInitData, context: GraphContext) => {
-      const { id, type, params: overrideParams } = node;
-      const nodeDef = nodeRegistry[type];
-      if (!nodeDef) {
-        return;
-      }
-
-      if (!nodeDef.allowedContexts.includes(context.type)) {
-        return;
-      }
-
+  immer((set, get) => {
+    // Set up scheduler event listener to update UI state
+    renderConeScheduler.addListener((event: SchedulerEvent) => {
       set((state) => {
-        const defaultParams = extractDefaultValues(nodeDef.params);
-
-        const mergedParams: Record<string, any> = {};
-        for (const [category] of Object.entries(nodeDef.params)) {
-          mergedParams[category] = {
-            ...defaultParams[category],
-            ...(overrideParams?.[category] || {}),
-          };
-        }
-
-        if (context.type === "subflow" && !overrideParams?.rendering?.hasOwnProperty("visible")) {
-          if (mergedParams.rendering) {
-            mergedParams.rendering.visible = false;
-          }
-        }
-
-        const targetRuntime =
-          context.type === "root"
-            ? state.rootNodeRuntime
-            : context.geoNodeId
-            ? state.subFlows[context.geoNodeId]?.nodeRuntime
-            : undefined;
-
-        if (!targetRuntime && context.type === "subflow") {
-          return;
-        }
-
-        if (!overrideParams?.general?.name && mergedParams.general?.name) {
-          const baseName = nodeDef.displayName;
-          const existingNames = new Set(
-            Object.values(targetRuntime || {})
-              .filter((runtime) => runtime.type === type)
-              .map((runtime) => runtime.params.general?.name)
-              .filter(Boolean)
-          );
-
-          let counter = 1;
-          let uniqueName = `${baseName} ${counter}`;
-          while (existingNames.has(uniqueName)) {
-            counter++;
-            uniqueName = `${baseName} ${counter}`;
-          }
-
-          mergedParams.general.name = uniqueName;
-        }
-
-        const validatedParams = validateAndNormalizeParams(mergedParams, nodeDef.params);
-
-        const newNodeRuntime: NodeRuntime = {
-          type,
-          params: validatedParams,
-          inputs: {},
-          output: null,
-          isDirty: true,
-        };
-
-        const graphNodeForDirty: GraphNode = {
-          id,
-          isDirty: () => newNodeRuntime.isDirty,
-          cook: async () => {},
-        };
-        newNodeRuntime.dirtyController = new DirtyController(
-          graphNodeForDirty,
-          get().cooker,
-          (nodeId: string) => get().graph.getAllSuccessors(nodeId)
-        );
-
-        if (context.type === "root") {
-          state.rootNodeRuntime[id] = newNodeRuntime;
-
-          if (type === "geoNode") {
-            state.subFlows[id] = {
-              nodeRuntime: {},
-              activeOutputNodeId: null,
-            };
-          }
+        const nodeState = state.rootNodeState[event.nodeId];
+        if (nodeState) {
+          nodeState.output = event.output || null;
+          nodeState.error = event.error;
         } else {
-          const subFlow = state.subFlows[context.geoNodeId!];
-          subFlow.nodeRuntime[id] = newNodeRuntime;
-        }
-
-        const graphNodeForGraph: GraphNode = { id };
-        state.graph.addNode(graphNodeForGraph);
-      });
-
-      if (get().evaluationMode === "eager") {
-        get().cooker.enqueue(id);
-      }
-    },
-
-    removeNode: (nodeId: string, context: GraphContext) => {
-      set((state) => {
-        if (context.type === "root") {
-          if (state.rootNodeRuntime[nodeId]?.type === "geoNode") {
-            delete state.subFlows[nodeId];
-          }
-
-          delete state.rootNodeRuntime[nodeId];
-        } else {
-          const subFlow = state.subFlows[context.geoNodeId!];
-          if (!subFlow) return;
-
-          if (subFlow.activeOutputNodeId === nodeId) {
-            subFlow.activeOutputNodeId = null;
-          }
-
-          delete subFlow.nodeRuntime[nodeId];
-        }
-
-        state.graph.removeNode(nodeId);
-        state.connectionManager.removeAllConnectionsForNode(nodeId);
-      });
-    },
-
-    setParams: (nodeId: string, params: Partial<Record<string, any>>, context: GraphContext) => {
-      set((state) => {
-        const targetRuntime =
-          context.type === "root"
-            ? state.rootNodeRuntime
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-        if (!targetRuntime?.[nodeId]) {
-          return;
-        }
-
-        const wasVisible = targetRuntime[nodeId].params.rendering?.visible;
-        const willBeVisible = params.rendering?.visible;
-
-        if (
-          context.type === "subflow" &&
-          willBeVisible === true &&
-          wasVisible !== true &&
-          !state.isImporting
-        ) {
-          const subFlow = state.subFlows[context.geoNodeId!];
-          Object.keys(subFlow.nodeRuntime).forEach((id) => {
-            if (id !== nodeId && subFlow.nodeRuntime[id].params.rendering?.visible) {
-              subFlow.nodeRuntime[id].params.rendering.visible = false;
+          // Check subflows
+          Object.values(state.subFlows).forEach((subflow) => {
+            if (subflow.nodeState[event.nodeId]) {
+              subflow.nodeState[event.nodeId].output = event.output || null;
+              subflow.nodeState[event.nodeId].error = event.error;
+              
+              // Update compatibility layer for SceneManager
+              if (subflow.nodeRuntime[event.nodeId]) {
+                subflow.nodeRuntime[event.nodeId].output = event.output || null;
+                subflow.nodeRuntime[event.nodeId].error = event.error;
+              }
             }
           });
-          subFlow.activeOutputNodeId = nodeId;
+        }
+      });
+    });
+
+    return {
+      rootNodeState: {},
+      subFlows: {},
+      evaluationMode: "eager" as const,
+      isImporting: false,
+      rootRenderTarget: null,
+
+      graph: graphLibAdapter,
+      scheduler: renderConeScheduler,
+      cache: contentCache,
+      subflowManager,
+
+      // Compatibility properties for legacy UI components
+      rootNodeRuntime: {},
+      connectionManager: {}, // Empty object for compatibility
+      recomputeFrom: (nodeId: string) => {
+        // Delegate to render cone scheduler
+        renderConeScheduler.onParameterChange(nodeId, {});
+      },
+      markDirty: (nodeId: string) => {
+        // Delegate to render cone scheduler
+        renderConeScheduler.onParameterChange(nodeId, {});
+      },
+
+      addNode: (node: NodeInitData, context: GraphContext) => {
+        const nodeDefinition = nodeRegistry[node.type];
+        if (!nodeDefinition) {
+          console.warn(`Unknown node type: ${node.type}`);
+          return;
         }
 
-        const oldParams = targetRuntime[nodeId].params;
+        const validatedParams = validateAndNormalizeParams(
+          node.params || {},
+          nodeDefinition.params
+        );
 
-        const newParams = { ...oldParams };
-        for (const [category, categoryParams] of Object.entries(params)) {
-          if (typeof categoryParams === "object" && categoryParams !== null) {
-            newParams[category] = {
-              ...oldParams[category],
-              ...categoryParams,
+        set((state) => {
+          // Add to graph
+          state.graph.addNode({
+            id: node.id,
+            type: node.type,
+          });
+
+          // Create node state
+          const nodeState: NodeState = {
+            id: node.id,
+            type: node.type,
+            params: validatedParams,
+            inputs: {},
+            output: null,
+            isInRenderCone: false,
+            isRenderTarget: false,
+          };
+
+          if (context.type === "root") {
+            state.rootNodeState[node.id] = nodeState;
+
+            // Populate compatibility property for UI components
+            state.rootNodeRuntime[node.id] = {
+              id: node.id,
+              type: node.type,
+              params: validatedParams,
             };
-          } else {
-            newParams[category] = categoryParams;
-          }
-        }
 
-        targetRuntime[nodeId].params = newParams;
+            // Add to root scheduler
+            state.scheduler.addNode(node.id, node.type, validatedParams);
 
-        targetRuntime[nodeId].isDirty = true;
+            // Manual computation for root nodes (especially lights)
+            if (node.type.includes('Light') && validatedParams.rendering?.visible !== false) {
+              // Light node computation
+              try {
+                const nodeDefinition = nodeRegistry[node.type];
+                if (nodeDefinition?.compute) {
+                  const result = nodeDefinition.compute(validatedParams, undefined, { nodeId: node.id });
+                  // Light computation completed
+                  state.rootNodeRuntime[node.id].output = result;
+                  nodeState.output = result;
+                }
+              } catch (error) {
+                console.warn(`Could not compute root light ${node.id}:`, error);
+              }
+            }
 
-        if (context.type === "subflow" && context.geoNodeId) {
-          state.rootNodeRuntime[context.geoNodeId].isDirty = true;
-        }
-      });
+            // Update render cone status
+            const renderTarget = state.rootRenderTarget;
+            if (renderTarget) {
+              const cone = state.graph.getRenderCone(renderTarget);
+              nodeState.isInRenderCone = cone.includes(node.id);
+            }
+          } else if (context.type === "subflow" && context.geoNodeId) {
+            if (!state.subFlows[context.geoNodeId]) {
+              state.subFlows[context.geoNodeId] = {
+                nodeState: {},
+                activeOutputNodeId: null,
+                nodeRuntime: {}, // Compatibility property
+              };
+              state.subflowManager.createSubflow(context.geoNodeId);
+            }
 
-      if (get().evaluationMode === "eager") {
-        get().cooker.enqueue(nodeId);
+            state.subFlows[context.geoNodeId].nodeState[node.id] = nodeState;
 
-        if (context.type === "subflow" && context.geoNodeId) {
-          get().cooker.enqueue(context.geoNodeId);
-          // Propagate dirty state to all downstream nodes connected to the parent geoNode
-          get().markDirty(context.geoNodeId, { type: "root" });
-        }
-      }
-    },
+            // Populate compatibility property for UI components
+            state.subFlows[context.geoNodeId].nodeRuntime[node.id] = {
+              id: node.id,
+              type: node.type,
+              params: validatedParams,
+            };
 
-    addEdge: (
-      source: string,
-      target: string,
-      context: GraphContext,
-      sourceHandle?: string,
-      targetHandle?: string
-    ): Result => {
-      if (source === target) return { ok: false, error: "Self-connections are not allowed" };
+            // Add to subflow first
+            state.subflowManager.addNodeToSubflow(
+              context.geoNodeId,
+              node.id,
+              node.type,
+              validatedParams
+            );
 
-      const state = get();
-      const nodeRuntime =
-        context.type === "root"
-          ? state.rootNodeRuntime
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-      if (!nodeRuntime) {
-        return { ok: false, error: `Context not found` };
-      }
-
-      if (!nodeRuntime[source] || !nodeRuntime[target])
-        return { ok: false, error: `Node "${source}" or "${target}" not found` };
-
-      if (state.graph.wouldCreateCycle(source, target)) {
-        return { ok: false, error: "Connection creates a cycle—edge not added" };
-      }
-
-      set((state) => {
-        const connection: Connection = {
-          id: state.connectionManager.generateConnectionId(),
-          sourceNodeId: source,
-          targetNodeId: target,
-          sourceHandle,
-          targetHandle,
-        };
-
-        state.connectionManager.addConnection(connection);
-
-        state.graph.connect(source, target);
-
-        const targetNodeRuntime =
-          context.type === "root"
-            ? state.rootNodeRuntime[target]
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime[target];
-
-        if (targetNodeRuntime) {
-          targetNodeRuntime.isDirty = true;
-        }
-      });
-
-      if (get().evaluationMode === "eager") {
-        get().cooker.enqueue(target);
-      }
-
-      return { ok: true };
-    },
-
-    removeEdge: (
-      source: string,
-      target: string,
-      context: GraphContext,
-      sourceHandle?: string,
-      targetHandle?: string
-    ): Result => {
-      const state = get();
-      const nodeRuntime =
-        context.type === "root"
-          ? state.rootNodeRuntime
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-      if (!nodeRuntime) {
-        return { ok: false, error: `Context not found` };
-      }
-
-      if (!nodeRuntime[source] || !nodeRuntime[target])
-        return { ok: false, error: `Node "${source}" or "${target}" not found` };
-
-      const connections = state.connectionManager.getConnectionsBetweenNodes(source, target);
-      if (connections.length === 0) {
-        return { ok: false, error: `Edge from "${source}" to "${target}" does not exist` };
-      }
-
-      set((state) => {
-        const connectionsToRemove = state.connectionManager.getConnectionsBetweenNodes(
-          source,
-          target
-        );
-
-        let connectionToRemove = connectionsToRemove[0];
-        if (sourceHandle && targetHandle) {
-          connectionToRemove =
-            connectionsToRemove.find(
-              (conn) => conn.sourceHandle === sourceHandle && conn.targetHandle === targetHandle
-            ) || connectionsToRemove[0];
-        }
-
-        if (connectionToRemove) {
-          state.connectionManager.removeConnection(connectionToRemove.id);
-
-          const remainingConnections = state.connectionManager.getConnectionsBetweenNodes(
-            source,
-            target
-          );
-          if (remainingConnections.length === 0) {
-            state.graph.disconnect(source, target);
-          }
-        }
-
-        const targetNodeRuntime =
-          context.type === "root"
-            ? state.rootNodeRuntime[target]
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime[target];
-
-        if (targetNodeRuntime) {
-          if (sourceHandle && targetHandle && targetNodeRuntime.inputs[targetHandle]) {
-            delete targetNodeRuntime.inputs[targetHandle];
-          }
-
-          targetNodeRuntime.isDirty = true;
-        }
-      });
-
-      if (get().evaluationMode === "eager") {
-        get().cooker.enqueue(target);
-      }
-
-      return { ok: true };
-    },
-
-    resetEdges: (edges: EdgeData[], context: GraphContext): Result => {
-      set((state) => {
-        const nodeRuntime =
-          context.type === "root"
-            ? state.rootNodeRuntime
-            : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-        if (nodeRuntime) {
-          const nodeIds = Object.keys(nodeRuntime);
-
-          for (const nodeId of nodeIds) {
-            state.connectionManager.removeAllConnectionsForNode(nodeId);
-            state.graph.removeNode(nodeId);
-            state.graph.addNode({ id: nodeId });
-            nodeRuntime[nodeId].isDirty = true;
-          }
-        }
-      });
-
-      for (const edge of edges) {
-        const result = get().addEdge(
-          edge.source,
-          edge.target,
-          context,
-          edge.sourceHandle,
-          edge.targetHandle
-        );
-        if (!result.ok) {
-          return { ok: false, error: `Failed to add edge ${edge.id}: ${result.error}` };
-        }
-      }
-
-      return { ok: true };
-    },
-
-    markDirty: (nodeId: string, context: GraphContext) => {
-      const state = get();
-
-      const targetNodeRuntime =
-        context.type === "root"
-          ? state.rootNodeRuntime
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-      if (!targetNodeRuntime?.[nodeId]) {
-        return;
-      }
-
-      const runtime = targetNodeRuntime[nodeId];
-      if (runtime.dirtyController) {
-        runtime.dirtyController.setDirty();
-      } else {
-        const successors = state.graph.getAllSuccessors(nodeId);
-        const nodesToMark = [nodeId, ...successors.map((n) => n.id)];
-        set((_state) => {
-          for (const id of nodesToMark) {
-            if (targetNodeRuntime[id]) {
-              targetNodeRuntime[id].isDirty = true;
+            // Auto-toggle visibility logic for subflows
+            const subflow = state.subFlows[context.geoNodeId];
+            const existingNodes = Object.keys(subflow.nodeState);
+            
+            if (existingNodes.length === 1) {
+              // First node in subflow - automatically set it as visible and active output
+              console.log(`🔧 First node in subflow ${context.geoNodeId}:`, {
+                nodeId: node.id,
+                nodeType: node.type,
+                visible: validatedParams.rendering?.visible,
+                rendering: validatedParams.rendering
+              });
+              
+              // Force first node to be visible
+              if (!validatedParams.rendering) {
+                validatedParams.rendering = {};
+              }
+              validatedParams.rendering.visible = true;
+              nodeState.params = validatedParams; // Update stored params
+              
+              subflow.activeOutputNodeId = node.id;
+              nodeState.isRenderTarget = true;
+              state.subflowManager.setActiveOutput(context.geoNodeId, node.id);
+              console.log(`✅ Set activeOutputNodeId to ${node.id} in subflow ${context.geoNodeId} (auto-visible)`);
+              
+              // Cache invalidation and trigger SubflowManager computation
+              state.cache.invalidateNode(node.id);
+              console.log(`✅ Set activeOutputNodeId and invalidated cache for ${node.id}`);
+              
+              // Force immediate computation since SubflowManager doesn't auto-compute
+              // Computing active output node
+              try {
+                const nodeDefinition = nodeRegistry[node.type];
+                if (nodeDefinition?.computeTyped) {
+                  // Get inputs from connected nodes for proper computation
+                  const inputs: Record<string, BaseContainer> = {};
+                  
+                  // Get subflow internal graph and find predecessor nodes
+                  const subflowManager = state.subflowManager.getSubflow(context.geoNodeId);
+                  if (subflowManager) {
+                    try {
+                      const predecessors = subflowManager.internalGraph.getAllPredecessors(node.id);
+                      // Found predecessors for computation
+                      
+                      if (predecessors.length > 0) {
+                        // Use first predecessor as default input
+                        const inputNodeId = predecessors[0].id;
+                        const inputNodeRuntime = subflow.nodeRuntime[inputNodeId];
+                        if (inputNodeRuntime?.output) {
+                          inputs.default = inputNodeRuntime.output.default || new Object3DContainer(new Object3D());
+                          // Connected input for computation
+                        }
+                      }
+                    } catch (error) {
+                      console.warn(`Could not get predecessors for ${node.id}:`, error);
+                    }
+                  }
+                  
+                  // Computation inputs prepared
+                  const result = nodeDefinition.computeTyped(validatedParams, inputs, { nodeId: node.id });
+                  // Computation completed
+                  
+                  // Handle async results (Promises)
+                  if (result && typeof result.then === 'function') {
+                    // Async computation detected
+                    result.then((resolvedResult: any) => {
+                      // Async computation resolved
+                      // Use set() to properly update state in async context
+                      set((draft) => {
+                        if (draft.subFlows[context.geoNodeId]?.nodeRuntime[node.id]) {
+                          draft.subFlows[context.geoNodeId].nodeRuntime[node.id].output = resolvedResult;
+                          // Store updated with async result
+                        }
+                      });
+                    }).catch((error: any) => {
+                      console.error(`❌ Async computation failed for ${node.id}:`, error);
+                    });
+                  } else {
+                    // Store synchronous result
+                    state.subFlows[context.geoNodeId].nodeRuntime[node.id].output = result;
+                    // Stored synchronous result
+                  }
+                } else {
+                  console.log(`❌ No computeTyped function for ${node.type}`);
+                }
+              } catch (error) {
+                console.warn(`Could not compute node ${node.id}:`, error);
+              }
+            } else {
+              // Additional node - should start with visible = false by default
+              if (!validatedParams.rendering) {
+                validatedParams.rendering = {};
+              }
+              validatedParams.rendering.visible = false;
+              nodeState.params = validatedParams; // Update stored params
+              
+              console.log(`🔧 Additional node in subflow ${context.geoNodeId} - set to invisible by default:`, {
+                nodeId: node.id,
+                nodeType: node.type
+              });
+              
+              // Only make active output if user explicitly enables visibility later
+              nodeState.isRenderTarget = false;
             }
           }
         });
-      }
-    },
+      },
 
-    recomputeFrom: (nodeId: string, _context: GraphContext) => {
-      const state = get();
+      removeNode: (nodeId: string, context: GraphContext) => {
+        set((state) => {
+          // Remove from graph
+          state.graph.removeNode(nodeId);
 
-      if (state.isImporting) {
-        return;
-      }
+          if (context.type === "root") {
+            // Remove from scheduler
+            state.scheduler.removeNode(nodeId);
 
-      state.cooker.enqueue(nodeId, {
-        type: "compute",
-        trigger: state.graph.getNode(nodeId),
-      });
-    },
+            // Clear render target if this was it
+            if (state.rootRenderTarget === nodeId) {
+              state.rootRenderTarget = null;
+            }
 
-    clear: () => {
-      const state = get();
-      state.graph = new CoreGraph();
-      state.connectionManager = new ConnectionManager();
-      state.cooker = new Cooker(state.graph);
+            delete state.rootNodeState[nodeId];
+            delete state.rootNodeRuntime[nodeId]; // Cleanup compatibility property
+          } else if (context.type === "subflow" && context.geoNodeId) {
+            const subflow = state.subFlows[context.geoNodeId];
+            if (subflow) {
+              delete subflow.nodeState[nodeId];
+              delete subflow.nodeRuntime[nodeId]; // Cleanup compatibility property
+              state.subflowManager.removeNodeFromSubflow(context.geoNodeId, nodeId);
+            }
+          }
 
-      set({
-        rootNodeRuntime: {},
-        subFlows: {},
-      });
-    },
+          // Invalidate cache
+          state.cache.invalidateNode(nodeId);
+        });
+      },
 
-    importGraph: async (serialized: SerializedGraph) => {
-      const { nodes, edges, nodeRuntime, positions, subFlows } = serialized;
+      setParams: (nodeId: string, params: Partial<Record<string, any>>, context: GraphContext) => {
+        set((state) => {
+          let nodeState: NodeState | undefined;
 
-      set((state) => {
-        state.isImporting = true;
-      });
+          if (context.type === "root") {
+            nodeState = state.rootNodeState[nodeId];
+            if (nodeState) {
+              Object.assign(nodeState.params, params);
+              // Update compatibility property
+              if (state.rootNodeRuntime[nodeId]) {
+                Object.assign(state.rootNodeRuntime[nodeId].params, params);
+              }
+              // Update scheduler
+              state.scheduler.onParameterChange(nodeId, params);
+            }
+          } else if (context.type === "subflow" && context.geoNodeId) {
+            nodeState = state.subFlows[context.geoNodeId]?.nodeState[nodeId];
+            if (nodeState) {
+              // Auto-toggle visibility logic: only one node per subflow can have visible=true
+              const subflow = state.subFlows[context.geoNodeId];
+              if (subflow && params.rendering?.visible === true) {
+                // Turn off visibility for all other nodes in this subflow
+                Object.keys(subflow.nodeState).forEach(otherNodeId => {
+                  if (otherNodeId !== nodeId) {
+                    const otherNodeState = subflow.nodeState[otherNodeId];
+                    const otherNodeRuntime = subflow.nodeRuntime[otherNodeId];
+                    if (otherNodeState?.params?.rendering) {
+                      otherNodeState.params.rendering.visible = false;
+                    }
+                    if (otherNodeRuntime?.params?.rendering) {
+                      otherNodeRuntime.params.rendering.visible = false;
+                    }
+                    if (otherNodeState) {
+                      otherNodeState.isRenderTarget = false;
+                    }
+                  }
+                });
+                
+                // Update activeOutputNodeId to the newly visible node
+                subflow.activeOutputNodeId = nodeId;
+                nodeState.isRenderTarget = true;
+                state.subflowManager.setActiveOutput(context.geoNodeId, nodeId);
+              } else if (subflow && params.rendering?.visible === false) {
+                // If turning this node off and it was the active output, clear active output
+                if (subflow.activeOutputNodeId === nodeId) {
+                  subflow.activeOutputNodeId = null;
+                  nodeState.isRenderTarget = false;
+                  // Note: SubflowManager doesn't have a clear method, so we just clear our state
+                }
+              }
+              
+              Object.assign(nodeState.params, params);
+              // Update compatibility property
+              const subflowRuntime = state.subFlows[context.geoNodeId]?.nodeRuntime[nodeId];
+              if (subflowRuntime) {
+                Object.assign(subflowRuntime.params, params);
+              }
+              // Update subflow manager
+              state.subflowManager.onSubflowParameterChange(context.geoNodeId, nodeId, params);
+            }
+          }
 
-      get().clear();
+          // Invalidate cache and trigger recomputation
+          if (nodeState) {
+            state.cache.invalidateNode(nodeId);
+            
+            // Handle visibility changes and active output switching for subflows
+            if (context.type === "subflow" && context.geoNodeId) {
+              const subflow = state.subFlows[context.geoNodeId];
+              
+              // Check if visibility changed from false to true
+              const wasVisible = nodeState?.params?.rendering?.visible === true;
+              const nowVisible = params.rendering?.visible === true;
+              
+              if (!wasVisible && nowVisible && subflow) {
+                // Node became visible - make it the active output and turn off others
+                console.log(`Node ${nodeId} became visible - switching active output`);
+                
+                // Turn off visibility for all other nodes in this subflow
+                Object.keys(subflow.nodeState).forEach(otherNodeId => {
+                  if (otherNodeId !== nodeId) {
+                    const otherNodeState = subflow.nodeState[otherNodeId];
+                    const otherNodeRuntime = subflow.nodeRuntime[otherNodeId];
+                    if (otherNodeState?.params?.rendering) {
+                      otherNodeState.params.rendering.visible = false;
+                    }
+                    if (otherNodeRuntime?.params?.rendering) {
+                      otherNodeRuntime.params.rendering.visible = false;
+                    }
+                    if (otherNodeState) {
+                      otherNodeState.isRenderTarget = false;
+                    }
+                  }
+                });
+                
+                // Set this node as the active output
+                subflow.activeOutputNodeId = nodeId;
+                nodeState.isRenderTarget = true;
+                state.subflowManager.setActiveOutput(context.geoNodeId, nodeId);
+                console.log(`✅ Set activeOutputNodeId to ${nodeId} via visibility change`);
+              }
+              
+              // Recompute if this is the active output node (either already was, or just became)
+              if (subflow && subflow.activeOutputNodeId === nodeId) {
+                // Recomputing subflow node on parameter change
+                try {
+                  const nodeDefinition = nodeRegistry[nodeState.type];
+                  if (nodeDefinition?.computeTyped) {
+                    // Get inputs from connected nodes for proper computation
+                    const inputs: Record<string, BaseContainer> = {};
+                    
+                    // Get subflow internal graph and find predecessor nodes
+                    const subflowManager = state.subflowManager.getSubflow(context.geoNodeId);
+                    if (subflowManager) {
+                      try {
+                        const predecessors = subflowManager.internalGraph.getAllPredecessors(nodeId);
+                        // Found predecessors for parameter change
+                        
+                        if (predecessors.length > 0) {
+                          // Use first predecessor as default input (typical for Transform nodes)
+                          const inputNodeId = predecessors[0].id;
+                          const inputNodeRuntime = subflow.nodeRuntime[inputNodeId];
+                          if (inputNodeRuntime?.output) {
+                            inputs.default = inputNodeRuntime.output.default || new Object3DContainer(new Object3D());
+                            // Connected input for parameter change
+                          }
+                        }
+                      } catch (error) {
+                        console.warn(`Could not get predecessors for ${nodeId}:`, error);
+                      }
+                    }
+                    
+                    // Parameter change inputs prepared
+                    const result = nodeDefinition.computeTyped(nodeState.params, inputs, { nodeId });
+                    // Parameter change computation completed
+                    
+                    // Handle async results
+                    if (result && typeof result.then === 'function') {
+                      result.then((resolvedResult: any) => {
+                        // Parameter change async resolved
+                        // Use set() to properly update state in async context
+                        set((draft) => {
+                          if (draft.subFlows[context.geoNodeId]?.nodeRuntime[nodeId]) {
+                            draft.subFlows[context.geoNodeId].nodeRuntime[nodeId].output = resolvedResult;
+                            // Parameter change async store updated
+                          }
+                        });
+                      });
+                    } else {
+                      // Store synchronous result
+                      subflow.nodeRuntime[nodeId].output = result;
+                      // Parameter change stored synchronous result
+                    }
+                  }
+                } catch (error) {
+                  console.warn(`Could not recompute node ${nodeId} after parameter change:`, error);
+                }
+              }
+              // Also notify SubflowManager for future scheduler integration
+              state.subflowManager.onSubflowParameterChange(context.geoNodeId, nodeId, nodeState.params);
+            } else if (context.type === "root" && nodeState.type.includes('Light')) {
+              // Recompute root light nodes on parameter change
+              // Recomputing root light node
+              try {
+                const nodeDefinition = nodeRegistry[nodeState.type];
+                if (nodeDefinition?.compute) {
+                  const result = nodeDefinition.compute(nodeState.params, undefined, { nodeId });
+                  // Light parameter change completed
+                  state.rootNodeRuntime[nodeId].output = result;
+                  nodeState.output = result;
+                }
+              } catch (error) {
+                console.warn(`Could not recompute light ${nodeId} after parameter change:`, error);
+              }
+            }
+          }
+        });
+      },
 
-      const rootContext: GraphContext = { type: "root" };
-      nodes.forEach((node) => {
-        get().addNode(node, rootContext);
-      });
+      addEdge: (
+        source: string,
+        target: string,
+        context: GraphContext,
+        sourceHandle?: string,
+        targetHandle?: string
+      ) => {
+        // Check if connection would create cycle
+        if (get().graph.wouldCreateCycle(source, target)) {
+          return { ok: false, error: "Connection would create a cycle" };
+        }
 
-      edges.forEach((edge) => {
-        get().addEdge(edge.source, edge.target, rootContext, edge.sourceHandle, edge.targetHandle);
-      });
+        // Add to graph structure
+        const connected = get().graph.connect(source, target);
+        if (!connected) {
+          return { ok: false, error: "Failed to create connection" };
+        }
 
-      if (subFlows) {
-        Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
-          const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
+        if (context.type === "root") {
+          // Notify scheduler about connection change
+          get().scheduler.onConnectionChange(source, target, true);
 
-          subFlow.nodes.forEach((node) => {
-            get().addNode(node, subFlowContext);
+          // Update render cone status
+          const state = get();
+          if (state.rootRenderTarget) {
+            const cone = state.graph.getRenderCone(state.rootRenderTarget);
+            Object.keys(state.rootNodeState).forEach((nodeId) => {
+              state.rootNodeState[nodeId].isInRenderCone = cone.includes(nodeId);
+            });
+          }
+        } else if (context.type === "subflow" && context.geoNodeId) {
+          // Add connection to subflow
+          // Adding subflow connection
+          const connected = get().subflowManager.addSubflowConnection(
+            context.geoNodeId,
+            source,
+            target,
+            sourceHandle,
+            targetHandle
+          );
+          // Subflow connection result
+        }
+
+        return { ok: true };
+      },
+
+      removeEdge: (
+        source: string,
+        target: string,
+        context: GraphContext,
+        _sourceHandle?: string,
+        _targetHandle?: string
+      ) => {
+        // Remove from graph structure
+        get().graph.disconnect(source, target);
+
+        if (context.type === "root") {
+          // Notify scheduler
+          get().scheduler.onConnectionChange(source, target, false);
+
+          // Update render cone status
+          const state = get();
+          if (state.rootRenderTarget) {
+            const cone = state.graph.getRenderCone(state.rootRenderTarget);
+            Object.keys(state.rootNodeState).forEach((nodeId) => {
+              state.rootNodeState[nodeId].isInRenderCone = cone.includes(nodeId);
+            });
+          }
+        } else if (context.type === "subflow" && context.geoNodeId) {
+          // Remove connection from subflow
+          get().subflowManager.removeSubflowConnection(context.geoNodeId, source, target);
+        }
+
+        return { ok: true };
+      },
+
+      resetEdges: (edges: EdgeData[], context: GraphContext) => {
+        const state = get();
+
+        // Clear all existing edges
+        // TODO: Implement proper edge clearing
+
+        // Add new edges
+        edges.forEach((edge) => {
+          state.addEdge(edge.source, edge.target, context, edge.sourceHandle, edge.targetHandle);
+        });
+
+        return { ok: true };
+      },
+
+      setRenderTarget: (nodeId: string | null, context: GraphContext) => {
+        set((state) => {
+          if (context.type === "root") {
+            // Clear previous render target
+            if (state.rootRenderTarget) {
+              const prevNode = state.rootNodeState[state.rootRenderTarget];
+              if (prevNode) {
+                prevNode.isRenderTarget = false;
+              }
+            }
+
+            state.rootRenderTarget = nodeId;
+            state.scheduler.setRenderTarget(nodeId);
+
+            // Update render target flag and cone status
+            if (nodeId) {
+              const targetNode = state.rootNodeState[nodeId];
+              if (targetNode) {
+                targetNode.isRenderTarget = true;
+              }
+
+              const cone = state.graph.getRenderCone(nodeId);
+              Object.keys(state.rootNodeState).forEach((id) => {
+                state.rootNodeState[id].isInRenderCone = cone.includes(id);
+              });
+            } else {
+              // No render target - nothing is in cone
+              Object.keys(state.rootNodeState).forEach((id) => {
+                state.rootNodeState[id].isInRenderCone = false;
+              });
+            }
+          } else if (context.type === "subflow" && context.geoNodeId && nodeId) {
+            // Set subflow active output
+            state.subflowManager.setActiveOutput(context.geoNodeId, nodeId);
+
+            const subflow = state.subFlows[context.geoNodeId];
+            if (subflow) {
+              // Clear previous active output flag
+              if (subflow.activeOutputNodeId) {
+                const prevNode = subflow.nodeState[subflow.activeOutputNodeId];
+                if (prevNode) {
+                  prevNode.isRenderTarget = false;
+                }
+              }
+
+              subflow.activeOutputNodeId = nodeId;
+
+              // Set new active output flag
+              const activeNode = subflow.nodeState[nodeId];
+              if (activeNode) {
+                activeNode.isRenderTarget = true;
+              }
+            }
+          }
+        });
+      },
+
+      getRenderTarget: (context: GraphContext) => {
+        const state = get();
+        if (context.type === "root") {
+          return state.rootRenderTarget;
+        } else if (context.type === "subflow" && context.geoNodeId) {
+          return state.subflowManager.getActiveOutputNodeId(context.geoNodeId);
+        }
+        return null;
+      },
+
+      isInRenderCone: (nodeId: string, context: GraphContext) => {
+        const state = get();
+        if (context.type === "root") {
+          return state.rootNodeState[nodeId]?.isInRenderCone || false;
+        } else if (context.type === "subflow" && context.geoNodeId) {
+          return state.subflowManager.shouldComputeInSubflow(context.geoNodeId, nodeId);
+        }
+        return false;
+      },
+
+      clear: () => {
+        set((state) => {
+          // Clear scheduler and cache
+          state.scheduler.clear();
+          state.cache.clear();
+          state.subflowManager.clear();
+
+          // Clear graph - create outside Immer context
+          const newGraph = new GraphLibAdapter();
+          const newScheduler = new RenderConeScheduler(newGraph);
+          const newSubflowManager = new SubflowManager(newGraph);
+          const newCache = new ContentCache();
+
+          state.graph = newGraph;
+          state.scheduler = newScheduler;
+          state.subflowManager = newSubflowManager;
+          state.cache = newCache;
+
+          // Clear state
+          state.rootNodeState = {};
+          state.subFlows = {};
+          state.rootRenderTarget = null;
+          state.isImporting = false;
+        });
+      },
+
+      importGraph: async (serialized: SerializedGraph) => {
+        set((state) => {
+          state.isImporting = true;
+        });
+
+        try {
+          const state = get();
+          state.clear();
+
+          // Import root nodes
+          serialized.nodes.forEach((nodeData) => {
+            state.addNode(nodeData, { type: "root" });
           });
 
-          subFlow.edges.forEach((edge) => {
-            const result = get().addEdge(
+          // Import subflows
+          Object.entries(serialized.subFlows).forEach(([geoNodeId, subflow]) => {
+            subflow.nodes.forEach((nodeData) => {
+              state.addNode(nodeData, { type: "subflow", geoNodeId });
+            });
+          });
+
+          // Import edges
+          serialized.edges.forEach((edge) => {
+            state.addEdge(
               edge.source,
               edge.target,
-              subFlowContext,
+              { type: "root" },
               edge.sourceHandle,
               edge.targetHandle
             );
-            if (!result.ok) {
-            } else {
-            }
           });
 
+          // Import subflow edges
+          Object.entries(serialized.subFlows).forEach(([geoNodeId, subflow]) => {
+            subflow.edges.forEach((edge) => {
+              state.addEdge(
+                edge.source,
+                edge.target,
+                { type: "subflow", geoNodeId },
+                edge.sourceHandle,
+                edge.targetHandle
+              );
+            });
+          });
+
+          // Set render targets
+          if (serialized.rootRenderTarget) {
+            state.setRenderTarget(serialized.rootRenderTarget, { type: "root" });
+          }
+
+          Object.entries(serialized.subFlows).forEach(([geoNodeId, subflow]) => {
+            if (subflow.activeOutputNodeId) {
+              state.setSubFlowActiveOutput(geoNodeId, subflow.activeOutputNodeId);
+            }
+          });
+        } catch (error) {
+          console.error("Failed to import graph:", error);
+        } finally {
           set((state) => {
-            const targetSubFlow = state.subFlows[geoNodeId];
-            if (targetSubFlow) {
-              Object.entries(subFlow.nodeRuntime).forEach(([nodeId, runtime]) => {
-                if (targetSubFlow.nodeRuntime[nodeId]) {
-                  targetSubFlow.nodeRuntime[nodeId].inputs = runtime.inputs;
-                }
-              });
-
-              targetSubFlow.activeOutputNodeId = subFlow.activeOutputNodeId;
-            }
+            state.isImporting = false;
           });
-        });
-      }
-
-      set((state) => {
-        Object.entries(nodeRuntime).forEach(([nodeId, runtime]) => {
-          if (state.rootNodeRuntime[nodeId]) {
-            state.rootNodeRuntime[nodeId].inputs = runtime.inputs;
-          }
-        });
-      });
-
-      (async () => {
-        try {
-          const { useUIStore } = await import("../store/uiStore");
-          const { saveNodePositions } = useUIStore.getState();
-
-          if (positions && Object.keys(positions).length > 0) {
-            saveNodePositions("root", positions);
-          }
-
-          if (subFlows) {
-            Object.entries(subFlows).forEach(([geoNodeId, subFlow]) => {
-              if (subFlow.positions && Object.keys(subFlow.positions).length > 0) {
-                const contextKey = `subflow-${geoNodeId}`;
-                saveNodePositions(contextKey, subFlow.positions);
-              }
-            });
-          }
-        } catch (error) {}
-      })();
-
-      set((state) => {
-        state.isImporting = false;
-      });
-
-      if (get().evaluationMode === "eager") {
-        await get().preloadImportObjAssets();
-
-        get().markAllNodesAsDirty();
-
-        get().clearRecomputationTracking();
-
-        if (subFlows) {
-          for (const [geoNodeId, subFlow] of Object.entries(subFlows)) {
-            const subFlowContext: GraphContext = { type: "subflow", geoNodeId };
-
-            for (const node of subFlow.nodes) {
-              await get().recomputeFromSync(node.id, subFlowContext);
-            }
-          }
         }
+      },
 
-        for (const node of nodes) {
-          await get().recomputeFromSync(node.id, rootContext);
-        }
+      exportGraph: async (nodePositions?: Record<string, { x: number; y: number }>) => {
+        const state = get();
 
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        await get().validatePostImportComputation();
-      }
-
-      const allNodeIds = [
-        ...nodes.map((n) => n.id),
-        ...Object.values(subFlows || {}).flatMap((sf) => sf.nodes.map((n) => n.id)),
-      ];
-      const allContexts = [
-        { type: "root" as const },
-        ...Object.keys(subFlows || {}).map((geoNodeId) => ({
-          type: "subflow" as const,
-          geoNodeId,
-        })),
-      ];
-      get().forceResetImportedNodeTracking(allNodeIds, allContexts);
-    },
-
-    preloadImportObjAssets: async () => {
-      const state = get();
-
-      for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
-        if (runtime.type === "importObjNode") {
-          await get().preloadAssetForNode(nodeId, runtime, { type: "root" });
-        }
-      }
-
-      for (const [geoNodeId, subFlow] of Object.entries(state.subFlows)) {
-        for (const [nodeId, runtime] of Object.entries(subFlow.nodeRuntime)) {
-          if (runtime.type === "importObjNode") {
-            await get().preloadAssetForNode(nodeId, runtime, { type: "subflow", geoNodeId });
-          }
-        }
-      }
-    },
-
-    preloadAssetForNode: async (nodeId: string, runtime: NodeRuntime, context: GraphContext) => {
-      if (runtime.type !== "importObjNode" || !runtime.params?.object) return;
-
-      const objectParams = runtime.params.object as any;
-      if (!objectParams?.assetHash || objectParams?.file) return;
-
-      try {
-        const { getAssetCache } = await import("../io/mxscene/opfs-cache");
-        const assetCache = getAssetCache();
-        const assetData = await assetCache.get(objectParams.assetHash);
-
-        if (!assetData) {
-          return;
-        }
-
-        const decoder = new TextDecoder();
-        const content = decoder.decode(assetData);
-        const encodedContent = btoa(content);
-
-        const serializableFile = {
-          name: `restored-${objectParams.assetHash.slice(0, 8)}.obj`,
-          size: assetData.byteLength,
-          lastModified: Date.now(),
-          content: encodedContent,
+        const serialized: SerializedGraph = {
+          nodes: Object.keys(state.rootNodeState).map((nodeId) => ({
+            id: nodeId,
+            type: state.rootNodeState[nodeId].type,
+            params: state.rootNodeState[nodeId].params,
+          })),
+          edges: [], // TODO: Extract from graph connections
+          nodeRuntime: {},
+          positions: nodePositions || {},
+          subFlows: {},
+          rootRenderTarget: state.rootRenderTarget,
         };
 
-        set((state) => {
-          const targetRuntime =
-            context.type === "root"
-              ? state.rootNodeRuntime[nodeId]
-              : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-
-          if (targetRuntime && targetRuntime.params?.object) {
-            const objParams = targetRuntime.params.object as any;
-            objParams.file = serializableFile;
-            targetRuntime.isDirty = true;
-          }
-        });
-      } catch (error) {}
-    },
-
-    markAllNodesAsDirty: () => {
-      set((state) => {
-        for (const runtime of Object.values(state.rootNodeRuntime)) {
-          runtime.isDirty = true;
-          runtime.output = null; // Clear cached output
-        }
-
-        for (const subFlow of Object.values(state.subFlows)) {
-          for (const runtime of Object.values(subFlow.nodeRuntime)) {
-            runtime.isDirty = true;
-            runtime.output = null; // Clear cached output
-          }
-        }
-      });
-    },
-
-    validatePostImportComputation: async () => {
-      const state = get();
-
-      let hasIssues = false;
-
-      for (const [, runtime] of Object.entries(state.rootNodeRuntime)) {
-        if (runtime.isDirty) {
-          hasIssues = true;
-        } else if (!runtime.output && runtime.type !== "noteNode") {
-          hasIssues = true;
-        } else if (runtime.error) {
-          hasIssues = true;
-        } else {
-        }
-      }
-
-      for (const [, subFlow] of Object.entries(state.subFlows)) {
-        for (const [, runtime] of Object.entries(subFlow.nodeRuntime)) {
-          if (runtime.isDirty) {
-            hasIssues = true;
-          } else if (!runtime.output && runtime.type !== "noteNode") {
-            hasIssues = true;
-          } else if (runtime.error) {
-            hasIssues = true;
-          } else {
-          }
-        }
-
-        if (subFlow.activeOutputNodeId) {
-          const outputRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
-          if (!outputRuntime?.output) {
-            hasIssues = true;
-          }
-        }
-      }
-
-      if (hasIssues) {
-      } else {
-      }
-    },
-
-    clearRecomputationTracking: () => {
-      const state = get();
-      state.cooker.clear();
-    },
-
-    forceResetImportedNodeTracking: (_nodeIds: string[], _contexts: GraphContext[]) => {
-      const state = get();
-      state.cooker.clear();
-    },
-
-    recomputeFromSync: async (nodeId: string, context: GraphContext) => {
-      const state = get();
-
-      const nodeRuntime =
-        context.type === "root"
-          ? state.rootNodeRuntime
-          : state.subFlows[context.geoNodeId!]?.nodeRuntime;
-
-      if (!nodeRuntime || !nodeRuntime[nodeId]) {
-        return;
-      }
-
-      const node = nodeRuntime[nodeId];
-      if (!node.isDirty) {
-        return;
-      }
-
-      const nodeDef = nodeRegistry[node.type];
-      if (!nodeDef) {
-        return;
-      }
-
-      const inputConnections = state.connectionManager.getInputConnections(nodeId);
-      const inputs: Record<string, any> = {};
-
-      for (const connection of inputConnections) {
-        const sourceNode = nodeRuntime[connection.sourceNodeId];
-        if (sourceNode && sourceNode.output !== undefined) {
-          const inputHandle = connection.targetHandle || connection.sourceNodeId;
-          inputs[inputHandle] = sourceNode.output;
-        }
-      }
-
-      try {
-        const result = computeEngine.evaluateNode(nodeId, node.params, inputs, nodeDef.compute);
-
-        set((state) => {
-          const targetRuntime =
-            context.type === "root"
-              ? state.rootNodeRuntime[nodeId]
-              : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-
-          if (targetRuntime) {
-            targetRuntime.output = result;
-            targetRuntime.isDirty = false;
-            targetRuntime.error = undefined;
-          }
-        });
-      } catch (err) {
-        set((state) => {
-          const targetRuntime =
-            context.type === "root"
-              ? state.rootNodeRuntime[nodeId]
-              : state.subFlows[context.geoNodeId!]?.nodeRuntime[nodeId];
-
-          if (targetRuntime) {
-            targetRuntime.error = err instanceof Error ? err.message : String(err);
-            targetRuntime.isDirty = false;
-          }
-        });
-      }
-    },
-
-    exportGraph: async (nodePositions?: Record<string, { x: number; y: number }>) => {
-      const state = get();
-
-      const nodes: NodeInitData[] = Object.entries(state.rootNodeRuntime).map(([id, runtime]) => ({
-        id,
-        type: runtime.type,
-        params: runtime.params,
-      }));
-
-      const edges: EdgeData[] = [];
-      const rootNodeIds = Object.keys(state.rootNodeRuntime);
-
-      for (const nodeId of rootNodeIds) {
-        const connections = state.connectionManager.getOutputConnections(nodeId);
-
-        for (const connection of connections) {
-          if (rootNodeIds.includes(connection.targetNodeId)) {
-            edges.push({
-              id: connection.id,
-              source: connection.sourceNodeId,
-              target: connection.targetNodeId,
-              sourceHandle: connection.sourceHandle,
-              targetHandle: connection.targetHandle,
-            });
-          }
-        }
-      }
-
-      const nodeRuntime: Record<string, Omit<NodeRuntime, "output" | "isDirty" | "error">> = {};
-      Object.entries(state.rootNodeRuntime).forEach(([id, runtime]) => {
-        nodeRuntime[id] = {
-          type: runtime.type,
-          params: runtime.params,
-          inputs: runtime.inputs,
-        };
-      });
-
-      const subFlows: Record<string, SerializedSubFlow> = {};
-      Object.entries(state.subFlows).forEach(([geoNodeId, subFlow]) => {
-        const subFlowNodes: NodeInitData[] = Object.entries(subFlow.nodeRuntime).map(
-          ([id, runtime]) => ({
-            id,
-            type: runtime.type,
-            params: runtime.params,
-          })
-        );
-
-        const subFlowEdges: EdgeData[] = [];
-        const subFlowNodeIds = Object.keys(subFlow.nodeRuntime);
-
-        for (const nodeId of subFlowNodeIds) {
-          const connections = state.connectionManager.getOutputConnections(nodeId);
-
-          for (const connection of connections) {
-            if (subFlowNodeIds.includes(connection.targetNodeId)) {
-              subFlowEdges.push({
-                id: connection.id,
-                source: connection.sourceNodeId,
-                target: connection.targetNodeId,
-                sourceHandle: connection.sourceHandle,
-                targetHandle: connection.targetHandle,
-              });
-            }
-          }
-        }
-
-        const subFlowNodeRuntime: Record<
-          string,
-          Omit<NodeRuntime, "output" | "isDirty" | "error">
-        > = {};
-        Object.entries(subFlow.nodeRuntime).forEach(([id, runtime]) => {
-          subFlowNodeRuntime[id] = {
-            type: runtime.type,
-            params: runtime.params,
-            inputs: runtime.inputs,
+        // Export node runtime (without transient data)
+        Object.entries(state.rootNodeState).forEach(([nodeId, nodeState]) => {
+          serialized.nodeRuntime[nodeId] = {
+            id: nodeState.id,
+            type: nodeState.type,
+            params: nodeState.params,
+            inputs: nodeState.inputs,
           };
         });
 
-        const subFlowPositions: Record<string, { x: number; y: number }> = {};
+        // Export subflows
+        Object.entries(state.subFlows).forEach(([geoNodeId, subflow]) => {
+          serialized.subFlows[geoNodeId] = {
+            nodes: Object.keys(subflow.nodeState).map((nodeId) => ({
+              id: nodeId,
+              type: subflow.nodeState[nodeId].type,
+              params: subflow.nodeState[nodeId].params,
+            })),
+            edges: [], // TODO: Extract from subflow connections
+            nodeRuntime: {},
+            positions: {},
+            activeOutputNodeId: subflow.activeOutputNodeId,
+          };
 
-        subFlows[geoNodeId] = {
-          nodes: subFlowNodes,
-          edges: subFlowEdges,
-          nodeRuntime: subFlowNodeRuntime,
-          positions: subFlowPositions,
-          activeOutputNodeId: subFlow.activeOutputNodeId,
-        };
-      });
+          // Export subflow node runtime
+          Object.entries(subflow.nodeState).forEach(([nodeId, nodeState]) => {
+            serialized.subFlows[geoNodeId].nodeRuntime[nodeId] = {
+              id: nodeState.id,
+              type: nodeState.type,
+              params: nodeState.params,
+              inputs: nodeState.inputs,
+            };
+          });
+        });
 
-      return {
-        nodes,
-        edges,
-        nodeRuntime,
-        positions: nodePositions || {},
-        subFlows,
-      };
-    },
+        return serialized;
+      },
 
-    setSubFlowActiveOutput: (geoNodeId: string, nodeId: string) => {
-      set((state) => {
-        const subFlow = state.subFlows[geoNodeId];
-        if (subFlow) {
-          subFlow.activeOutputNodeId = nodeId;
-        }
-      });
-    },
-  }))
+      setSubFlowActiveOutput: (geoNodeId: string, nodeId: string) => {
+        get().setRenderTarget(nodeId, { type: "subflow", geoNodeId });
+      },
+
+      preloadImportObjAssets: async () => {
+        // TODO: Implement asset preloading if needed
+      },
+
+      preloadAssetForNode: async (
+        _nodeId: string,
+        _nodeState: NodeState,
+        _context: GraphContext
+      ) => {
+        // TODO: Implement per-node asset preloading if needed
+      },
+
+      validatePostImportComputation: async () => {
+        // Render-cone system handles validation automatically
+        // No manual validation needed
+      },
+
+      forceResetImportedNodeTracking: (nodeIds: string[], _contexts: GraphContext[]) => {
+        // Force recomputation by invalidating cache
+        nodeIds.forEach((nodeId) => {
+          get().cache.invalidateNode(nodeId);
+        });
+      },
+    };
+  })
 );
 
-export const useNodeOutputs = () =>
-  useGraphStore((state) => {
-    const outputs: Record<string, any> = {};
+// Export singleton instances for direct access when needed
+export { graphLibAdapter, renderConeScheduler, contentCache, subflowManager };
 
-    for (const [nodeId, runtime] of Object.entries(state.rootNodeRuntime)) {
-      outputs[nodeId] = runtime.output;
-    }
-
-    return outputs;
-  });
-
-export const useNodes = () => {
-  const rootNodeRuntime = useGraphStore((state) => state.rootNodeRuntime);
-
-  return React.useMemo(() => {
-    return Object.entries(rootNodeRuntime)
-      .map(([id, runtime]) => ({
-        id,
-        type: runtime.type,
-        data: runtime.params,
-        position: { x: 0, y: 0 },
-      }))
-      .sort((a, b) => a.id.localeCompare(b.id));
-  }, [rootNodeRuntime]);
-};
-
-export const useEdges = () => {
-  const connectionManager = useGraphStore((state) => state.connectionManager);
-  const rootNodeRuntime = useGraphStore((state) => state.rootNodeRuntime);
-
-  return React.useMemo(() => {
-    const edges: EdgeData[] = [];
-
-    const rootNodeIds = Object.keys(rootNodeRuntime);
-
-    for (const nodeId of rootNodeIds) {
-      const connections = connectionManager.getOutputConnections(nodeId);
-
-      for (const connection of connections) {
-        if (rootNodeIds.includes(connection.targetNodeId)) {
-          edges.push({
-            id: connection.id,
-            source: connection.sourceNodeId,
-            target: connection.targetNodeId,
-            sourceHandle: connection.sourceHandle,
-            targetHandle: connection.targetHandle,
-          });
-        }
-      }
-    }
-
-    return edges.sort((a, b) => a.id.localeCompare(b.id));
-  }, [connectionManager, rootNodeRuntime]);
-};
-
-export const useRenderableNodes = () => {
-  const rootNodeRuntime = useGraphStore((state) => state.rootNodeRuntime);
-
-  return React.useMemo(() => {
-    return Object.entries(rootNodeRuntime)
-      .filter(([_, runtime]) => runtime.output && !runtime.error)
-      .map(([id, runtime]) => ({
-        id,
-        output: runtime.output,
-      }));
-  }, [rootNodeRuntime]);
-};
-
-export const useRenderableObjects = () => {
-  const { rootNodeRuntime, subFlows } = useGraphStore((state) => ({
-    rootNodeRuntime: state.rootNodeRuntime,
-    subFlows: state.subFlows,
-  }));
-
-  return React.useMemo(() => {
-    const result: any[] = [];
-
-    for (const [nodeId, runtime] of Object.entries(rootNodeRuntime)) {
-      if (runtime.isDirty || runtime.error) continue;
-
-      if (runtime.type === "geoNode") {
-        const geoNodeVisible = runtime.params?.rendering?.visible !== false;
-        if (!geoNodeVisible) continue;
-
-        const subFlow = subFlows[nodeId];
-        if (!subFlow || !subFlow.activeOutputNodeId) continue;
-
-        const outputNodeRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
-        if (
-          !outputNodeRuntime ||
-          outputNodeRuntime.isDirty ||
-          outputNodeRuntime.error ||
-          !outputNodeRuntime.output
-        )
-          continue;
-
-        const outputNodeVisible = outputNodeRuntime.params?.rendering?.visible === true;
-        if (!outputNodeVisible) continue;
-
-        const subFlowOutput = outputNodeRuntime.output;
-        if (subFlowOutput && typeof subFlowOutput === "object" && "isObject3D" in subFlowOutput) {
-          const clonedOutput = subFlowOutput.clone();
-
-          const transform = runtime.params?.transform;
-          if (transform) {
-            if (transform.position) {
-              clonedOutput.position.set(
-                transform.position.x || 0,
-                transform.position.y || 0,
-                transform.position.z || 0
-              );
-            }
-            if (transform.rotation) {
-              clonedOutput.rotation.set(
-                transform.rotation.x || 0,
-                transform.rotation.y || 0,
-                transform.rotation.z || 0
-              );
-            }
-            if (transform.scale) {
-              const scaleFactor = transform.scaleFactor || 1;
-              clonedOutput.scale.set(
-                (transform.scale.x || 1) * scaleFactor,
-                (transform.scale.y || 1) * scaleFactor,
-                (transform.scale.z || 1) * scaleFactor
-              );
-            }
-          }
-
-          const rendering = runtime.params?.rendering;
-          if (rendering) {
-            clonedOutput.traverse((child: any) => {
-              if (child.isMesh && child.material) {
-                if (rendering.color && child.material.color) {
-                  child.material.color.setStyle(rendering.color);
-                }
-                child.castShadow = rendering.castShadow ?? false;
-                child.receiveShadow = rendering.receiveShadow ?? false;
-              }
-            });
-          }
-
-          result.push(clonedOutput);
-        }
-      } else {
-        const renderingVisible = runtime.params?.rendering?.visible !== false;
-        if (!renderingVisible) continue;
-
-        const output = runtime.output;
-        if (output && typeof output === "object" && "isObject3D" in output) {
-          result.push(output);
-        }
-      }
-    }
-
-    return result;
-  }, [rootNodeRuntime, subFlows]);
-};
-
-export const useDirtyNodes = () =>
-  useGraphStore((state) =>
-    Object.entries(state.rootNodeRuntime)
-      .filter(([_, runtime]) => runtime.isDirty)
-      .map(([id, runtime]) => ({ id, ...runtime }))
+// Legacy compatibility export (deprecated)
+export const exportGraphWithMeta = async (): Promise<any> => {
+  console.warn(
+    "exportGraphWithMeta is deprecated - use useGraphStore.getState().exportGraph() instead"
   );
-
-export const useErroredNodes = () =>
-  useGraphStore((state) =>
-    Object.entries(state.rootNodeRuntime)
-      .filter(([_, runtime]) => runtime.error)
-      .map(([id, runtime]) => ({ id, ...runtime }))
-  );
-
-export const useCleanNodes = () =>
-  useGraphStore((state) =>
-    Object.entries(state.rootNodeRuntime)
-      .filter(([_, runtime]) => !runtime.isDirty && !runtime.error)
-      .map(([id, runtime]) => ({ id, ...runtime }))
-  );
-
-export async function exportGraphWithMeta() {
-  let viewport = { x: 0, y: 0, zoom: 1 };
-  try {
-    const event = new CustomEvent("minimystx:getViewport");
-    window.dispatchEvent(event);
-    const eventData = event as unknown as { viewportData?: typeof viewport };
-    if (eventData.viewportData) {
-      viewport = eventData.viewportData;
-    }
-  } catch (e) {}
-
-  let nodePositions: Record<string, { x: number; y: number }> = {};
-  try {
-    const event = new CustomEvent("minimystx:getNodePositions");
-    window.dispatchEvent(event);
-    const eventData = event as unknown as { nodePositions?: typeof nodePositions };
-    if (eventData.nodePositions) {
-      nodePositions = eventData.nodePositions;
-    }
-  } catch (e) {}
-
-  let camera = { position: [5, 2, 5], target: [0, 0, 0] };
-  try {
-    const event = new CustomEvent("minimystx:getCameraData");
-    window.dispatchEvent(event);
-    const eventData = event as unknown as { cameraData?: typeof camera };
-    if (eventData.cameraData) {
-      camera = eventData.cameraData;
-    }
-  } catch (e) {}
-
-  const graph = await useGraphStore.getState().exportGraph(nodePositions);
-
-  return {
-    schema: GRAPH_SCHEMA,
-    created: Date.now(),
-    graph,
-    viewport,
-    camera,
-  };
-}
-
-export function importGraphWithMeta(json: unknown) {
-  const data = json as { schema?: number; graph?: unknown; viewport?: unknown; camera?: unknown };
-
-  if (data.schema !== GRAPH_SCHEMA) {
-    throw new Error(`Unsupported schema ${data.schema}`);
-  }
-
-  const state = useGraphStore.getState();
-  const graph = data.graph as SerializedGraph;
-
-  state.importGraph(graph);
-
-  setTimeout(() => {
-    window.dispatchEvent(
-      new CustomEvent("minimystx:rebuildFlowGraph", {
-        detail: { positions: graph.positions },
-      })
-    );
-  }, 50);
-
-  if (data.viewport) {
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("minimystx:setViewport", { detail: data.viewport }));
-    }, 300);
-  }
-
-  if (data.camera) {
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("minimystx:setCameraData", { detail: data.camera }));
-    }, 200);
-  }
-}
+  return useGraphStore.getState().exportGraph();
+};

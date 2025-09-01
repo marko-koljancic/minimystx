@@ -23,7 +23,7 @@ export default function GeoNodeNode(props: NodeProps) {
       />
       <RenderFlagBadge
         nodeId={id}
-        render={nodeData.rendering?.visible || false}
+        render={nodeData.rendering?.visible ?? true}
         nodeWidth={NODE_WIDTH}
         nodeHeight={NODE_HEIGHT}
       />

@@ -204,6 +204,7 @@ export async function applyImportedScene(result: ImportResult): Promise<void> {
       nodeRuntime: restoredNodeRuntime,
       positions: scene.graph.positions,
       subFlows: restoredGraph.subFlows,
+      rootRenderTarget: null, // Default value for compatibility
     });
     
     if (scene.ui.viewportStates.root) {

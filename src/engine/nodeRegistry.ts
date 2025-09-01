@@ -1,14 +1,14 @@
-import { NodeDefinition } from "./graphStore";
-import { boxNodeParams, boxNodeCompute } from "../flow/nodes/Geometry/Box";
-import { transformNodeParams, transformNodeCompute } from "../flow/nodes/Utility/Transform";
-import { sphereNodeParams, sphereNodeCompute } from "../flow/nodes/Geometry/Sphere";
-import { cylinderNodeParams, cylinderNodeCompute } from "../flow/nodes/Geometry/Cylinder";
-import { planeNodeParams, planeNodeCompute } from "../flow/nodes/Geometry/Plane";
-import { coneNodeParams, coneNodeCompute } from "../flow/nodes/Geometry/Cone";
-import { torusNodeParams, torusNodeCompute } from "../flow/nodes/Geometry/Torus";
-import { torusKnotNodeParams, torusKnotNodeCompute } from "../flow/nodes/Geometry/TorusKnot";
-import { importObjNodeParams, importObjNodeCompute } from "../flow/nodes/Geometry/ImportObj";
-import { importGltfNodeParams, importGltfNodeCompute } from "../flow/nodes/Geometry/ImportGltf";
+import { NodeDefinition, InputCloneMode } from "./graphStore";
+import { boxNodeParams, boxNodeComputeTyped } from "../flow/nodes/Geometry/Box";
+import { transformNodeParams, transformNodeComputeTyped } from "../flow/nodes/Utility/Transform";
+import { sphereNodeParams, sphereNodeComputeTyped } from "../flow/nodes/Geometry/Sphere";
+import { cylinderNodeParams, cylinderNodeComputeTyped } from "../flow/nodes/Geometry/Cylinder";
+import { planeNodeParams, planeNodeComputeTyped } from "../flow/nodes/Geometry/Plane";
+import { coneNodeParams, coneNodeComputeTyped } from "../flow/nodes/Geometry/Cone";
+import { torusNodeParams, torusNodeComputeTyped } from "../flow/nodes/Geometry/Torus";
+import { torusKnotNodeParams, torusKnotNodeComputeTyped } from "../flow/nodes/Geometry/TorusKnot";
+import { importObjNodeParams, importObjNodeComputeTyped } from "../flow/nodes/Geometry/ImportObj";
+import { importGltfNodeParams, importGltfNodeComputeTyped } from "../flow/nodes/Geometry/ImportGltf";
 import { pointLightNodeParams, pointLightNodeCompute } from "../flow/nodes/Lights/PointLight";
 import { ambientLightNodeParams, ambientLightNodeCompute } from "../flow/nodes/Lights/AmbientLight";
 import {
@@ -38,11 +38,12 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
   },
   boxNode: {
     type: "boxNode",
-    category: "Geometry",
+    category: "Geometry", 
     displayName: "Box",
     allowedContexts: ["subflow"],
     params: boxNodeParams,
-    compute: boxNodeCompute,
+    computeTyped: boxNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   sphereNode: {
     type: "sphereNode",
@@ -50,7 +51,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Sphere",
     allowedContexts: ["subflow"],
     params: sphereNodeParams,
-    compute: sphereNodeCompute,
+    computeTyped: sphereNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   cylinderNode: {
     type: "cylinderNode",
@@ -58,7 +60,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Cylinder",
     allowedContexts: ["subflow"],
     params: cylinderNodeParams,
-    compute: cylinderNodeCompute,
+    computeTyped: cylinderNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   planeNode: {
     type: "planeNode",
@@ -66,7 +69,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Plane",
     allowedContexts: ["subflow"],
     params: planeNodeParams,
-    compute: planeNodeCompute,
+    computeTyped: planeNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   coneNode: {
     type: "coneNode",
@@ -74,7 +78,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Cone",
     allowedContexts: ["subflow"],
     params: coneNodeParams,
-    compute: coneNodeCompute,
+    computeTyped: coneNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   torusNode: {
     type: "torusNode",
@@ -82,7 +87,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Torus",
     allowedContexts: ["subflow"],
     params: torusNodeParams,
-    compute: torusNodeCompute,
+    computeTyped: torusNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   torusKnotNode: {
     type: "torusKnotNode",
@@ -90,7 +96,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "TorusKnot",
     allowedContexts: ["subflow"],
     params: torusKnotNodeParams,
-    compute: torusKnotNodeCompute,
+    computeTyped: torusKnotNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   transformNode: {
     type: "transformNode",
@@ -98,7 +105,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Transform",
     allowedContexts: ["subflow"],
     params: transformNodeParams,
-    compute: transformNodeCompute,
+    computeTyped: transformNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   noteNode: {
     type: "noteNode",
@@ -114,7 +122,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Import OBJ",
     allowedContexts: ["subflow"],
     params: importObjNodeParams,
-    compute: importObjNodeCompute,
+    computeTyped: importObjNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   importGltfNode: {
     type: "importGltfNode",
@@ -122,7 +131,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Import glTF",
     allowedContexts: ["subflow"],
     params: importGltfNodeParams,
-    compute: importGltfNodeCompute,
+    computeTyped: importGltfNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
   },
   pointLightNode: {
     type: "pointLightNode",

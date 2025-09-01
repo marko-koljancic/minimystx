@@ -4,6 +4,7 @@ import {
   createTransformParams,
   createRenderingParams,
 } from "../../../engine/nodeParameterFactories";
+import { Object3DContainer } from "../../../engine/containers/BaseContainer";
 
 export interface GeoNodeData extends Record<string, unknown> {
   general: {
@@ -52,11 +53,16 @@ export const geoNodeCompute = (params: Record<string, any>, _inputs?: any, conte
       if (subFlow && subFlow.activeOutputNodeId) {
         const outputNodeRuntime = subFlow.nodeRuntime[subFlow.activeOutputNodeId];
         
-        if (outputNodeRuntime?.output?.object) {
-          subflowObject = outputNodeRuntime.output.object;
-        } else {
+        if (outputNodeRuntime?.output) {
+          // Handle new container format
+          if (outputNodeRuntime.output.default instanceof Object3DContainer) {
+            subflowObject = outputNodeRuntime.output.default.value;
+          }
+          // Handle legacy object format
+          else if (outputNodeRuntime.output.object) {
+            subflowObject = outputNodeRuntime.output.object;
+          }
         }
-      } else {
       }
     } catch (error) {
     }

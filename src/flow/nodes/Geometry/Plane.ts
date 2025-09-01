@@ -2,8 +2,9 @@ import { BufferGeometry, Object3D, PlaneGeometry } from "three";
 import type { NodeProcessor } from "../props";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
-import type { NodeParams } from "../../../engine/graphStore";
+import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
 import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
+import { BaseContainer } from "../../../engine/containers/BaseContainer";
 
 export interface PlaneNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
@@ -77,4 +78,26 @@ export const planeNodeCompute = (params: Record<string, any>) => {
   } as PlaneNodeData;
   const inputObject = undefined;
   return processor(data, inputObject);
+};
+
+export const planeNodeComputeTyped = (
+  params: Record<string, any>,
+  inputs: Record<string, BaseContainer>,
+  context: ComputeContext
+): Record<string, BaseContainer> => {
+  const data: PlaneNodeData = {
+    general: params.general,
+    transform: {
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 1, y: 1, z: 1, factor: 1 },
+    },
+    geometry: params.geometry,
+    rendering: params.rendering,
+  } as PlaneNodeData;
+
+  const geometry = createPlaneGeometry(data);
+  const container = createGeometryMesh(data, geometry);
+  
+  return { default: container };
 };
