@@ -49,13 +49,13 @@ export const torusKnotNodeParams: NodeParams = {
     }),
     p: createParameterMetadata("number", 2, { displayName: "P Value", min: 1, max: 10, step: 1 }),
     q: createParameterMetadata("number", 3, { displayName: "Q Value", min: 1, max: 10, step: 1 }),
-    tubularSegments: createParameterMetadata("number", 64, {
+    tubularSegments: createParameterMetadata("number", 128, {
       displayName: "Tubular Segments",
       min: 3,
       max: 2048,
       step: 1,
     }),
-    radialSegments: createParameterMetadata("number", 8, {
+    radialSegments: createParameterMetadata("number", 32, {
       displayName: "Radial Segments",
       min: 3,
       max: 2048,

@@ -83,7 +83,7 @@ export default function Header() {
             message: progress.message,
           });
         },
-        onError: (_error) => {
+        onError: () => {
           setExportProgress(null);
           setIsExporting(false);
         },
@@ -108,7 +108,7 @@ export default function Header() {
       await initializeNewScene({
         triggerRecomputation: true,
         restoreCamera: true,
-        restoreUI: true,
+        resetUIToDefaults: false,
       });
       setTimeout(() => {
         setIsCreatingNew(false);
@@ -128,7 +128,7 @@ export default function Header() {
             message: progress.message,
           });
         },
-        onError: (_error) => {
+        onError: () => {
           setImportProgress(null);
           setIsImporting(false);
         },
@@ -166,7 +166,7 @@ export default function Header() {
     window.dispatchEvent(event);
   }, []);
   useEffect(() => {
-    initializeMxScene().catch((error) => {
+    initializeMxScene().catch(() => {
     });
     setupSceneEventListeners();
   }, []);
@@ -214,7 +214,7 @@ export default function Header() {
   }, [handleCreateNodeAtCenter, currentContext.type]);
   const fileDropdownItems = [
     {
-      label: isCreatingNew ? "Creating..." : "New Scene (Ctrl+N)",
+      label: isCreatingNew ? "Creating..." : "New Scene",
       onClick: isCreatingNew ? () => {} : handleNewScene,
       testId: "file-new",
     },
@@ -224,12 +224,12 @@ export default function Header() {
       isDivider: true,
     },
     {
-      label: isExporting ? "Exporting..." : "Save… (Ctrl+Shift+S)",
+      label: isExporting ? "Exporting..." : "Save...",
       onClick: isExporting ? () => {} : handleSave,
       testId: "file-save",
     },
     {
-      label: isImporting ? "Importing..." : "Open… (Ctrl+O)",
+      label: isImporting ? "Importing..." : "Open...",
       onClick: isImporting ? () => {} : handleOpen,
       testId: "file-open",
     },

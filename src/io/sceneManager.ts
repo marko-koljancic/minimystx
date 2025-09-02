@@ -1,9 +1,10 @@
 import type { ImportResult } from "./mxscene/types";
 import { applyImportedScene } from "./mxscene/import";
+import { v4 as uuid } from "uuid";
 export interface SceneInitializationOptions {
   triggerRecomputation?: boolean;
   restoreCamera?: boolean;
-  restoreUI?: boolean;
+  resetUIToDefaults?: boolean;
 }
 export interface SceneState {
   isLoaded: boolean;
@@ -20,8 +21,64 @@ let sceneState: SceneState = {
 export function getSceneState(): SceneState {
   return { ...sceneState };
 }
+
+async function createDefaultScene(): Promise<void> {
+  const { useGraphStore } = await import("../engine/graphStore");
+  const graphStore = useGraphStore.getState();
+  
+  // Create DirectionalLight node
+  const directionalLightId = uuid();
+  graphStore.addNode({
+    id: directionalLightId,
+    type: "directionalLightNode",
+    params: {}
+  }, { type: "root" });
+  
+  // Create HemisphereLight node
+  const hemisphereLightId = uuid();
+  graphStore.addNode({
+    id: hemisphereLightId,
+    type: "hemisphereLightNode",
+    params: {}
+  }, { type: "root" });
+  
+  // Create GeoNode
+  const geoNodeId = uuid();
+  graphStore.addNode({
+    id: geoNodeId,
+    type: "geoNode",
+    params: {}
+  }, { type: "root" });
+  
+  // Wait a bit for GeoNode to be properly initialized
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  // Create TorusKnotNode inside the GeoNode's subflow
+  const torusKnotId = uuid();
+  graphStore.addNode({
+    id: torusKnotId,
+    type: "torusKnotNode",
+    params: {}
+  }, { type: "subflow", geoNodeId });
+  
+  // Dispatch positioning events for the root nodes
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent("minimystx:setNodePosition", {
+      detail: { nodeId: directionalLightId, position: { x: -200, y: -50 } }
+    }));
+    window.dispatchEvent(new CustomEvent("minimystx:setNodePosition", {
+      detail: { nodeId: hemisphereLightId, position: { x: 0, y: -50 } }
+    }));
+    window.dispatchEvent(new CustomEvent("minimystx:setNodePosition", {
+      detail: { nodeId: geoNodeId, position: { x: 200, y: 50 } }
+    }));
+    window.dispatchEvent(new CustomEvent("minimystx:setSubflowNodePosition", {
+      detail: { geoNodeId, nodeId: torusKnotId, position: { x: 0, y: 0 } }
+    }));
+  }, 200);
+}
 export async function initializeNewScene(options: SceneInitializationOptions = {}): Promise<void> {
-  const { triggerRecomputation = true, restoreCamera = true, restoreUI = true } = options;
+  const { triggerRecomputation = true, restoreCamera = true, resetUIToDefaults = false } = options;
   try {
     sceneState = {
       isLoaded: false,
@@ -31,7 +88,10 @@ export async function initializeNewScene(options: SceneInitializationOptions = {
     const { useGraphStore } = await import("../engine/graphStore");
     const graphStore = useGraphStore.getState();
     graphStore.clear();
-    if (restoreUI) {
+    
+    // Only reset UI preferences to defaults if explicitly requested
+    // Normal "New Scene" should preserve user's UI preferences
+    if (resetUIToDefaults) {
       const { useUIStore } = await import("../store/uiStore");
       const uiStore = useUIStore.getState();
       uiStore.resetToDefaults();
@@ -50,6 +110,10 @@ export async function initializeNewScene(options: SceneInitializationOptions = {
       }, 100);
     }
     document.title = "Minimystx";
+    
+    // Create default scene with initial nodes
+    await createDefaultScene();
+    
     if (triggerRecomputation) {
       await triggerSceneRecomputation();
     }
@@ -211,9 +275,9 @@ async function validateSceneAssets(result: ImportResult): Promise<void> {
 }
 export function setupSceneEventListeners(): void {
   window.addEventListener("minimystx:resetScene", () => {
-    initializeNewScene().catch((error) => {});
+    initializeNewScene().catch(() => {});
   });
   window.addEventListener("minimystx:recomputeScene", () => {
-    triggerSceneRecomputation().catch((error) => {});
+    triggerSceneRecomputation().catch(() => {});
   });
 }
