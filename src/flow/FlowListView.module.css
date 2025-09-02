@@ -81,7 +81,7 @@
 .selectButton {
   background: var(--accent-primary);
   border: none;
-  color: var(--text-on-accent, #000);
+  color: rgba(255, 255, 255, 0.92);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
