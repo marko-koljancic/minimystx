@@ -13,10 +13,7 @@ import {
   initializeMxScene,
   applyImportedScene,
 } from "../io/mxscene";
-import {
-  initializeNewScene,
-  setupSceneEventListeners,
-} from "../io/sceneManager";
+import { initializeNewScene, setupSceneEventListeners } from "../io/sceneManager";
 import {
   getNodesByCategoryForContext,
   getAvailableCategoriesForContext,
@@ -166,8 +163,7 @@ export default function Header() {
     window.dispatchEvent(event);
   }, []);
   useEffect(() => {
-    initializeMxScene().catch(() => {
-    });
+    initializeMxScene().catch(() => {});
     setupSceneEventListeners();
   }, []);
   useEffect(() => {
@@ -196,10 +192,14 @@ export default function Header() {
       onClick: () => void;
       submenu?: Array<{ label: string; onClick: () => void }>;
     }> = [];
-    const sortedCategories = [...categories].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    const sortedCategories = [...categories].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" })
+    );
     sortedCategories.forEach((category) => {
       const nodes = nodesByCategory[category] || [];
-      const sortedNodes = [...nodes].sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' }));
+      const sortedNodes = [...nodes].sort((a, b) =>
+        a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" })
+      );
       const submenuItems = sortedNodes.map((node) => ({
         label: node.displayName,
         onClick: () => handleCreateNodeAtCenter(node.type),
@@ -224,12 +224,12 @@ export default function Header() {
       isDivider: true,
     },
     {
-      label: isExporting ? "Exporting..." : "Save...",
+      label: isExporting ? "Exporting..." : "Save Scene",
       onClick: isExporting ? () => {} : handleSave,
       testId: "file-save",
     },
     {
-      label: isImporting ? "Importing..." : "Open...",
+      label: isImporting ? "Importing..." : "Open Scene",
       onClick: isImporting ? () => {} : handleOpen,
       testId: "file-open",
     },
