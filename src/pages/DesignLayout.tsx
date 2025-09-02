@@ -3,7 +3,7 @@ import styles from "./DesignLayout.module.css";
 import Header from "../pages/Header";
 import { useUIStore, useIsRendererMaximized } from "../store";
 import PropertiesDrawer from "../components/PropertiesDrawer";
-import { NodePalette } from "../panels/NodePalette";
+import { NodePalette } from "../components/NodePalette";
 interface DesignLayoutProps {
   leftTop?: ReactNode;
   right?: ReactNode;

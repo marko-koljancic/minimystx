@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useUIStore, useCurrentContext } from "../store";
 import { useGraphStore } from "../engine/graphStore";
-import { nodeRegistry } from "../engine/nodeRegistry";
+import { nodeRegistry } from "../flow/nodes/nodeRegistry";
 import { getParameterDisplayName } from "../engine/parameterUtils";
 import { ParameterInput } from "./inputs/ParameterInput";
 import styles from "./UnifiedPropertiesPanel.module.css";

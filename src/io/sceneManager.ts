@@ -155,7 +155,7 @@ export async function validateSceneState(): Promise<{
       if (!node.id || !node.type) {
         errors.push(`Invalid node found: missing id or type`);
       }
-      const { nodeRegistry } = await import("../engine/nodeRegistry");
+      const { nodeRegistry } = await import("../flow/nodes/nodeRegistry");
       if (!nodeRegistry[node.type]) {
         errors.push(`Unknown node type: ${node.type}`);
       }

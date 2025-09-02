@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from "react";
 import { useContextNodes } from "../hooks/useContextNodes";
-import { nodeRegistry } from "../engine/nodeRegistry";
+import { nodeRegistry } from "./nodes/nodeRegistry";
 import { useUIStore } from "../store";
 import styles from "./FlowListView.module.css";
 interface NodeListItem {

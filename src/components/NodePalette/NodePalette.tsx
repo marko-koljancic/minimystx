@@ -20,7 +20,7 @@ import {
   getAvailableCategoriesForContext,
   getFilteredNodesByCategoryForContext,
   searchNodesForContext,
-} from "../../engine/nodeRegistry";
+} from "../../flow/nodes/nodeRegistry";
 import { SearchInput } from "../../components/inputs";
 import NodePaletteItem from "./NodePaletteItem";
 import styles from "./NodePalette.module.css";

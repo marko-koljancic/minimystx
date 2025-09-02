@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { EdgeData, useGraphStore } from "../engine/graphStore";
-import { nodeRegistry } from "../engine/nodeRegistry";
+import { nodeRegistry } from "../flow/nodes/nodeRegistry";
 import { useCurrentContext } from "../store/uiStore";
 import { EdgeChange } from "@xyflow/react";
 export const useFlowGraphSync = () => {

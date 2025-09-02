@@ -1,9 +1,9 @@
 import MenuItem from "./MenuItem";
 import styles from "./Header.module.css";
-import { ThemeToggle } from "../common/ThemeToggle";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { useUIStore, useCurrentContext } from "../store";
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { PromptModal } from "../common/PromptModal";
+import { PromptModal } from "../components/PromptModal";
 import { sanitizeFilename, getDefaultFilename } from "../utils";
 import {
   exportToMxScene,
@@ -20,7 +20,7 @@ import {
 import {
   getNodesByCategoryForContext,
   getAvailableCategoriesForContext,
-} from "../engine/nodeRegistry";
+} from "../flow/nodes/nodeRegistry";
 export default function Header() {
   const {
     wireframe,

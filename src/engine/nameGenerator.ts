@@ -1,4 +1,4 @@
-import { nodeRegistry } from "./nodeRegistry";
+import { nodeRegistry } from "../flow/nodes/nodeRegistry";
 import { NodeState, GraphContext } from "./graphStore";
 export function getBaseName(nodeType: string): string {
   const nodeDefinition = nodeRegistry[nodeType];

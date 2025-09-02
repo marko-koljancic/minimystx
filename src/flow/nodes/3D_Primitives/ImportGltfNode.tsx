@@ -1,19 +1,19 @@
 import { NodeProps, Position } from "@xyflow/react";
 import { useEffect, useRef } from "react";
-import IOHandle from "../../../common/IOHandle";
-import BaseGeometryNodeDesign from "../../../common/BaseGeometryNodeDesign";
+import IOHandle from "../../handles/IOHandle";
+import BaseGeometryNodeDesign from "../../../components/BaseGeometryNodeDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
-import { ImportObjNodeData, loadObjFile, SerializableObjFile } from "./ImportObj";
+import { ImportGltfNodeData, loadGltfFile, SerializableGltfFile } from "./ImportGltf";
 import { useGraphStore } from "../../../engine/graphStore";
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
-export default function ImportObjNode(props: NodeProps) {
+export default function ImportGltfNode(props: NodeProps) {
   const { data, selected, id } = props;
-  const nodeData = data as ImportObjNodeData;
+  const nodeData = data as ImportGltfNodeData;
   const recomputeFrom = useGraphStore(state => state.recomputeFrom);
   const markDirty = useGraphStore(state => state.markDirty);
-  const lastFileRef = useRef<File | SerializableObjFile | null>(null);
+  const lastFileRef = useRef<File | SerializableGltfFile | null>(null);
   useEffect(() => {
     const currentFile = nodeData.object?.file;
     const filesAreDifferent = currentFile && (
@@ -24,12 +24,12 @@ export default function ImportObjNode(props: NodeProps) {
     );
     if (filesAreDifferent) {
       lastFileRef.current = currentFile;
-      loadObjFile(currentFile)
+      loadGltfFile(currentFile)
         .then(() => {
           markDirty(id);
           recomputeFrom(id);
         })
-        .catch((_error) => {
+        .catch(() => {
         });
     } else if (!currentFile) {
       lastFileRef.current = null;
@@ -38,7 +38,7 @@ export default function ImportObjNode(props: NodeProps) {
   return (
     <div className={styles.nodeContainer}>
       <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Import OBJ"}
+        label={nodeData.general?.name || "Import glTF"}
         isSelected={Boolean(selected)}
       />
       <RenderFlagBadge

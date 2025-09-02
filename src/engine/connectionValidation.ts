@@ -1,5 +1,5 @@
 import { Edge, Connection, Node } from "@xyflow/react";
-import { nodeRegistry } from "./nodeRegistry";
+import { nodeRegistry } from "../flow/nodes/nodeRegistry";
 interface NodeHandleConfig {
   sourceHandles: string[];
   targetHandles: string[];

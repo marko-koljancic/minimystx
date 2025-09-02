@@ -1,5 +1,5 @@
 import { NodeProps } from "@xyflow/react";
-import BaseNodeDesign from "../../../common/BaseNodeDesign";
+import BaseNodeDesign from "../../../components/BaseNodeDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
 import { GeoNodeData } from "./GeoNode";

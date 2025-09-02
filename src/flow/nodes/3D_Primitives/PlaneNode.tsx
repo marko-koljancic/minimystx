@@ -1,18 +1,18 @@
 import { NodeProps, Position } from "@xyflow/react";
-import IOHandle from "../../../common/IOHandle";
-import BaseGeometryNodeDesign from "../../../common/BaseGeometryNodeDesign";
+import IOHandle from "../../handles/IOHandle";
+import BaseGeometryNodeDesign from "../../../components/BaseGeometryNodeDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
-import { TransformNodeData } from "./Transform";
+import { PlaneNodeData } from "./Plane";
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
-export default function TransformNode(props: NodeProps) {
+export default function PlaneNode(props: NodeProps) {
   const { data, selected, id } = props;
-  const nodeData = data as TransformNodeData;
+  const nodeData = data as PlaneNodeData;
   return (
     <div className={styles.nodeContainer}>
       <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Transform"}
+        label={nodeData.general?.name || "Plane"}
         isSelected={Boolean(selected)}
       />
       <RenderFlagBadge
@@ -20,16 +20,6 @@ export default function TransformNode(props: NodeProps) {
         render={nodeData.rendering?.visible ?? true}
         nodeWidth={NODE_WIDTH}
         nodeHeight={NODE_HEIGHT}
-      />
-      <IOHandle
-        type="target"
-        position={Position.Top}
-        className={`${styles.targetHandle} ${styles.handleGreen}`}
-        style={{
-          top: -8,
-          left: NODE_WIDTH / 2,
-        }}
-        id="geometry_input"
       />
       <IOHandle
         type="source"

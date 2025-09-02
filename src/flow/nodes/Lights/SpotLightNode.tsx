@@ -1,6 +1,6 @@
 import { NodeProps, Position } from "@xyflow/react";
-import IOHandle from "../../../common/IOHandle";
-import LightNodeBaseDesign from "../../../common/LightNodeBaseDesign";
+import IOHandle from "../../handles/IOHandle";
+import LightNodeBaseDesign from "./LightNodeBaseDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
 import { SpotLightNodeData } from "./SpotLight";

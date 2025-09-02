@@ -1,5 +1,5 @@
 import { GraphLibAdapter } from "../graph/GraphLibAdapter";
-import { nodeRegistry } from "../nodeRegistry";
+import { nodeRegistry } from "../../flow/nodes/nodeRegistry";
 import { BaseContainer } from "../containers/BaseContainer";
 import { InputCloneMode } from "../graphStore";
 export interface ComputeContext {

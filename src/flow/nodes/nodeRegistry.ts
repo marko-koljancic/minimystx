@@ -1,38 +1,52 @@
-import { NodeDefinition, InputCloneMode } from "./graphStore";
-import { boxNodeParams, boxNodeComputeTyped } from "../flow/nodes/Geometry/Box";
-import { transformNodeParams, transformNodeComputeTyped } from "../flow/nodes/Utility/Transform";
-import { sphereNodeParams, sphereNodeComputeTyped } from "../flow/nodes/Geometry/Sphere";
-import { cylinderNodeParams, cylinderNodeComputeTyped } from "../flow/nodes/Geometry/Cylinder";
-import { planeNodeParams, planeNodeComputeTyped } from "../flow/nodes/Geometry/Plane";
-import { coneNodeParams, coneNodeComputeTyped } from "../flow/nodes/Geometry/Cone";
-import { torusNodeParams, torusNodeComputeTyped } from "../flow/nodes/Geometry/Torus";
-import { torusKnotNodeParams, torusKnotNodeComputeTyped } from "../flow/nodes/Geometry/TorusKnot";
-import { importObjNodeParams, importObjNodeComputeTyped } from "../flow/nodes/Geometry/ImportObj";
+import { NodeDefinition, InputCloneMode } from "../../engine/graphStore";
 import {
+  // Container Nodes
+  geoNodeParams,
+  geoNodeCompute,
+  // 3D Primitive Nodes
+  boxNodeParams,
+  boxNodeComputeTyped,
+  sphereNodeParams,
+  sphereNodeComputeTyped,
+  cylinderNodeParams,
+  cylinderNodeComputeTyped,
+  coneNodeParams,
+  coneNodeComputeTyped,
+  planeNodeParams,
+  planeNodeComputeTyped,
+  torusNodeParams,
+  torusNodeComputeTyped,
+  torusKnotNodeParams,
+  torusKnotNodeComputeTyped,
+  // Import Nodes
+  importObjNodeParams,
+  importObjNodeComputeTyped,
   importGltfNodeParams,
   importGltfNodeComputeTyped,
-} from "../flow/nodes/Geometry/ImportGltf";
-import { pointLightNodeParams, pointLightNodeCompute } from "../flow/nodes/Lights/PointLight";
-import { ambientLightNodeParams, ambientLightNodeCompute } from "../flow/nodes/Lights/AmbientLight";
-import {
+  // Light Nodes
+  pointLightNodeParams,
+  pointLightNodeCompute,
+  ambientLightNodeParams,
+  ambientLightNodeCompute,
   directionalLightNodeParams,
   directionalLightNodeCompute,
-} from "../flow/nodes/Lights/DirectionalLight";
-import { spotLightNodeParams, spotLightNodeCompute } from "../flow/nodes/Lights/SpotLight";
-import {
+  spotLightNodeParams,
+  spotLightNodeCompute,
   hemisphereLightNodeParams,
   hemisphereLightNodeCompute,
-} from "../flow/nodes/Lights/HemisphereLight";
-import {
   rectAreaLightNodeParams,
   rectAreaLightNodeCompute,
-} from "../flow/nodes/Lights/RectAreaLight";
-import { geoNodeParams, geoNodeCompute } from "../flow/nodes/Root/GeoNode";
-import { noteNodeParams, noteNodeCompute } from "../flow/nodes/Utility/Note";
+  // Modifier Nodes
+  transformNodeParams,
+  transformNodeComputeTyped,
+  // Utility Nodes
+  noteNodeParams,
+  noteNodeCompute,
+} from ".";
 export const nodeRegistry: Record<string, NodeDefinition> = {
   geoNode: {
     type: "geoNode",
-    category: "Geometry",
+    category: "Container",
     displayName: "Geo",
     allowedContexts: ["root"],
     params: geoNodeParams,

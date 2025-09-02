@@ -1,18 +1,18 @@
 import { NodeProps, Position } from "@xyflow/react";
-import IOHandle from "../../../common/IOHandle";
-import BaseGeometryNodeDesign from "../../../common/BaseGeometryNodeDesign";
+import IOHandle from "../../handles/IOHandle";
+import BaseGeometryNodeDesign from "../../../components/BaseGeometryNodeDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
-import { SphereNodeData } from "./Sphere";
+import { BoxNodeData } from "./Box";
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
-export default function SphereNode(props: NodeProps) {
+export default function BoxNode(props: NodeProps) {
   const { data, selected, id } = props;
-  const nodeData = data as SphereNodeData;
+  const nodeData = data as BoxNodeData;
   return (
     <div className={styles.nodeContainer}>
       <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Sphere"}
+        label={nodeData.general?.name || "Box"}
         isSelected={Boolean(selected)}
       />
       <RenderFlagBadge

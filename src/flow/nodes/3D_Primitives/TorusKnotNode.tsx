@@ -1,18 +1,18 @@
 import { NodeProps, Position } from "@xyflow/react";
-import IOHandle from "../../../common/IOHandle";
-import BaseGeometryNodeDesign from "../../../common/BaseGeometryNodeDesign";
+import IOHandle from "../../handles/IOHandle";
+import BaseGeometryNodeDesign from "../../../components/BaseGeometryNodeDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
-import { TorusNodeData } from "./Torus";
+import { TorusKnotNodeData } from "./TorusKnot";
 const NODE_HEIGHT = 30;
 const NODE_WIDTH = 90;
-export default function TorusNode(props: NodeProps) {
+export default function TorusKnotNode(props: NodeProps) {
   const { data, selected, id } = props;
-  const nodeData = data as TorusNodeData;
+  const nodeData = data as TorusKnotNodeData;
   return (
     <div className={styles.nodeContainer}>
       <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Torus"}
+        label={nodeData.general?.name || "TorusKnot"}
         isSelected={Boolean(selected)}
       />
       <RenderFlagBadge
