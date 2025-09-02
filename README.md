@@ -1,10 +1,10 @@
 # Minimystx
 
-A browser-based parametric design studio built with React, TypeScript, and WebAssembly (Rust) for instant, high-performance 3D modeling.
+A browser-based parametric design studio built with React, TypeScript, and WebAssembly for instant, high-performance 3D modeling and lighting design.
 
 ## Overview
 
-Minimystx is a browser-only parametric design studio that combines the power of React and TypeScript with Rust compiled to WebAssembly for high-performance operations. It's designed to open fast, feel instantaneous on a laptop GPU, and keep users in an unbroken flow of node editing with real-time 3D feedback. The application features a node-based editing system similar to Houdini/Grasshopper with a split interface showing both the node editor and 3D viewport simultaneously.
+Minimystx is a sophisticated browser-only parametric design studio that combines React and TypeScript with WebAssembly for high-performance 3D operations. It features a professional node-based editing system similar to Houdini/Grasshopper with a split interface showing both the node editor and real-time 3D viewport simultaneously. The application includes advanced features like hierarchical subflow systems, comprehensive lighting tools, scene serialization, and performance-optimized computation with intelligent caching.
 
 ## Features
 
@@ -13,64 +13,103 @@ Minimystx is a browser-only parametric design studio that combines the power of 
 - Instant entry with minimal landing page and client-side navigation
 - Split workspace with Three.js 3D viewport and React Flow node editor
 - Node-based parametric design with real-time 3D feedback
-- Intuitive port grammar with color-coded type system
+- Hierarchical subflow system for complex project organization
+- Comprehensive lighting design with 6 light types
+- Professional keyboard navigation and shortcuts
+- Persistent UI state and viewport management
 
 ### Technical Implementation
 
-- React 19 + TypeScript frontend with React Router
-- Rust WebAssembly backend for performance-critical operations
-- Three.js with @react-three/fiber and @react-three/drei for hardware-accelerated 3D graphics
-- @xyflow/react (formerly React Flow) for interactive node-based workflows
-- Zustand for state management
-- Vite for fast development and optimized builds
-- Performance optimizations for smooth 60 FPS experience
+- React 19.1.0 + TypeScript 5.2.2 frontend with Vite
+- WebAssembly backend for performance-critical operations
+- Three.js 0.178.0 with @react-three/fiber and @react-three/drei for hardware-accelerated 3D graphics
+- @xyflow/react for interactive node-based workflows
+- Zustand with Immer for reactive state management
+- Cook-on-Demand computation system with intelligent caching
+- Render Cone Scheduler for optimized selective updates
 
 ### Design System
 
-- Color-coded port types (Float, Integer, Vector3, Geometry, Material, Light)
+- Color-coded port types with context-aware node organization
 - Streamlined node workflow with hover enlargement and inline controls
-- Collapsible node palette
-- Advanced interaction patterns (space+drag to pan, F to frame, A for auto-layout)
+- Advanced node palette with fuzzy search and keyboard navigation
+- Professional interaction patterns (space+drag, multi-view camera system)
 - Responsive visual feedback with magnetized connections and hover highlights
 
-### Supported Nodes
+### File Format Support
 
-#### Primitive Geometry
+- **Export**: MXSCENE format (custom ZIP-based project files with asset embedding)
+- **Import**: OBJ and glTF/GLB geometry files
+- **Asset Management**: OPFS-based caching with SHA256 integrity verification
 
-- Box - Create parametric box/cube geometry
-- Sphere - Create parametric sphere geometry
-- Cylinder - Create parametric cylinder geometry
-- Cone - Create parametric cone geometry
-- Plane - Create parametric plane geometry
-- Torus - Create parametric torus (donut) geometry
-- TorusKnot - Create parametric torus knot geometry
+### Node System
 
-#### Import Geometry
+#### Root Nodes
 
-- ImportObj - Import OBJ file format geometry
+- **GeoNode** - Hierarchical container for subflow organization and geometry output
 
-#### Transformations
+#### 3D Primitives
 
-- Transform - Apply translation, rotation, and scale to geometry
+- **Box** - Parametric box/cube geometry with width, height, depth controls
+- **Sphere** - Parametric sphere geometry with radius and segment controls
+- **Cylinder** - Parametric cylinder geometry with radius, height, and segment controls
+- **Cone** - Parametric cone geometry with radius, height, and segment controls
+- **Plane** - Parametric plane geometry with width, height, and subdivision controls
+- **Torus** - Parametric torus (donut) geometry with major/minor radius controls
+- **TorusKnot** - Parametric torus knot geometry with advanced mathematical parameters
+
+#### Lighting System
+
+- **Point Light** - Omnidirectional point light source with color and intensity
+- **Ambient Light** - Global ambient lighting for scene illumination
+- **Directional Light** - Directional lighting (sun-like) with shadow support
+- **Spot Light** - Focused spot lighting with cone angle and penumbra controls
+- **Hemisphere Light** - Ambient hemisphere lighting with sky/ground colors
+- **Rect Area Light** - Rectangular area light source for architectural lighting
+
+#### Import & I/O
+
+- **Import OBJ** - Import OBJ file format geometry with material support
+- **Import glTF** - Import glTF/GLB files with full scene, animation, and material support
+
+#### Modifiers
+
+- **Transform** - Apply translation, rotation, and scale transformations to geometry
+
+#### Utility
+
+- **Note** - Add text annotations and documentation to node graphs
 
 ### Keyboard Shortcuts
 
-#### Flow Canvas
+#### Flow Canvas Navigation
 
-- `G` - Toggle grid visibility in flow canvas
+- `G` - Toggle grid visibility
 - `M` - Toggle minimap visibility
 - `C` - Toggle flow controls visibility
-- `S` - Cycle through connection line styles
+- `S` - Cycle through connection line styles (bezier, straight, step, simpleBezier)
 - `F` - Fit nodes to view
+- `Shift+F` - Fit nodes (alternative)
+- `L` - Auto-layout cycle
+- `Shift+L` - Auto-layout (force all nodes)
+- `Delete/Backspace` - Delete selected edges
 
-#### 3D Viewport
+#### 3D Viewport Navigation
 
-- `G` - Toggle grid visibility in 3D viewport
+- `G` - Toggle grid visibility
 - `W` - Toggle wireframe mode
 - `X` - Toggle x-ray mode
-- `F` - Fit view to geometry
+- `F` - Set front orthographic view
+- `T` - Set top orthographic view
+- `L` - Set left orthographic view
+- `R` - Set right orthographic view
+- `B` - Set bottom orthographic view
+- `Shift+F` - Fit view to geometry
+- `P` - Switch to perspective camera
+- `O` - Switch to orthographic camera
+- `A` - Toggle axis gizmo visibility
 
-#### Global
+#### Global Navigation
 
 - Space+drag - Pan the canvas
 - Mouse wheel - Zoom in/out
@@ -131,6 +170,31 @@ npm run build-core  # Build WebAssembly components only
 npm run build       # Build TypeScript and bundle with Vite only
 ```
 
+## Architecture Overview
+
+### Core System Design
+
+Minimystx implements a reactive computation graph architecture with advanced performance optimizations:
+
+- **Cook-on-Demand System** - Intelligent computation scheduling that only processes changed nodes
+- **Content Cache** - LRU caching system with dependency tracking and validity hashing
+- **Render Cone Scheduler** - Optimized rendering pipeline that selectively updates only visible geometry
+- **Subflow Manager** - Hierarchical node graph system enabling complex project organization
+
+### Data Flow Architecture
+
+1. **Node Registry** - Central registry managing all node types with compute functions and metadata
+2. **Graph Store** - Zustand-based reactive state management with Immer for immutable updates
+3. **Computation Engine** - Topological sorting with cycle detection for efficient graph evaluation
+4. **Scene Serialization** - Complete project state persistence with the custom MXSCENE format
+
+### Performance Optimizations
+
+- **Intelligent Caching** - Content-aware caching with automatic invalidation on parameter changes
+- **Selective Rendering** - Render cone optimization processes only nodes affecting final output
+- **Asset Management** - OPFS-based browser storage with SHA256 integrity verification
+- **Memory Management** - LRU eviction and dependency-aware cache pruning
+
 ## Project Structure
 
 ```plaintext
@@ -139,32 +203,38 @@ minimystx/
 │   ├── App.tsx         # Main application component
 │   ├── main.tsx        # Application entry point
 │   ├── assets/         # Asset files (models, IFC samples)
-│   ├── common/         # Common UI components
+│   ├── common/         # Shared UI components and design system
 │   ├── components/     # Reusable React components
-│   ├── constants/      # Application constants
-│   ├── engine/         # Core application engine
-│   │   ├── computeEngine.ts      # Computation engine
-│   │   ├── connectionValidation.ts # Connection validation logic
-│   │   ├── graphStore.ts         # Graph state management
-│   │   └── nodeRegistry.ts       # Node type registry
-│   ├── flow/           # Flow editor components
-│   │   ├── edges/      # Edge components for connections
-│   │   └── nodes/      # Node definitions and components
+│   ├── engine/         # Core computation and graph engine
+│   │   ├── cache/      # Content caching system
+│   │   ├── compute/    # Cook-on-demand computation
+│   │   ├── containers/ # Data container abstractions
+│   │   ├── graph/      # Graph processing and adapters
+│   │   ├── nodes/      # Node builder and management
+│   │   ├── scheduler/  # Render cone scheduler
+│   │   ├── subflow/    # Hierarchical subflow system
+│   │   ├── types/      # Core type definitions
+│   │   ├── computeEngine.ts     # Main computation orchestration
+│   │   ├── graphStore.ts        # Reactive graph state management
+│   │   ├── nodeRegistry.ts      # Node type registry and search
+│   │   └── parameterUtils.ts    # Parameter validation utilities
+│   ├── flow/           # Node-based visual editor
+│   │   ├── edges/      # Connection components
+│   │   └── nodes/      # Node UI and computation definitions
 │   ├── hooks/          # Custom React hooks
-│   ├── pages/          # Page components
-│   ├── panels/         # Panel UI components
-│   ├── rendering/      # 3D rendering components
-│   │   ├── RenderingCanvas.tsx   # Canvas component
-│   │   └── SceneManager.ts       # Three.js scene management
-│   ├── store/          # State management
-│   ├── styles/         # CSS styles
-│   ├── types/          # TypeScript type definitions
+│   ├── io/             # File I/O and scene management
+│   │   └── mxscene/    # MXSCENE format implementation
+│   ├── pages/          # Page components and routing
+│   ├── panels/         # UI panels and interface components
+│   ├── rendering/      # 3D rendering and Three.js integration
+│   ├── store/          # UI state management
+│   ├── styles/         # CSS and design system
 │   ├── utils/          # Utility functions
-│   └── wasm/           # Rust WebAssembly code
+│   └── wasm/           # WebAssembly integration
 │       ├── src/        # Rust source code
-│       └── pkg/        # WebAssembly compiled output
+│       └── pkg/        # Compiled WebAssembly modules
 ├── public/             # Static assets
-└── docs/               # Documentation
+└── docs/               # Architecture and API documentation
 ```
 
 ## Development
