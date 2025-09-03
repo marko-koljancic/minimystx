@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useUIStore } from "../../store";
-import { PreferencesState } from "../../store/uiStore";
+import { usePreferencesStore, PreferencesState } from "../../store";
 import { UnitsTab, RendererTab, MaterialsTab, CameraTab, GuidesTab, ScreenshotTab } from "./tabs";
 import styles from "./PreferencesModal.module.css";
 
@@ -17,7 +16,7 @@ interface PreferencesModalProps {
 }
 
 export function PreferencesModal({ onClose }: PreferencesModalProps) {
-  const { preferences, updatePreferences } = useUIStore();
+  const preferences = usePreferencesStore();
   const modalRef = useRef<HTMLDivElement>(null);
 
   const [localPreferences, setLocalPreferences] = useState<PreferencesState>(preferences);
@@ -51,14 +50,33 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
     [handleCancel]
   );
 
+  const updatePreferencesState = useCallback((newPrefs: PreferencesState) => {
+    const store = usePreferencesStore.getState();
+    store.updateUnits(newPrefs.units);
+    store.updateRendererPostProcessing(newPrefs.renderer.postProcessing);
+    store.updateRendererBackground(newPrefs.renderer.background);
+    store.updateMaterials(newPrefs.materials);
+    store.updateCameraSettings(newPrefs.camera);
+    store.updateCameraOrbitControls(newPrefs.camera.orbitControls);
+    store.updateGridSettings(newPrefs.guides.grid);
+    store.updateAxisGizmo(newPrefs.guides.axisGizmo);
+    store.updateGroundPlane(newPrefs.guides.groundPlane);
+    store.updateScreenshotSettings(newPrefs.screenshot);
+    store.updateScreenshotResolution(newPrefs.screenshot.resolution);
+    store.updateScreenshotOverlays(newPrefs.screenshot.overlays);
+    store.updateScreenshotColorManagement(newPrefs.screenshot.colorManagement);
+    store.updateScreenshotFileNaming(newPrefs.screenshot.fileNaming);
+    store.updateScreenshotCaptureFlow(newPrefs.screenshot.captureFlow);
+  }, []);
+
   const handleApply = useCallback(() => {
-    updatePreferences(localPreferences);
-  }, [localPreferences, updatePreferences]);
+    updatePreferencesState(localPreferences);
+  }, [localPreferences, updatePreferencesState]);
 
   const handleSave = useCallback(() => {
-    updatePreferences(localPreferences);
+    updatePreferencesState(localPreferences);
     onClose();
-  }, [localPreferences, updatePreferences, onClose]);
+  }, [localPreferences, updatePreferencesState, onClose]);
 
   const handleResetToDefaults = useCallback(() => {
     setShowResetConfirmation(true);
@@ -148,7 +166,9 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
       },
     };
 
-    setLocalPreferences(defaultPrefs);
+    const store = usePreferencesStore.getState();
+    store.resetToDefaults();
+    setLocalPreferences(usePreferencesStore.getState());
     setShowResetConfirmation(false);
   }, []);
 

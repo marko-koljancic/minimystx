@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { useUIStore, PreferencesState } from "../../store/uiStore";
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore";
+import { useUIStore } from "../../store/uiStore";
 import { MaterialManagerDependencies, IMaterialManager } from "./MaterialTypes";
 
 export class MaterialManager implements IMaterialManager {
@@ -37,17 +38,16 @@ export class MaterialManager implements IMaterialManager {
           if (!this.originalMaterials.has(object)) {
             this.originalMaterials.set(object, object.material);
           }
-          const wireframeState = useUIStore.getState().wireframe;
-          this.xRayMaterial!.wireframe = wireframeState;
+          const { wireframe } = useUIStore.getState();
+          this.xRayMaterial!.wireframe = wireframe;
           object.material = this.xRayMaterial!;
         } else {
           const originalMaterial = this.originalMaterials.get(object);
           if (originalMaterial) {
             object.material = originalMaterial;
-            const wireframeState = useUIStore.getState().wireframe;
+            const { wireframe } = useUIStore.getState();
             if ("wireframe" in object.material) {
-              (object.material as THREE.Material & { wireframe: boolean }).wireframe =
-                wireframeState;
+              (object.material as THREE.Material & { wireframe: boolean }).wireframe = wireframe;
             }
           }
         }

@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { useUIStore, PreferencesState } from "../../store/uiStore";
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore"
+import { useUIStore } from "../../store/uiStore";
 import { GridSystemDependencies, IGridSystem } from "./GridTypes";
 import { GridPlane } from "../types/SceneTypes";
 
@@ -21,11 +22,12 @@ export class GridSystem implements IGridSystem {
     if (this.currentGridPlane === plane) return;
 
     this.currentGridPlane = plane;
-    const { showGridInRenderView, preferences } = useUIStore.getState();
+    const { showGridInRenderView } = useUIStore.getState();
+    const { guides } = usePreferencesStore.getState();
 
     this.hideAllGrids();
 
-    if (showGridInRenderView && preferences.guides.grid.enabled) {
+    if (showGridInRenderView && guides.grid.enabled) {
       switch (plane) {
         case "xy":
           if (this.xyMinorGrid) this.xyMinorGrid.visible = true;
@@ -44,8 +46,8 @@ export class GridSystem implements IGridSystem {
   }
 
   public updateGridVisibility(visible: boolean): void {
-    const { preferences } = useUIStore.getState();
-    const gridEnabled = preferences.guides.grid.enabled;
+    const { guides } = usePreferencesStore.getState();
+    const gridEnabled = guides.grid.enabled;
 
     this.hideAllGrids();
 
@@ -93,8 +95,8 @@ export class GridSystem implements IGridSystem {
   }
 
   private createTwoLevelGrids(): void {
-    const { preferences } = useUIStore.getState();
-    const { majorSpacing, minorSubdivisions, majorGridLines } = preferences.guides.grid;
+    const { guides } = usePreferencesStore.getState();
+    const { majorSpacing, minorSubdivisions, majorGridLines } = guides.grid;
 
     const gridSize = majorGridLines * majorSpacing;
     const majorDivisions = majorGridLines;

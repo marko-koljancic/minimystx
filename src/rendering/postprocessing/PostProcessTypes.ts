@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { PreferencesState } from "../../store/uiStore";
+import { PreferencesState } from "../../store/preferencesStore";
 import { RenderingSubsystem, PreferenceUpdateHandler } from "../types/SceneTypes";
 
 export interface PostProcessManagerDependencies {

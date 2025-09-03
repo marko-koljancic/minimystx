@@ -1,5 +1,5 @@
 import { ParameterInput } from "../../inputs/ParameterInput";
-import { PreferencesState } from "../../../store/uiStore";
+import { PreferencesState } from "../../../store/preferencesStore";
 import styles from "./PreferencesTab.module.css";
 
 interface CameraTabProps {

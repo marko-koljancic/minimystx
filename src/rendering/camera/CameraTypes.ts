@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { PreferencesState } from "../../store/uiStore";
+import { PreferencesState } from "../../store/preferencesStore";
 import { RenderingSubsystem, PreferenceUpdateHandler, ViewType } from "../types/SceneTypes";
 
 export interface CameraControllerDependencies {

@@ -3,7 +3,8 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
-import { useUIStore, PreferencesState } from "../../store/uiStore";
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore"
+import { useUIStore } from "../../store/uiStore";
 import { PostProcessManagerDependencies, IPostProcessManager } from "./PostProcessTypes";
 
 export class PostProcessManager implements IPostProcessManager {
@@ -13,7 +14,7 @@ export class PostProcessManager implements IPostProcessManager {
   private ssaoPass: SSAOPass | null = null;
 
   constructor(private dependencies: PostProcessManagerDependencies) {
-    const { preferences } = useUIStore.getState();
+    const preferences = usePreferencesStore.getState();
     if (preferences.renderer.postProcessing.enabled) {
       this.updatePostProcessing();
     }
@@ -28,7 +29,7 @@ export class PostProcessManager implements IPostProcessManager {
     
     this.disposePostProcessing();
     
-    const { preferences } = useUIStore.getState();
+    const preferences = usePreferencesStore.getState();
     const { passes } = preferences.renderer.postProcessing;
     
     this._composer = new EffectComposer(this.dependencies.renderer);
@@ -106,7 +107,7 @@ export class PostProcessManager implements IPostProcessManager {
   }
 
   public updatePostProcessing(): void {
-    const { preferences } = useUIStore.getState();
+    const preferences = usePreferencesStore.getState();
     const { postProcessing } = preferences.renderer;
 
     if (postProcessing.enabled && postProcessing.passes.length > 0) {

@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { useUIStore, PreferencesState } from "../store/uiStore";
+import { useUIStore } from "../store/uiStore";
+import { usePreferencesStore, PreferencesState } from "../store/preferencesStore";
 import { CameraController } from "./camera/CameraController";
 import { GridSystem } from "./grid/GridSystem";
 import { MaterialManager } from "./materials/MaterialManager";
@@ -18,6 +19,7 @@ export class SceneManager {
   private orthographicCamera!: THREE.OrthographicCamera;
   private animationId: number | null = null;
   private uiStoreUnsubscribe: (() => void) | null = null;
+  private preferencesStoreUnsubscribe: (() => void) | null = null;
   private initialized: boolean = false;
   private cameraController!: CameraController;
   private gridSystem!: GridSystem;
@@ -34,6 +36,7 @@ export class SceneManager {
       this.initializeThreeJS(canvas);
       this.initializeSubsystems();
       this.subscribeToUIStore();
+      this.subscribeToPreferencesStore();
       this.setupEventListeners();
       this.completeInitialization();
       this.startRenderLoop();
@@ -119,7 +122,7 @@ export class SceneManager {
 
   public dispose(): void {
     if (!this.initialized) return;
-    
+
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
     }
@@ -127,6 +130,11 @@ export class SceneManager {
     if (this.uiStoreUnsubscribe) {
       this.uiStoreUnsubscribe();
       this.uiStoreUnsubscribe = null;
+    }
+
+    if (this.preferencesStoreUnsubscribe) {
+      this.preferencesStoreUnsubscribe();
+      this.preferencesStoreUnsubscribe = null;
     }
 
     this.cameraController.dispose();
@@ -159,8 +167,7 @@ export class SceneManager {
     const height = canvas.clientHeight || 600;
     const aspect = width / height;
 
-    const { preferences } = useUIStore.getState();
-    const { camera: cameraPrefs } = preferences;
+    const { camera: cameraPrefs } = usePreferencesStore.getState();
 
     this.camera = new THREE.PerspectiveCamera(
       cameraPrefs.perspectiveFOV,
@@ -194,7 +201,7 @@ export class SceneManager {
     this._renderer.shadowMap.enabled = true;
     this._renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    const { materials: materialsPrefs } = preferences;
+    const { materials: materialsPrefs } = usePreferencesStore.getState();
     this.applyToneMappingDirectly(materialsPrefs.toneMapping);
     this._renderer.toneMappingExposure = materialsPrefs.exposure;
     this._renderer.outputColorSpace = materialsPrefs.sRGBEncoding
@@ -282,51 +289,36 @@ export class SceneManager {
       if (state.xRay !== prevState.xRay) {
         this.materialManager.updateXRayMode(state.xRay);
       }
+    });
+  }
 
-      if (state.showAxisGizmo !== prevState.showAxisGizmo) {
-        this.axisGizmo.updateVisibility(state.showAxisGizmo);
+  private subscribeToPreferencesStore(): void {
+    this.preferencesStoreUnsubscribe = usePreferencesStore.subscribe((state, prevState) => {
+      if (!prevState) return;
+
+      if (state.camera && prevState.camera) {
+        this.cameraController.updateFromPreferences(state.camera, prevState.camera);
       }
 
-      if (state.preferences.guides.grid !== prevState.preferences.guides.grid) {
-        this.gridSystem.updateFromPreferences(
-          state.preferences.guides.grid,
-          prevState.preferences.guides.grid
-        );
+      if (state.guides && prevState.guides && state.guides.grid && prevState.guides.grid) {
+        this.gridSystem.updateFromPreferences(state.guides.grid, prevState.guides.grid);
       }
 
-      if (state.preferences.guides.axisGizmo !== prevState.preferences.guides.axisGizmo) {
-        this.axisGizmo.updateFromPreferences(
-          state.preferences.guides.axisGizmo,
-          prevState.preferences.guides.axisGizmo
-        );
+      if (
+        state.guides &&
+        prevState.guides &&
+        state.guides.axisGizmo &&
+        prevState.guides.axisGizmo
+      ) {
+        this.axisGizmo.updateFromPreferences(state.guides.axisGizmo, prevState.guides.axisGizmo);
       }
 
-      if (state.preferences.guides.groundPlane !== prevState.preferences.guides.groundPlane) {
-        this.groundPlane.updateFromPreferences(
-          state.preferences.guides.groundPlane,
-          prevState.preferences.guides.groundPlane
-        );
+      if (state.renderer && prevState.renderer) {
+        this.updateRendererFromPreferences(state.renderer, prevState.renderer);
       }
 
-      if (state.preferences.camera !== prevState.preferences.camera) {
-        this.cameraController.updateFromPreferences(
-          state.preferences.camera,
-          prevState.preferences.camera
-        );
-      }
-
-      if (state.preferences.renderer !== prevState.preferences.renderer) {
-        this.updateRendererFromPreferences(
-          state.preferences.renderer,
-          prevState.preferences.renderer
-        );
-      }
-
-      if (state.preferences.materials !== prevState.preferences.materials) {
-        this.updateMaterialsFromPreferences(
-          state.preferences.materials,
-          prevState.preferences.materials
-        );
+      if (state.materials && prevState.materials) {
+        this.updateMaterialsFromPreferences(state.materials, prevState.materials);
       }
     });
   }
@@ -365,7 +357,7 @@ export class SceneManager {
 
   private handleGetCameraData(event: CustomEvent): void {
     if (!this.isValidGetCameraDataEvent(event)) return;
-    
+
     if (this.cameraController.getCurrentCamera() && this.cameraController.controls) {
       const cameraData = {
         position: [
@@ -385,14 +377,12 @@ export class SceneManager {
 
   private handleSetCameraData(event: CustomEvent): void {
     if (!this.isValidSetCameraDataEvent(event)) return;
-    
+
     const cameraData = event.detail;
     if (this.cameraController.getCurrentCamera() && this.cameraController.controls) {
-      this.cameraController.getCurrentCamera().position.set(
-        cameraData.position[0],
-        cameraData.position[1],
-        cameraData.position[2]
-      );
+      this.cameraController
+        .getCurrentCamera()
+        .position.set(cameraData.position[0], cameraData.position[1], cameraData.position[2]);
       this.cameraController.controls.target.set(
         cameraData.target[0],
         cameraData.target[1],
@@ -404,7 +394,7 @@ export class SceneManager {
 
   private handleSetCameraMode(event: CustomEvent): void {
     if (!this.isValidSetCameraModeEvent(event)) return;
-    
+
     const { isOrthographic } = event.detail;
     this.cameraController.setCameraMode(isOrthographic);
     this.postProcessManager.updateCameraReference();
@@ -412,7 +402,7 @@ export class SceneManager {
 
   private handleSetCameraView(event: CustomEvent): void {
     if (!this.isValidSetCameraViewEvent(event)) return;
-    
+
     const { view } = event.detail;
     this.cameraController.setCameraView(view);
     const gridPlane = this.cameraController.getGridPlaneForView(view);
@@ -436,7 +426,8 @@ export class SceneManager {
 
     if (
       newRendererPrefs.postProcessing !== prevRendererPrefs.postProcessing ||
-      JSON.stringify(newRendererPrefs.postProcessing) !== JSON.stringify(prevRendererPrefs.postProcessing)
+      JSON.stringify(newRendererPrefs.postProcessing) !==
+        JSON.stringify(prevRendererPrefs.postProcessing)
     ) {
       this.postProcessManager.updateFromPreferences(
         newRendererPrefs.postProcessing,
@@ -455,9 +446,8 @@ export class SceneManager {
   private updateSceneBackground(): void {
     if (!this.scene) return;
 
-    const storeState = useUIStore.getState();
-    const { isDarkTheme, preferences } = storeState;
-    const { renderer: rendererPrefs } = preferences;
+    const { isDarkTheme } = useUIStore.getState();
+    const { renderer: rendererPrefs } = usePreferencesStore.getState();
 
     if (rendererPrefs.background.type === "gradient" && rendererPrefs.background.color2) {
       const canvas = document.createElement("canvas");
@@ -502,8 +492,9 @@ export class SceneManager {
     }
   }
 
-
-  private applyToneMappingDirectly(toneMapping: PreferencesState["materials"]["toneMapping"]): void {
+  private applyToneMappingDirectly(
+    toneMapping: PreferencesState["materials"]["toneMapping"]
+  ): void {
     if (!this._renderer) return;
     switch (toneMapping) {
       case "None":
@@ -534,30 +525,28 @@ export class SceneManager {
   }
 
   private isValidGetCameraDataEvent(event: CustomEvent): boolean {
-    return event && typeof event === 'object';
+    return event && typeof event === "object";
   }
 
   private isValidSetCameraDataEvent(event: CustomEvent): boolean {
-    return event && 
-           event.detail && 
-           event.detail.position && 
-           Array.isArray(event.detail.position) && 
-           event.detail.position.length === 3 &&
-           event.detail.target && 
-           Array.isArray(event.detail.target) && 
-           event.detail.target.length === 3;
+    return (
+      event &&
+      event.detail &&
+      event.detail.position &&
+      Array.isArray(event.detail.position) &&
+      event.detail.position.length === 3 &&
+      event.detail.target &&
+      Array.isArray(event.detail.target) &&
+      event.detail.target.length === 3
+    );
   }
 
   private isValidSetCameraModeEvent(event: CustomEvent): boolean {
-    return event && 
-           event.detail && 
-           typeof event.detail.isOrthographic === 'boolean';
+    return event && event.detail && typeof event.detail.isOrthographic === "boolean";
   }
 
   private isValidSetCameraViewEvent(event: CustomEvent): boolean {
-    return event && 
-           event.detail && 
-           typeof event.detail.view === 'string';
+    return event && event.detail && typeof event.detail.view === "string";
   }
 
   private setCameraDataOnEvent(event: CustomEvent, cameraData: any): void {
@@ -574,26 +563,26 @@ export class SceneManager {
   }
 
   private handleInitializationError(error: unknown): void {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown initialization error';
-    this.logError('Initialization failed', errorMessage, { error });
-    
+    const errorMessage = error instanceof Error ? error.message : "Unknown initialization error";
+    this.logError("Initialization failed", errorMessage, { error });
+
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
     }
-    
+
     throw new Error(`SceneManager initialization failed: ${errorMessage}`);
   }
 
   private handleWebGLContextLoss(): void {
     const gl = this._renderer.getContext();
     if (gl.isContextLost()) {
-      this.logError('WebGL context lost', 'Attempting recovery');
-      
+      this.logError("WebGL context lost", "Attempting recovery");
+
       this._renderer.forceContextRestore();
-      
+
       setTimeout(() => {
         if (!gl.isContextLost()) {
-          this.logError('WebGL context restored', 'Recovery successful');
+          this.logError("WebGL context restored", "Recovery successful");
           this.reinitializeAfterContextRestore();
         }
       }, 100);
@@ -604,28 +593,30 @@ export class SceneManager {
     try {
       this.postProcessManager.updatePostProcessing();
       this.gridSystem.recreateGridsFromPreferences();
-      this.axisGizmo.updateFromPreferences(
-        useUIStore.getState().preferences.guides.axisGizmo,
-        useUIStore.getState().preferences.guides.axisGizmo
-      );
+      const axisGizmoPrefs = usePreferencesStore.getState().guides.axisGizmo;
+      this.axisGizmo.updateFromPreferences(axisGizmoPrefs, axisGizmoPrefs);
     } catch (error) {
-      this.logError('Context restore failed', error);
+      this.logError("Context restore failed", error);
     }
   }
 
   private handleRenderError(error: unknown): void {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown render error';
-    this.logError('Render error', errorMessage, { error });
-    
+    const errorMessage = error instanceof Error ? error.message : "Unknown render error";
+    this.logError("Render error", errorMessage, { error });
+
     try {
       if (this._renderer && this.scene && this.cameraController) {
         this._renderer.render(this.scene, this.cameraController.getCurrentCamera());
       }
     } catch (fallbackError) {
-      this.logError('Fallback render failed', fallbackError instanceof Error ? fallbackError.message : 'Unknown fallback error', { 
-        originalError: error,
-        fallbackError 
-      });
+      this.logError(
+        "Fallback render failed",
+        fallbackError instanceof Error ? fallbackError.message : "Unknown fallback error",
+        {
+          originalError: error,
+          fallbackError,
+        }
+      );
     }
   }
 
@@ -633,16 +624,16 @@ export class SceneManager {
     const timestamp = new Date().toISOString();
     const logEntry = {
       timestamp,
-      level: 'ERROR',
-      component: 'SceneManager',
+      level: "ERROR",
+      component: "SceneManager",
       message,
       details,
-      context
+      context,
     };
-    
+
     console.error(`[${timestamp}] SceneManager ERROR: ${message}`, details, context);
-    
-    if (typeof window !== 'undefined' && (window as any).errorReporting) {
+
+    if (typeof window !== "undefined" && (window as any).errorReporting) {
       (window as any).errorReporting.captureError(logEntry);
     }
   }

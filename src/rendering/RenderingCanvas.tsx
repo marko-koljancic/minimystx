@@ -5,10 +5,10 @@ import MaximizeToggleButton from "../components/MaximizeToggleButton";
 import ViewportControls from "../components/ViewportControls";
 import ScreenshotButton from "../components/ScreenshotButton";
 import { ScreenshotModal } from "../components/ScreenshotModal";
-import { useUIStore } from "../store/uiStore";
+import { usePreferencesStore } from "../store/preferencesStore";
 export default function RenderingCanvas() {
   const { containerRef: keyboardContainerRef } = useKeyboardShortcuts({ context: "render" });
-  const screenshotPreferences = useUIStore((state) => state.preferences.screenshot);
+  const screenshotPreferences = usePreferencesStore((state) => state.screenshot);
   const resizeContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneManagerRef = useRef<SceneManager | null>(null);

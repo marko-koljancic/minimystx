@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useUIStore, PreferencesState } from "../../store/uiStore";
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore";
 import { GroundPlaneDependencies, IGroundPlane } from "./GuideTypes";
 
 export class GroundPlane implements IGroundPlane {
@@ -52,7 +52,7 @@ export class GroundPlane implements IGroundPlane {
       this.dispose();
     }
 
-    const { preferences } = useUIStore.getState();
+    const preferences = usePreferencesStore.getState();
     const { enabled, shadowsEnabled, elevation } = preferences.guides.groundPlane;
 
     const groundGeometry = new THREE.PlaneGeometry(1000, 1000);

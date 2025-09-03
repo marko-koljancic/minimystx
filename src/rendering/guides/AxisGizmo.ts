@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { useUIStore, PreferencesState } from "../../store/uiStore";
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore"
+import { useUIStore } from "../../store/uiStore";
 import { AxisGizmoDependencies, IAxisGizmo } from "./GuideTypes";
 import { GizmoSize } from "../types/SceneTypes";
 
@@ -17,7 +18,7 @@ export class AxisGizmo implements IAxisGizmo {
   public updateAxisGizmo(): void {
     if (!this._gizmo) return;
 
-    const { preferences } = useUIStore.getState();
+    const preferences = usePreferencesStore.getState();
     const userSize = this.getGizmoSize(preferences.guides.axisGizmo.size);
 
     const camera = this.dependencies.getCurrentCamera();
@@ -121,7 +122,8 @@ export class AxisGizmo implements IAxisGizmo {
       this.dispose();
     }
 
-    const { preferences, showAxisGizmo } = useUIStore.getState();
+    const { showAxisGizmo } = useUIStore.getState();
+    const preferences = usePreferencesStore.getState();
     const size = this.getGizmoSize(preferences.guides.axisGizmo.size);
 
     this._gizmo = new THREE.Group();

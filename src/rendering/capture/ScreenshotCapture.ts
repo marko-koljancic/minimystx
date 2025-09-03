@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { useUIStore } from "../../store/uiStore";
+import { usePreferencesStore } from "../../store/preferencesStore";
 import {
   ScreenshotCaptureDependencies,
   IScreenshotCapture,
@@ -81,8 +82,7 @@ export class ScreenshotCapture implements IScreenshotCapture {
   public dispose(): void {}
 
   private applyRendererSettings(renderer: THREE.WebGLRenderer): void {
-    const { preferences } = useUIStore.getState();
-    const { materials } = preferences;
+    const { materials } = usePreferencesStore.getState();
 
     switch (materials.toneMapping) {
       case "None":

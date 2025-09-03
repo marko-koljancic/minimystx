@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { useUIStore, PreferencesState } from "../../store/uiStore";
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore";
 import { CameraControllerDependencies, ICameraController } from "./CameraTypes";
 import { ViewType, GridPlane } from "../types/SceneTypes";
 
@@ -9,8 +9,7 @@ export class CameraController implements ICameraController {
   private _isOrthographic: boolean = false;
 
   constructor(private dependencies: CameraControllerDependencies) {
-    const { preferences } = useUIStore.getState();
-    const { camera: cameraPrefs } = preferences;
+    const { camera: cameraPrefs } = usePreferencesStore.getState();
 
     this._isOrthographic = cameraPrefs.defaultType === "orthographic";
 
@@ -100,8 +99,8 @@ export class CameraController implements ICameraController {
     this.dependencies.camera.aspect = aspect;
     this.dependencies.camera.updateProjectionMatrix();
 
-    const { preferences } = useUIStore.getState();
-    const frustumSize = preferences.camera.orthoScale;
+    const { camera: cameraPrefs } = usePreferencesStore.getState();
+    const frustumSize = cameraPrefs.orthoScale;
     this.dependencies.orthographicCamera.left = (-frustumSize * aspect) / 2;
     this.dependencies.orthographicCamera.right = (frustumSize * aspect) / 2;
     this.dependencies.orthographicCamera.top = frustumSize / 2;
@@ -199,8 +198,8 @@ export class CameraController implements ICameraController {
   private updateOrbitControlsFromPreferences(): void {
     if (!this.controls) return;
 
-    const { preferences } = useUIStore.getState();
-    const { orbitControls } = preferences.camera;
+    const { camera: cameraPrefs } = usePreferencesStore.getState();
+    const { orbitControls } = cameraPrefs;
 
     this.controls.rotateSpeed = orbitControls.rotateSpeed;
     this.controls.panSpeed = orbitControls.panSpeed;

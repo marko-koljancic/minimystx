@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { PreferencesState } from "../../store/uiStore";
+import { PreferencesState } from "../../store/preferencesStore";
 import { RenderingSubsystem, PreferenceUpdateHandler } from "../types/SceneTypes";
 
 export interface AxisGizmoDependencies {
