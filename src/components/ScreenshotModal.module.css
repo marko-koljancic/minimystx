@@ -15,38 +15,37 @@
   background-color: var(--background-tertiary);
   border: 0.1rem solid var(--border-primary);
   border-radius: 0.4rem;
-  padding: 2.4rem;
-  min-width: 32rem;
-  max-width: 64rem;
-  max-height: 80vh;
-  overflow: auto;
+  min-width: 40rem;
+  max-width: 70vw;
+  min-height: 30rem;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 0.8rem 2.4rem rgba(0, 0, 0, 0.3);
-}
-
-.title {
-  color: var(--text-primary);
-  font-size: 1.6rem;
-  margin: 0 0 1.6rem 0;
-  font-weight: 500;
+  padding-top: 1.2rem;
 }
 
 .imageContainer {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 2.4rem;
-  border: 1px solid var(--border-secondary);
-  border-radius: 0.2rem;
-  background-color: var(--background-quaternary);
-  padding: 1.2rem;
+  flex: 1;
+  padding: 0 1.2rem 2.4rem 1.2rem;
+  overflow: hidden;
 }
 
 .preview {
   max-width: 100%;
-  max-height: 50vh;
+  max-height: 100%;
   object-fit: contain;
-  border: 1px solid var(--border-tertiary);
   border-radius: 0.2rem;
+}
+
+.footer {
+  background-color: var(--background-secondary);
+  padding: 1.6rem 2.4rem;
+  border-top: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
 .buttons {
@@ -68,7 +67,7 @@
 
 .downloadButton {
   background-color: var(--accent-primary);
-  color: var(--text-on-accent);
+  color: white;
 }
 
 .downloadButton:hover:not(:disabled) {

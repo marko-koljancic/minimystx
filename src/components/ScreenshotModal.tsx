@@ -35,17 +35,18 @@ export function ScreenshotModal({ imageUrl, filename, onClose, onDownload }: Scr
   return (
     <div className={styles.backdrop} ref={modalRef} onClick={handleBackdropClick}>
       <div className={styles.modal}>
-        <h3 className={styles.title}>Screenshot Result</h3>
         <div className={styles.imageContainer}>
           <img src={imageUrl} alt="Screenshot preview" className={styles.preview} />
         </div>
-        <div className={styles.buttons}>
-          <button className={styles.closeButton} onClick={onClose}>
-            Close
-          </button>
-          <button className={styles.downloadButton} onClick={handleDownload}>
-            Save
-          </button>
+        <div className={styles.footer}>
+          <div className={styles.buttons}>
+            <button className={styles.closeButton} onClick={onClose}>
+              Close
+            </button>
+            <button className={styles.downloadButton} onClick={handleDownload}>
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
