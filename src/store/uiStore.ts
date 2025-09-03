@@ -8,7 +8,6 @@ type FlowViewMode = "graph" | "list";
 type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
 
 type DisplayUnit = "mm" | "cm" | "m" | "in" | "ft" | "ft-in";
-type AntialiasingType = "none" | "fxaa" | "msaa" | "taa";
 type BackgroundType = "single" | "gradient";
 type ToneMappingType = "None" | "Linear" | "Reinhard" | "ACES Filmic";
 type CameraType = "perspective" | "orthographic";
@@ -22,8 +21,6 @@ export interface PreferencesState {
     displayUnit: DisplayUnit;
   };
   renderer: {
-    antialiasing: AntialiasingType;
-    pixelRatioCap: number;
     postProcessing: {
       enabled: boolean;
       passes: string[];
@@ -241,8 +238,6 @@ export const useUIStore = create<UIStore>()(
           displayUnit: "m",
         },
         renderer: {
-          antialiasing: "fxaa",
-          pixelRatioCap: 2.0,
           postProcessing: {
             enabled: false,
             passes: [],
@@ -600,8 +595,6 @@ export const useUIStore = create<UIStore>()(
               displayUnit: "m",
             },
             renderer: {
-              antialiasing: "fxaa",
-              pixelRatioCap: 2.0,
               postProcessing: {
                 enabled: false,
                 passes: [],

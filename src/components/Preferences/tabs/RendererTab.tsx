@@ -14,48 +14,6 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
         Configure rendering quality, performance, and visual settings for the 3D viewport.
       </div>
 
-      <div className={styles.controlGroup}>
-        <h4 className={styles.controlGroupTitle}>Rendering Options</h4>
-        <div className={styles.parameterGrid}>
-          <div className={styles.parameterRow}>
-            <div className={styles.labelColumn}>
-              <label className={styles.parameterLabel}>Antialiasing</label>
-            </div>
-            <div className={styles.controlColumn}>
-              <ParameterInput
-                value={preferences.antialiasing}
-                metadata={{
-                  type: "enum",
-                  enumValues: ["none", "fxaa", "msaa", "taa"],
-                  default: "fxaa",
-                  displayName: "Antialiasing",
-                }}
-                onChange={(value) => onChange({ antialiasing: value as any })}
-              />
-            </div>
-          </div>
-
-          <div className={styles.parameterRow}>
-            <div className={styles.labelColumn}>
-              <label className={styles.parameterLabel}>Pixel Ratio Cap</label>
-            </div>
-            <div className={styles.controlColumn}>
-              <ParameterInput
-                value={preferences.pixelRatioCap}
-                metadata={{
-                  type: "number",
-                  min: 1.0,
-                  max: 4.0,
-                  step: 0.1,
-                  default: 2.0,
-                  displayName: "Pixel Ratio Cap",
-                }}
-                onChange={(value) => onChange({ pixelRatioCap: value as number })}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className={styles.controlGroup}>
         <h4 className={styles.controlGroupTitle}>Post-Processing</h4>

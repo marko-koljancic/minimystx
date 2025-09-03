@@ -115,7 +115,7 @@ export class SceneManager {
     const aspect = width / height;
 
     const { preferences } = useUIStore.getState();
-    const { camera: cameraPrefs, renderer: rendererPrefs } = preferences;
+    const { camera: cameraPrefs } = preferences;
 
     this.camera = new THREE.PerspectiveCamera(
       cameraPrefs.perspectiveFOV,
@@ -140,14 +140,13 @@ export class SceneManager {
 
     this.isOrthographic = cameraPrefs.defaultType === "orthographic";
 
-    const shouldUseAntialiasing = rendererPrefs.antialiasing !== "none";
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: shouldUseAntialiasing,
+      antialias: true,
     });
     this.renderer.setSize(width, height);
 
-    const effectivePixelRatio = Math.min(window.devicePixelRatio, rendererPrefs.pixelRatioCap);
+    const effectivePixelRatio = Math.min(window.devicePixelRatio, 2.0);
     this.renderer.setPixelRatio(effectivePixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -431,10 +430,6 @@ export class SceneManager {
   ) {
     if (!this.renderer) return;
 
-    if (newRendererPrefs.pixelRatioCap !== prevRendererPrefs.pixelRatioCap) {
-      const effectivePixelRatio = Math.min(window.devicePixelRatio, newRendererPrefs.pixelRatioCap);
-      this.renderer.setPixelRatio(effectivePixelRatio);
-    }
 
     if (
       JSON.stringify(newRendererPrefs.background) !== JSON.stringify(prevRendererPrefs.background)
@@ -442,10 +437,6 @@ export class SceneManager {
       this.updateSceneBackground();
     }
 
-    if (newRendererPrefs.antialiasing !== prevRendererPrefs.antialiasing) {
-      console.warn("Antialiasing changes require application restart to take effect.");
-      // TODO: Implement renderer recreation if needed in the future
-    }
 
     if (
       newRendererPrefs.postProcessing.enabled !== prevRendererPrefs.postProcessing.enabled ||
