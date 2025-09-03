@@ -901,7 +901,6 @@ export class SceneManager {
           : rendererPrefs.background.color;
 
       this.scene.background = new THREE.Color(backgroundColorHex);
-      console.log(`Applied single color background: ${backgroundColorHex}`);
     }
   }
   private updateWireframeMode(wireframe: boolean) {
