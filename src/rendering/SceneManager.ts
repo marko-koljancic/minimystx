@@ -430,13 +430,11 @@ export class SceneManager {
   ) {
     if (!this.renderer) return;
 
-
     if (
       JSON.stringify(newRendererPrefs.background) !== JSON.stringify(prevRendererPrefs.background)
     ) {
       this.updateSceneBackground();
     }
-
 
     if (
       newRendererPrefs.postProcessing.enabled !== prevRendererPrefs.postProcessing.enabled ||
@@ -578,8 +576,10 @@ export class SceneManager {
 
     if (hasBloom) {
       this.bloomPass!.renderToScreen = true;
+      if (this.ssaoPass) this.ssaoPass.renderToScreen = false;
     } else if (hasSSAO && this.ssaoPass) {
       this.ssaoPass.renderToScreen = true;
+      if (this.bloomPass) this.bloomPass.renderToScreen = false;
     }
 
     const canvas = this.renderer.domElement;
@@ -600,6 +600,9 @@ export class SceneManager {
       this.bloomPass = null;
     }
     if (this.ssaoPass) {
+      if (typeof this.ssaoPass.dispose === "function") {
+        this.ssaoPass.dispose();
+      }
       this.ssaoPass = null;
     }
   }
