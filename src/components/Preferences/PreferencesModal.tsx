@@ -6,9 +6,8 @@ import {
   RendererTab, 
   MaterialsTab, 
   CameraTab, 
-  ViewTab, 
-  ScreenshotTab, 
-  DebugTab 
+  GuidesTab, 
+  ScreenshotTab 
 } from "./tabs";
 import styles from "./PreferencesModal.module.css";
 
@@ -17,9 +16,8 @@ export type PreferencesTabType =
   | "renderer" 
   | "materials" 
   | "camera" 
-  | "view" 
-  | "screenshot" 
-  | "debug";
+  | "guides" 
+  | "screenshot";
 
 interface PreferencesModalProps {
   onClose: () => void;
@@ -102,7 +100,7 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
       },
       materials: {
         defaultMaterial: "meshStandard",
-        toneMapping: "acesFilmic",
+        toneMapping: "None",
         exposure: 1.0,
         sRGBEncoding: true,
       },
@@ -160,12 +158,6 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
           restoreViewport: true,
         },
       },
-      debug: {
-        rendererInfo: false,
-        logLevel: "warnings",
-        showNormals: false,
-        revealInternalMeters: true,
-      },
     };
     
     // Update local state with defaults
@@ -183,9 +175,8 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
       case "renderer": return "Renderer";
       case "materials": return "Materials";
       case "camera": return "Camera";
-      case "view": return "View";
+      case "guides": return "Guides";
       case "screenshot": return "Screenshot";
-      case "debug": return "Debug";
     }
   };
 
@@ -194,9 +185,8 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
     "renderer", 
     "materials",
     "camera",
-    "view",
-    "screenshot",
-    "debug"
+    "guides",
+    "screenshot"
   ];
 
   const updateTabPreferences = useCallback((tabKey: keyof PreferencesState, updates: any) => {
@@ -234,18 +224,13 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
                 preferences={localPreferences[activeTab]}
                 onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
               />;
-            case "view":
-              return <ViewTab 
-                guidesPreferences={localPreferences.guides}
-                onGuidesChange={(updates: any) => updateTabPreferences("guides", updates)}
+            case "guides":
+              return <GuidesTab 
+                preferences={localPreferences.guides}
+                onChange={(updates: any) => updateTabPreferences("guides", updates)}
               />;
             case "screenshot":
               return <ScreenshotTab 
-                preferences={localPreferences[activeTab]}
-                onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
-              />;
-            case "debug":
-              return <DebugTab 
                 preferences={localPreferences[activeTab]}
                 onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
               />;

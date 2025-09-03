@@ -201,6 +201,29 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
           <div className={`${styles.toggleGroup} ${preferences.groundPlane.enabled ? styles.enabled : ""}`}>
             <div className={styles.parameterRow}>
               <div className={styles.labelColumn}>
+                <label className={styles.parameterLabel}>Elevation</label>
+              </div>
+              <div className={styles.controlColumn}>
+                <ParameterInput
+                  value={preferences.groundPlane.elevation}
+                  metadata={{
+                    type: "number",
+                    min: -10.0,
+                    max: 10.0,
+                    step: 0.1,
+                    default: -0.001,
+                    displayName: "Ground Plane Elevation",
+                  }}
+                  onChange={(value) => onChange({ 
+                    groundPlane: { ...preferences.groundPlane, elevation: value as number }
+                  })}
+                  disabled={!preferences.groundPlane.enabled}
+                />
+              </div>
+            </div>
+
+            <div className={styles.parameterRow}>
+              <div className={styles.labelColumn}>
                 <label className={styles.parameterLabel}>Shadows</label>
               </div>
               <div className={styles.controlColumn}>

@@ -11,13 +11,12 @@ type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
 type DisplayUnit = "mm" | "cm" | "m" | "in" | "ft" | "ft-in";
 type AntialiasingType = "none" | "fxaa" | "msaa" | "taa";
 type BackgroundType = "single" | "gradient";
-type ToneMappingType = "none" | "linear" | "reinhard" | "acesFilmic";
+type ToneMappingType = "None" | "Linear" | "Reinhard" | "ACES Filmic";
 type CameraType = "perspective" | "orthographic";
 type GizmoSize = "Small" | "Medium" | "Large";
 type CaptureArea = "viewport" | "selection" | "custom";
 type ResolutionPreset = "Viewport" | "1.5x" | "2x" | "4x" | "Custom";
 type CountdownOption = "off" | "3s" | "5s";
-type LogLevel = "errors" | "warnings" | "verbose";
 
 export interface PreferencesState {
   units: {
@@ -102,12 +101,6 @@ export interface PreferencesState {
       countdown: CountdownOption;
       restoreViewport: boolean;
     };
-  };
-  debug: {
-    rendererInfo: boolean;
-    logLevel: LogLevel;
-    showNormals: boolean;
-    revealInternalMeters: boolean;
   };
 }
 interface UIState {
@@ -267,7 +260,7 @@ export const useUIStore = create<UIStore>()(
         },
         materials: {
           defaultMaterial: "meshStandard",
-          toneMapping: "acesFilmic",
+          toneMapping: "None",
           exposure: 1.0,
           sRGBEncoding: true,
         },
@@ -324,12 +317,6 @@ export const useUIStore = create<UIStore>()(
             countdown: "off",
             restoreViewport: true,
           },
-        },
-        debug: {
-          rendererInfo: false,
-          logLevel: "warnings",
-          showNormals: false,
-          revealInternalMeters: true,
         },
       },
       setTheme: (theme: Theme) => {
@@ -570,7 +557,6 @@ export const useUIStore = create<UIStore>()(
                 ...preferences.screenshot.captureFlow
               } : state.preferences.screenshot.captureFlow,
             } : state.preferences.screenshot,
-            debug: preferences.debug ? { ...state.preferences.debug, ...preferences.debug } : state.preferences.debug,
           },
         }));
       },
@@ -600,7 +586,7 @@ export const useUIStore = create<UIStore>()(
             },
             materials: {
               defaultMaterial: "meshStandard",
-              toneMapping: "acesFilmic",
+              toneMapping: "None",
               exposure: 1.0,
               sRGBEncoding: true,
             },
@@ -657,12 +643,6 @@ export const useUIStore = create<UIStore>()(
                 countdown: "off",
                 restoreViewport: true,
               },
-            },
-            debug: {
-              rendererInfo: false,
-              logLevel: "warnings",
-              showNormals: false,
-              revealInternalMeters: true,
             },
           },
         }));

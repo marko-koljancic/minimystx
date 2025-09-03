@@ -37,6 +37,13 @@
   background-color: var(--error-background);
 }
 
+.inputField:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--input-disabled-background, var(--input-background));
+  color: var(--input-disabled-text, var(--text-secondary));
+}
+
 .inputField.error:focus {
   border-color: var(--error-border);
   background-color: var(--error-background);

@@ -304,8 +304,8 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                 value={preferences.toneMapping}
                 metadata={{
                   type: "enum",
-                  enumValues: ["none", "linear", "reinhard", "acesFilmic"],
-                  default: "acesFilmic",
+                  enumValues: ["None", "Linear", "Reinhard", "ACES Filmic"],
+                  default: "None",
                   displayName: "Tone Mapping",
                 }}
                 onChange={(value) => onChange({ toneMapping: value as any })}
@@ -313,25 +313,27 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
             </div>
           </div>
 
-          <div className={styles.parameterRow}>
-            <div className={styles.labelColumn}>
-              <label className={styles.parameterLabel}>Exposure</label>
+          {preferences.toneMapping !== "None" && (
+            <div className={styles.parameterRow}>
+              <div className={styles.labelColumn}>
+                <label className={styles.parameterLabel}>Exposure</label>
+              </div>
+              <div className={styles.controlColumn}>
+                <ParameterInput
+                  value={preferences.exposure}
+                  metadata={{
+                    type: "number",
+                    min: 0.1,
+                    max: 3.0,
+                    step: 0.1,
+                    default: 1.0,
+                    displayName: "Exposure",
+                  }}
+                  onChange={(value) => onChange({ exposure: value as number })}
+                />
+              </div>
             </div>
-            <div className={styles.controlColumn}>
-              <ParameterInput
-                value={preferences.exposure}
-                metadata={{
-                  type: "number",
-                  min: 0.1,
-                  max: 3.0,
-                  step: 0.1,
-                  default: 1.0,
-                  displayName: "Exposure",
-                }}
-                onChange={(value) => onChange({ exposure: value as number })}
-              />
-            </div>
-          </div>
+          )}
         </div>
 
         <div className={styles.infoBox}>

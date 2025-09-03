@@ -158,6 +158,12 @@ export class SceneManager {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     
+    // Apply initial materials preferences
+    const { materials: materialsPrefs } = preferences;
+    this.applyToneMapping(materialsPrefs.toneMapping);
+    this.renderer.toneMappingExposure = materialsPrefs.exposure;
+    this.renderer.outputColorSpace = materialsPrefs.sRGBEncoding ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
+    
     // Initialize OrbitControls with preferences
     this.controls = new OrbitControls(this.getCurrentCamera(), canvas);
     this.controls.target.set(0, 0, 0);
@@ -474,6 +480,47 @@ export class SceneManager {
         newRendererPrefs.postProcessing.ssaoMaxDistance !== prevRendererPrefs.postProcessing.ssaoMaxDistance ||
         newRendererPrefs.postProcessing.ssaoIntensity !== prevRendererPrefs.postProcessing.ssaoIntensity) {
       this.updatePostProcessing();
+    }
+  }
+
+  private updateMaterialsFromPreferences(newMaterialsPrefs: PreferencesState["materials"], prevMaterialsPrefs: PreferencesState["materials"]) {
+    if (!this.renderer) return;
+    
+    // Handle tone mapping changes
+    if (newMaterialsPrefs.toneMapping !== prevMaterialsPrefs.toneMapping) {
+      this.applyToneMapping(newMaterialsPrefs.toneMapping);
+    }
+    
+    // Handle exposure changes
+    if (newMaterialsPrefs.exposure !== prevMaterialsPrefs.exposure) {
+      this.renderer.toneMappingExposure = newMaterialsPrefs.exposure;
+    }
+    
+    // Handle sRGB encoding changes
+    if (newMaterialsPrefs.sRGBEncoding !== prevMaterialsPrefs.sRGBEncoding) {
+      this.renderer.outputColorSpace = newMaterialsPrefs.sRGBEncoding ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
+    }
+  }
+
+  private applyToneMapping(toneMapping: PreferencesState["materials"]["toneMapping"]) {
+    if (!this.renderer) return;
+    this.applyToneMappingToRenderer(this.renderer, toneMapping);
+  }
+
+  private applyToneMappingToRenderer(renderer: THREE.WebGLRenderer, toneMapping: PreferencesState["materials"]["toneMapping"]) {
+    switch (toneMapping) {
+      case "None":
+        renderer.toneMapping = THREE.NoToneMapping;
+        break;
+      case "Linear":
+        renderer.toneMapping = THREE.LinearToneMapping;
+        break;
+      case "Reinhard":
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        break;
+      case "ACES Filmic":
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        break;
     }
   }
   
@@ -804,6 +851,11 @@ export class SceneManager {
       // Renderer preferences changes
       if (prevState && state.preferences.renderer !== prevState.preferences.renderer) {
         this.updateRendererFromPreferences(state.preferences.renderer, prevState.preferences.renderer);
+      }
+      
+      // Materials preferences changes
+      if (prevState && state.preferences.materials !== prevState.preferences.materials) {
+        this.updateMaterialsFromPreferences(state.preferences.materials, prevState.preferences.materials);
       }
     });
   }
@@ -1433,6 +1485,13 @@ export class SceneManager {
     tempRenderer.setPixelRatio(1); // Use pixel ratio 1 for temp renderer
     tempRenderer.shadowMap.enabled = this.renderer.shadowMap.enabled;
     tempRenderer.shadowMap.type = this.renderer.shadowMap.type;
+    
+    // Apply same materials preferences as main renderer
+    const { preferences } = useUIStore.getState();
+    const { materials } = preferences;
+    this.applyToneMappingToRenderer(tempRenderer, materials.toneMapping);
+    tempRenderer.toneMappingExposure = materials.exposure;
+    tempRenderer.outputColorSpace = materials.sRGBEncoding ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
     
     // Handle background transparency
     const originalBackground = this.scene.background;
