@@ -209,7 +209,9 @@ export async function triggerSceneRecomputation(): Promise<void> {
             await graphStore.computeNode(geoNodeId, { type: "root" });
           }
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error("Error during scene recomputation:", error);
+      }
     }, 50);
   } catch (error) {
     console.error("Error during scene recomputation:", error);
