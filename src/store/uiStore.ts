@@ -6,6 +6,110 @@ type ConnectionLineStyle = "bezier" | "straight" | "step" | "simpleBezier";
 type FocusedCanvas = "flow" | "render" | null;
 type FlowViewMode = "graph" | "list";
 type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
+
+// Preferences types
+type DisplayUnit = "mm" | "cm" | "m" | "in" | "ft" | "ft-in";
+type AntialiasingType = "none" | "fxaa" | "msaa" | "taa";
+type BackgroundType = "single" | "gradient";
+type ToneMappingType = "none" | "linear" | "reinhard" | "acesFilmic";
+type CameraType = "perspective" | "orthographic";
+type GizmoSize = "Small" | "Medium" | "Large";
+type CaptureArea = "viewport" | "selection" | "custom";
+type ResolutionPreset = "Viewport" | "1.5x" | "2x" | "4x" | "Custom";
+type CountdownOption = "off" | "3s" | "5s";
+type LogLevel = "errors" | "warnings" | "verbose";
+
+export interface PreferencesState {
+  units: {
+    displayUnit: DisplayUnit;
+  };
+  renderer: {
+    antialiasing: AntialiasingType;
+    pixelRatioCap: number;
+    postProcessing: {
+      enabled: boolean;
+      passes: string[];
+      bloomStrength: number;
+      ssaoKernelRadius: number;
+      ssaoMinDistance: number;
+      ssaoMaxDistance: number;
+      ssaoIntensity: number;
+    };
+    background: {
+      type: BackgroundType;
+      color: string;
+      color2?: string;
+    };
+  };
+  materials: {
+    defaultMaterial: string;
+    toneMapping: ToneMappingType;
+    exposure: number;
+    sRGBEncoding: boolean;
+  };
+  camera: {
+    defaultType: CameraType;
+    perspectiveFOV: number;
+    orthoScale: number;
+    clippingNear: number;
+    clippingFar: number;
+    orbitControls: {
+      rotateSpeed: number;
+      panSpeed: number;
+      dollySpeed: number;
+      dampingEnabled: boolean;
+    };
+  };
+  guides: {
+    grid: {
+      enabled: boolean;
+      majorSpacing: number;
+      minorSubdivisions: number;
+      majorGridLines: number;
+    };
+    axisGizmo: {
+      enabled: boolean;
+      size: GizmoSize;
+    };
+    groundPlane: {
+      enabled: boolean;
+      shadowsEnabled: boolean;
+      elevation: number;
+    };
+  };
+  screenshot: {
+    captureArea: CaptureArea;
+    cameraSource: string;
+    resolution: {
+      preset: ResolutionPreset;
+      customWidth?: number;
+      customHeight?: number;
+    };
+    overlays: {
+      transparentBackground: boolean;
+      grid: boolean;
+      gizmos: boolean;
+      stats: boolean;
+    };
+    colorManagement: {
+      embedSRGB: boolean;
+      bakeToneMapping: boolean;
+    };
+    fileNaming: {
+      template: string;
+    };
+    captureFlow: {
+      countdown: CountdownOption;
+      restoreViewport: boolean;
+    };
+  };
+  debug: {
+    rendererInfo: boolean;
+    logLevel: LogLevel;
+    showNormals: boolean;
+    revealInternalMeters: boolean;
+  };
+}
 interface UIState {
   theme: Theme;
   isDarkTheme: boolean;
@@ -38,6 +142,7 @@ interface UIState {
   nodePositions: Record<string, Record<string, { x: number; y: number }>>;
   isRendererMaximized: boolean;
   flowViewModes: Record<string, FlowViewMode>;
+  preferences: PreferencesState;
 }
 interface UIActions {
   setTheme: (theme: Theme) => void;
@@ -90,6 +195,8 @@ interface UIActions {
   toggleRendererMaximized: () => void;
   setFlowViewMode: (contextKey: string, mode: FlowViewMode) => void;
   getFlowViewMode: (contextKey: string) => FlowViewMode;
+  updatePreferences: (preferences: Partial<PreferencesState>) => void;
+  resetPreferencesToDefaults: () => void;
 }
 type UIStore = UIState & UIActions;
 const getIsDarkTheme = (theme: Theme): boolean => {
@@ -137,6 +244,94 @@ export const useUIStore = create<UIStore>()(
       nodePositions: {},
       isRendererMaximized: false,
       flowViewModes: {},
+      preferences: {
+        units: {
+          displayUnit: "m",
+        },
+        renderer: {
+          antialiasing: "fxaa",
+          pixelRatioCap: 2.0,
+          postProcessing: {
+            enabled: false,
+            passes: [],
+            bloomStrength: 0.5,
+            ssaoKernelRadius: 16,
+            ssaoMinDistance: 0.005,
+            ssaoMaxDistance: 0.1,
+            ssaoIntensity: 1.0,
+          },
+          background: {
+            type: "single",
+            color: "#191919",
+          },
+        },
+        materials: {
+          defaultMaterial: "meshStandard",
+          toneMapping: "acesFilmic",
+          exposure: 1.0,
+          sRGBEncoding: true,
+        },
+        camera: {
+          defaultType: "perspective",
+          perspectiveFOV: 75,
+          orthoScale: 10,
+          clippingNear: 0.1,
+          clippingFar: 1000,
+          orbitControls: {
+            rotateSpeed: 1.0,
+            panSpeed: 1.0,
+            dollySpeed: 1.0,
+            dampingEnabled: true,
+          },
+        },
+        guides: {
+          grid: {
+            enabled: true,
+            majorSpacing: 10.0,
+            minorSubdivisions: 5,
+            majorGridLines: 10,
+          },
+          axisGizmo: {
+            enabled: true,
+            size: "Small",
+          },
+          groundPlane: {
+            enabled: false,
+            shadowsEnabled: false,
+            elevation: -0.001,
+          },
+        },
+        screenshot: {
+          captureArea: "viewport",
+          cameraSource: "active",
+          resolution: {
+            preset: "2x",
+          },
+          overlays: {
+            transparentBackground: false,
+            grid: true,
+            gizmos: true,
+            stats: false,
+          },
+          colorManagement: {
+            embedSRGB: true,
+            bakeToneMapping: true,
+          },
+          fileNaming: {
+            template: "minimystx-screenshot-{date}-{time}-{width}x{height}.png",
+          },
+          captureFlow: {
+            countdown: "off",
+            restoreViewport: true,
+          },
+        },
+        debug: {
+          rendererInfo: false,
+          logLevel: "warnings",
+          showNormals: false,
+          revealInternalMeters: true,
+        },
+      },
       setTheme: (theme: Theme) => {
         const isDarkTheme = getIsDarkTheme(theme);
         updateBodyTheme(theme);
@@ -306,6 +501,172 @@ export const useUIStore = create<UIStore>()(
         const state = get();
         return state.flowViewModes[contextKey] || "graph";
       },
+      updatePreferences: (preferences: Partial<PreferencesState>) => {
+        set((state) => ({
+          ...state,
+          preferences: {
+            ...state.preferences,
+            ...preferences,
+            // Deep merge nested objects to ensure proper updates
+            units: preferences.units ? { ...state.preferences.units, ...preferences.units } : state.preferences.units,
+            renderer: preferences.renderer ? {
+              ...state.preferences.renderer,
+              ...preferences.renderer,
+              postProcessing: preferences.renderer.postProcessing ? {
+                ...state.preferences.renderer.postProcessing,
+                ...preferences.renderer.postProcessing
+              } : state.preferences.renderer.postProcessing,
+              background: preferences.renderer.background ? {
+                ...state.preferences.renderer.background,
+                ...preferences.renderer.background
+              } : state.preferences.renderer.background,
+            } : state.preferences.renderer,
+            materials: preferences.materials ? { ...state.preferences.materials, ...preferences.materials } : state.preferences.materials,
+            camera: preferences.camera ? {
+              ...state.preferences.camera,
+              ...preferences.camera,
+              orbitControls: preferences.camera.orbitControls ? {
+                ...state.preferences.camera.orbitControls,
+                ...preferences.camera.orbitControls
+              } : state.preferences.camera.orbitControls,
+            } : state.preferences.camera,
+            guides: preferences.guides ? {
+              ...state.preferences.guides,
+              ...preferences.guides,
+              grid: preferences.guides.grid ? {
+                ...state.preferences.guides.grid,
+                ...preferences.guides.grid
+              } : state.preferences.guides.grid,
+              axisGizmo: preferences.guides.axisGizmo ? {
+                ...state.preferences.guides.axisGizmo,
+                ...preferences.guides.axisGizmo
+              } : state.preferences.guides.axisGizmo,
+              groundPlane: preferences.guides.groundPlane ? {
+                ...state.preferences.guides.groundPlane,
+                ...preferences.guides.groundPlane
+              } : state.preferences.guides.groundPlane,
+            } : state.preferences.guides,
+            screenshot: preferences.screenshot ? {
+              ...state.preferences.screenshot,
+              ...preferences.screenshot,
+              resolution: preferences.screenshot.resolution ? {
+                ...state.preferences.screenshot.resolution,
+                ...preferences.screenshot.resolution
+              } : state.preferences.screenshot.resolution,
+              overlays: preferences.screenshot.overlays ? {
+                ...state.preferences.screenshot.overlays,
+                ...preferences.screenshot.overlays
+              } : state.preferences.screenshot.overlays,
+              colorManagement: preferences.screenshot.colorManagement ? {
+                ...state.preferences.screenshot.colorManagement,
+                ...preferences.screenshot.colorManagement
+              } : state.preferences.screenshot.colorManagement,
+              fileNaming: preferences.screenshot.fileNaming ? {
+                ...state.preferences.screenshot.fileNaming,
+                ...preferences.screenshot.fileNaming
+              } : state.preferences.screenshot.fileNaming,
+              captureFlow: preferences.screenshot.captureFlow ? {
+                ...state.preferences.screenshot.captureFlow,
+                ...preferences.screenshot.captureFlow
+              } : state.preferences.screenshot.captureFlow,
+            } : state.preferences.screenshot,
+            debug: preferences.debug ? { ...state.preferences.debug, ...preferences.debug } : state.preferences.debug,
+          },
+        }));
+      },
+      resetPreferencesToDefaults: () => {
+        set((state) => ({
+          ...state,
+          preferences: {
+            units: {
+              displayUnit: "m",
+            },
+            renderer: {
+              antialiasing: "fxaa",
+              pixelRatioCap: 2.0,
+              postProcessing: {
+                enabled: false,
+                passes: [],
+                bloomStrength: 0.5,
+                ssaoKernelRadius: 16,
+                ssaoMinDistance: 0.005,
+                ssaoMaxDistance: 0.1,
+                ssaoIntensity: 1.0,
+              },
+              background: {
+                type: "single",
+                color: "#191919",
+              },
+            },
+            materials: {
+              defaultMaterial: "meshStandard",
+              toneMapping: "acesFilmic",
+              exposure: 1.0,
+              sRGBEncoding: true,
+            },
+            camera: {
+              defaultType: "perspective",
+              perspectiveFOV: 75,
+              orthoScale: 10,
+              clippingNear: 0.1,
+              clippingFar: 1000,
+              orbitControls: {
+                rotateSpeed: 1.0,
+                panSpeed: 1.0,
+                dollySpeed: 1.0,
+                dampingEnabled: true,
+              },
+            },
+            guides: {
+              grid: {
+                enabled: true,
+                majorSpacing: 10.0,
+                minorSubdivisions: 5,
+                majorGridLines: 10,
+              },
+              axisGizmo: {
+                enabled: true,
+                size: "Small",
+              },
+              groundPlane: {
+                enabled: false,
+                shadowsEnabled: false,
+                elevation: -0.001,
+              },
+            },
+            screenshot: {
+              captureArea: "viewport",
+              cameraSource: "active",
+              resolution: {
+                preset: "2x",
+              },
+              overlays: {
+                transparentBackground: false,
+                grid: true,
+                gizmos: true,
+                stats: false,
+              },
+              colorManagement: {
+                embedSRGB: true,
+                bakeToneMapping: true,
+              },
+              fileNaming: {
+                template: "minimystx-screenshot-{date}-{time}-{width}x{height}.png",
+              },
+              captureFlow: {
+                countdown: "off",
+                restoreViewport: true,
+              },
+            },
+            debug: {
+              rendererInfo: false,
+              logLevel: "warnings",
+              showNormals: false,
+              revealInternalMeters: true,
+            },
+          },
+        }));
+      },
     }),
     {
       name: "minimystx-ui-store",
@@ -323,6 +684,7 @@ export const useUIStore = create<UIStore>()(
         collapsed: state.collapsed,
         bottomPaneHeight: state.bottomPaneHeight,
         isRendererMaximized: state.isRendererMaximized,
+        preferences: state.preferences,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -331,6 +693,37 @@ export const useUIStore = create<UIStore>()(
             state.isDarkTheme = computedIsDark;
           }
           updateBodyTheme(state.theme);
+
+          // Migrate preferences to ensure all required properties exist
+          if (state.preferences) {
+            // Ensure elevation property exists for groundPlane
+            if (state.preferences.guides?.groundPlane && typeof state.preferences.guides.groundPlane.elevation === 'undefined') {
+              state.preferences.guides.groundPlane.elevation = -0.001;
+            }
+            // Ensure majorGridLines property exists for grid
+            if (state.preferences.guides?.grid && typeof state.preferences.guides.grid.majorGridLines === 'undefined') {
+              state.preferences.guides.grid.majorGridLines = 10;
+            }
+            // Ensure bloomStrength property exists for postProcessing
+            if (state.preferences.renderer?.postProcessing && typeof state.preferences.renderer.postProcessing.bloomStrength === 'undefined') {
+              state.preferences.renderer.postProcessing.bloomStrength = 0.5;
+            }
+            // Ensure SSAO properties exist for postProcessing
+            if (state.preferences.renderer?.postProcessing) {
+              if (typeof state.preferences.renderer.postProcessing.ssaoKernelRadius === 'undefined') {
+                state.preferences.renderer.postProcessing.ssaoKernelRadius = 16;
+              }
+              if (typeof state.preferences.renderer.postProcessing.ssaoMinDistance === 'undefined') {
+                state.preferences.renderer.postProcessing.ssaoMinDistance = 0.005;
+              }
+              if (typeof state.preferences.renderer.postProcessing.ssaoMaxDistance === 'undefined') {
+                state.preferences.renderer.postProcessing.ssaoMaxDistance = 0.1;
+              }
+              if (typeof state.preferences.renderer.postProcessing.ssaoIntensity === 'undefined') {
+                state.preferences.renderer.postProcessing.ssaoIntensity = 1.0;
+              }
+            }
+          }
         }
       },
     }

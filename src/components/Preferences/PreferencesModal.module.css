@@ -1,0 +1,275 @@
+/* Modal backdrop and container */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal - much more compact, similar to Properties panel width */
+.modal {
+  background: var(--background-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  width: 420px; /* Much narrower, closer to Properties panel */
+  max-width: 90vw;
+  height: 600px; /* Fixed height for consistency */
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Header - more compact */
+.header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+  background-color: var(--background-secondary);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Content area - vertical layout */
+.content {
+  display: flex;
+  flex-direction: column; /* Changed from horizontal to vertical */
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Tab navigation - horizontal on top, matching Properties panel exactly */
+.tabNav {
+  display: flex;
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  background-color: var(--background-tertiary);
+  overflow-x: auto; /* Handle overflow on mobile */
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  transition: var(--theme-transition);
+  border-bottom: 2px solid transparent;
+  min-width: auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.tabButton:hover {
+  color: var(--text-primary);
+}
+
+.tabButton.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+/* Tab content area - matching Properties panel */
+.tabContent {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+  min-height: 0;
+  background: var(--background-primary);
+}
+
+/* Footer - more compact with left/right layout */
+.footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  background-color: var(--background-secondary);
+}
+
+.footerLeft {
+  display: flex;
+  align-items: center;
+}
+
+.footerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cancelButton {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--theme-transition);
+}
+
+.cancelButton:hover {
+  background: var(--background-tertiary);
+}
+
+.applyButton {
+  background: var(--background-secondary);
+  color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--theme-transition);
+}
+
+.applyButton:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.applyButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saveButton {
+  background: var(--accent-primary);
+  color: white;
+  border: 1px solid var(--accent-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--theme-transition);
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--accent-secondary);
+}
+
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resetButton {
+  background: var(--background-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--theme-transition);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.resetButton:hover {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Confirmation Dialog */
+.confirmationOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+
+.confirmationDialog {
+  background: var(--background-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 20px;
+  max-width: 400px;
+  width: 90vw;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.confirmationTitle {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.confirmationMessage {
+  margin: 0 0 12px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.confirmationButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.resetConfirmButton {
+  background: #dc2626; /* Red background for destructive action */
+  color: white;
+  border: 1px solid #dc2626;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--theme-transition);
+  font-weight: 500;
+}
+
+.resetConfirmButton:hover {
+  background: #b91c1c; /* Darker red on hover */
+  border-color: #b91c1c;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .modal {
+    width: 95vw;
+    max-height: 90vh;
+  }
+
+  .tabNav {
+    padding: 0 8px;
+  }
+
+  .tabButton {
+    font-size: 1.1rem;
+    padding: 6px 6px;
+    margin-right: 6px;
+  }
+}

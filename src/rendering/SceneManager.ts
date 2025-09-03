@@ -1,7 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
 import { useGraphStore } from "../engine/graphStore";
-import { useUIStore } from "../store";
+import { useUIStore, PreferencesState } from "../store/uiStore";
 import { Object3DContainer } from "../engine/containers/BaseContainer";
 export class SceneManager {
   private scene!: THREE.Scene;
@@ -17,11 +21,24 @@ export class SceneManager {
   private xyGrid: THREE.GridHelper | null = null;
   private xzGrid: THREE.GridHelper | null = null;
   private yzGrid: THREE.GridHelper | null = null;
+  
+  // Two-level grid system
+  private xyMajorGrid: THREE.GridHelper | null = null;
+  private xyMinorGrid: THREE.GridHelper | null = null;
+  private xzMajorGrid: THREE.GridHelper | null = null;
+  private xzMinorGrid: THREE.GridHelper | null = null;
+  private yzMajorGrid: THREE.GridHelper | null = null;
+  private yzMinorGrid: THREE.GridHelper | null = null;
   private currentGridPlane: "xy" | "xz" | "yz" = "xz";
   private originalMaterials: WeakMap<THREE.Mesh, THREE.Material> = new WeakMap();
   private xRayMaterial: THREE.MeshBasicMaterial | null = null;
   private axisGizmo: THREE.Group | null = null;
+  private groundPlane: THREE.Mesh | null = null;
   private isOrthographic = false;
+  private composer: EffectComposer | null = null;
+  private renderPass: RenderPass | null = null;
+  private bloomPass: UnrealBloomPass | null = null;
+  private ssaoPass: SSAOPass | null = null;
   private fitViewHandler = () => {
     this.fitView();
   };
@@ -62,9 +79,17 @@ export class SceneManager {
     this.initializeGrid();
     this.initializeXRayMaterial();
     this.initializeAxisGizmo();
+    this.initializeGroundPlane();
     this.subscribeToStore();
     this.subscribeToUIStore();
     this.setupEventListeners();
+    
+    // Initialize post-processing if enabled in preferences  
+    const { preferences: currentPrefs } = useUIStore.getState();
+    if (currentPrefs.renderer.postProcessing.enabled) {
+      this.updatePostProcessing();
+    }
+    
     this.startRenderLoop();
     setTimeout(() => {
       this.updateSceneBackground();
@@ -88,61 +113,134 @@ export class SceneManager {
     const width = canvas.clientWidth || 800;
     const height = canvas.clientHeight || 600;
     const aspect = width / height;
-    this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+    
+    // Get preferences from UI store
+    const { preferences } = useUIStore.getState();
+    const { camera: cameraPrefs, renderer: rendererPrefs } = preferences;
+    
+    // Initialize perspective camera with preferences
+    this.camera = new THREE.PerspectiveCamera(
+      cameraPrefs.perspectiveFOV, 
+      aspect, 
+      cameraPrefs.clippingNear, 
+      cameraPrefs.clippingFar
+    );
     this.camera.position.set(5, 2, 5);
     this.camera.lookAt(0, 0, 0);
-    const frustumSize = 10;
+    
+    // Initialize orthographic camera with preferences
+    const frustumSize = cameraPrefs.orthoScale;
     this.orthographicCamera = new THREE.OrthographicCamera(
       (-frustumSize * aspect) / 2,
       (frustumSize * aspect) / 2,
       frustumSize / 2,
       -frustumSize / 2,
-      0.1,
-      1000
+      cameraPrefs.clippingNear,
+      cameraPrefs.clippingFar
     );
     this.orthographicCamera.position.set(5, 2, 5);
     this.orthographicCamera.lookAt(0, 0, 0);
+    
+    // Set initial camera mode based on preferences
+    this.isOrthographic = cameraPrefs.defaultType === 'orthographic';
+    
+    // Initialize renderer with preferences
+    const shouldUseAntialiasing = rendererPrefs.antialiasing !== 'none';
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: shouldUseAntialiasing,
     });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    
+    // Apply pixel ratio cap from preferences
+    const effectivePixelRatio = Math.min(window.devicePixelRatio, rendererPrefs.pixelRatioCap);
+    this.renderer.setPixelRatio(effectivePixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    // Initialize OrbitControls with preferences
     this.controls = new OrbitControls(this.getCurrentCamera(), canvas);
     this.controls.target.set(0, 0, 0);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
+    this.updateOrbitControlsFromPreferences();
     this.controls.update();
     this.updateCameraControls();
   }
   private initializeGrid() {
-    this.gridHelper = new THREE.GridHelper(20, 20);
-    this.updateGridColors();
-    this.scene.add(this.gridHelper);
-    this.initializeGridPlanes();
+    this.createTwoLevelGrids();
     const { showGridInRenderView } = useUIStore.getState();
     this.updateGridVisibility(showGridInRenderView);
   }
-  private initializeGridPlanes() {
-    const gridSize = 20;
-    const divisions = 20;
-    this.xyGrid = new THREE.GridHelper(gridSize, divisions);
-    this.xyGrid.rotateX(Math.PI / 2);
-    this.updateGridPlaneColors(this.xyGrid);
-    this.xyGrid.visible = false;
-    this.scene.add(this.xyGrid);
-    this.xzGrid = new THREE.GridHelper(gridSize, divisions);
-    this.updateGridPlaneColors(this.xzGrid);
-    this.xzGrid.visible = false;
-    this.scene.add(this.xzGrid);
-    this.yzGrid = new THREE.GridHelper(gridSize, divisions);
-    this.yzGrid.rotateZ(Math.PI / 2);
-    this.updateGridPlaneColors(this.yzGrid);
-    this.yzGrid.visible = false;
-    this.scene.add(this.yzGrid);
+  
+  private createTwoLevelGrids() {
+    const { preferences } = useUIStore.getState();
+    const { majorSpacing, minorSubdivisions, majorGridLines } = preferences.guides.grid;
+    
+    // Calculate grid size from major grid lines and spacing
+    const gridSize = majorGridLines * majorSpacing;
+    const majorDivisions = majorGridLines;
+    const minorDivisions = majorDivisions * minorSubdivisions;
+    
+    // Create XZ plane grids (default view)
+    this.createGridPair(gridSize, majorDivisions, minorDivisions, 'xz');
+    // Create XY plane grids  
+    this.createGridPair(gridSize, majorDivisions, minorDivisions, 'xy');
+    // Create YZ plane grids
+    this.createGridPair(gridSize, majorDivisions, minorDivisions, 'yz');
+    
+    // Show the default XZ plane
     this.showGridPlane("xz");
+  }
+  
+  private createGridPair(size: number, majorDivisions: number, minorDivisions: number, plane: 'xy' | 'xz' | 'yz') {
+    // Create minor grid (finer lines)
+    const minorGrid = new THREE.GridHelper(size, minorDivisions);
+    this.setupGridMaterial(minorGrid, false); // false = minor grid
+    
+    // Create major grid (bolder lines) 
+    const majorGrid = new THREE.GridHelper(size, majorDivisions);
+    this.setupGridMaterial(majorGrid, true); // true = major grid
+    
+    // Apply plane rotation
+    switch (plane) {
+      case 'xy':
+        minorGrid.rotateX(Math.PI / 2);
+        majorGrid.rotateX(Math.PI / 2);
+        this.xyMinorGrid = minorGrid;
+        this.xyMajorGrid = majorGrid;
+        break;
+      case 'xz':
+        // No rotation needed for XZ plane
+        this.xzMinorGrid = minorGrid;
+        this.xzMajorGrid = majorGrid;
+        break;
+      case 'yz':
+        minorGrid.rotateZ(Math.PI / 2);
+        majorGrid.rotateZ(Math.PI / 2);
+        this.yzMinorGrid = minorGrid;
+        this.yzMajorGrid = majorGrid;
+        break;
+    }
+    
+    // Initially hide all grids
+    minorGrid.visible = false;
+    majorGrid.visible = false;
+    
+    // Add to scene
+    this.scene.add(minorGrid);
+    this.scene.add(majorGrid);
+  }
+  
+  private setupGridMaterial(grid: THREE.GridHelper, isMajor: boolean) {
+    // Keep current theme-responsive color system
+    grid.material.color.setHex(0xffffff);
+    const material = grid.material as THREE.LineBasicMaterial & { color2?: THREE.Color };
+    material.color2?.setHex(0xffffff);
+    
+    // Set opacity and transparency - major grids are more opaque to appear thicker/bolder
+    grid.material.opacity = isMajor ? 0.5 : 0.2;
+    grid.material.transparent = true;
+    
+    // Note: linewidth is not supported in WebGL, so we use opacity difference for prominence
   }
   private initializeXRayMaterial() {
     this.xRayMaterial = new THREE.MeshBasicMaterial({
@@ -152,6 +250,26 @@ export class SceneManager {
     });
   }
   private initializeAxisGizmo() {
+    this.createAxisGizmo();
+  }
+  
+  private createAxisGizmo() {
+    // Dispose existing gizmo if it exists
+    if (this.axisGizmo) {
+      this.scene.remove(this.axisGizmo);
+      this.axisGizmo.traverse((child) => {
+        if (child instanceof THREE.Line) {
+          child.geometry.dispose();
+          if (child.material instanceof THREE.Material) {
+            child.material.dispose();
+          }
+        }
+      });
+    }
+    
+    const { preferences, showAxisGizmo } = useUIStore.getState();
+    const size = this.getGizmoSize(preferences.guides.axisGizmo.size);
+    
     this.axisGizmo = new THREE.Group();
     const xMaterial = new THREE.LineBasicMaterial({
       color: 0xff0000,
@@ -168,29 +286,83 @@ export class SceneManager {
       linewidth: 2,
       transparent: false,
     });
+    
+    // Create geometry with size-based length
     const xGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(size, 0, 0),
     ]);
     const xLine = new THREE.Line(xGeometry, xMaterial);
     this.axisGizmo.add(xLine);
+    
     const yGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, size, 0),
     ]);
     const yLine = new THREE.Line(yGeometry, yMaterial);
     this.axisGizmo.add(yLine);
+    
     const zGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, size),
     ]);
     const zLine = new THREE.Line(zGeometry, zMaterial);
     this.axisGizmo.add(zLine);
-    const { showAxisGizmo } = useUIStore.getState();
-    this.axisGizmo.visible = showAxisGizmo;
+    
+    this.axisGizmo.visible = showAxisGizmo && preferences.guides.axisGizmo.enabled;
     this.scene.add(this.axisGizmo);
     this.updateAxisGizmo();
   }
+  
+  private getGizmoSize(size: 'Small' | 'Medium' | 'Large'): number {
+    switch (size) {
+      case 'Small': return 1.0;
+      case 'Medium': return 2.5;
+      case 'Large': return 4.0;
+      default: return 1.0;
+    }
+  }
+  
+  private initializeGroundPlane() {
+    this.createGroundPlane();
+  }
+  
+  private createGroundPlane() {
+    // Dispose existing ground plane if it exists
+    if (this.groundPlane) {
+      this.scene.remove(this.groundPlane);
+      this.groundPlane.geometry.dispose();
+      if (this.groundPlane.material instanceof THREE.Material) {
+        this.groundPlane.material.dispose();
+      }
+    }
+    
+    const { preferences } = useUIStore.getState();
+    const { enabled, shadowsEnabled, elevation } = preferences.guides.groundPlane;
+    
+    // Create ground plane geometry (1000x1000 = appears infinite)
+    const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+    
+    // Create shadow material - invisible except for shadows
+    const groundMaterial = new THREE.ShadowMaterial({ 
+      opacity: 0.3,
+      transparent: true 
+    });
+    
+    this.groundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
+    
+    // Position and rotate the ground plane
+    this.groundPlane.rotation.x = -Math.PI / 2; // Make it horizontal
+    this.groundPlane.position.y = elevation;
+    
+    // Configure shadow receiving
+    this.groundPlane.receiveShadow = shadowsEnabled;
+    this.groundPlane.visible = enabled;
+    
+    // Add to scene
+    this.scene.add(this.groundPlane);
+  }
+  
   private getCurrentCamera(): THREE.Camera {
     return this.isOrthographic ? this.orthographicCamera : this.camera;
   }
@@ -202,6 +374,230 @@ export class SceneManager {
     } else {
       this.controls.minPolarAngle = 0.1;
       this.controls.maxPolarAngle = Math.PI - 0.1;
+    }
+  }
+  
+  private updateOrbitControlsFromPreferences() {
+    if (!this.controls) return;
+    
+    const { preferences } = useUIStore.getState();
+    const { orbitControls } = preferences.camera;
+    
+    // Apply basic OrbitControls properties
+    this.controls.rotateSpeed = orbitControls.rotateSpeed;
+    this.controls.panSpeed = orbitControls.panSpeed;
+    this.controls.zoomSpeed = orbitControls.dollySpeed; // OrbitControls uses zoomSpeed, not dollySpeed
+    this.controls.enableDamping = orbitControls.dampingEnabled;
+    this.controls.dampingFactor = orbitControls.dampingEnabled ? 0.05 : 0;
+  }
+  
+  private updateCameraFromPreferences(newCameraPrefs: PreferencesState["camera"], prevCameraPrefs: PreferencesState["camera"]) {
+    if (!this.camera || !this.orthographicCamera || !this.controls) return;
+    
+    let needsProjectionUpdate = false;
+    
+    // Update perspective camera properties
+    if (newCameraPrefs.perspectiveFOV !== prevCameraPrefs.perspectiveFOV) {
+      this.camera.fov = newCameraPrefs.perspectiveFOV;
+      needsProjectionUpdate = true;
+    }
+    
+    // Update clipping planes for both cameras
+    if (newCameraPrefs.clippingNear !== prevCameraPrefs.clippingNear || 
+        newCameraPrefs.clippingFar !== prevCameraPrefs.clippingFar) {
+      this.camera.near = newCameraPrefs.clippingNear;
+      this.camera.far = newCameraPrefs.clippingFar;
+      this.orthographicCamera.near = newCameraPrefs.clippingNear;
+      this.orthographicCamera.far = newCameraPrefs.clippingFar;
+      needsProjectionUpdate = true;
+    }
+    
+    // Update orthographic scale
+    if (newCameraPrefs.orthoScale !== prevCameraPrefs.orthoScale) {
+      const canvas = this.renderer.domElement;
+      const aspect = canvas.width / canvas.height;
+      const frustumSize = newCameraPrefs.orthoScale;
+      
+      this.orthographicCamera.left = (-frustumSize * aspect) / 2;
+      this.orthographicCamera.right = (frustumSize * aspect) / 2;
+      this.orthographicCamera.top = frustumSize / 2;
+      this.orthographicCamera.bottom = -frustumSize / 2;
+      needsProjectionUpdate = true;
+    }
+    
+    // Update projection matrices if needed
+    if (needsProjectionUpdate) {
+      this.camera.updateProjectionMatrix();
+      this.orthographicCamera.updateProjectionMatrix();
+    }
+    
+    // Update camera type if changed
+    if (newCameraPrefs.defaultType !== prevCameraPrefs.defaultType) {
+      const shouldBeOrthographic = newCameraPrefs.defaultType === 'orthographic';
+      if (this.isOrthographic !== shouldBeOrthographic) {
+        this.setCameraMode(shouldBeOrthographic);
+      }
+    }
+    
+    // Update orbit controls
+    if (JSON.stringify(newCameraPrefs.orbitControls) !== JSON.stringify(prevCameraPrefs.orbitControls)) {
+      this.updateOrbitControlsFromPreferences();
+    }
+  }
+  
+  private updateRendererFromPreferences(newRendererPrefs: PreferencesState["renderer"], prevRendererPrefs: PreferencesState["renderer"]) {
+    if (!this.renderer) return;
+    
+    // Handle pixel ratio changes (can be updated without renderer recreation)
+    if (newRendererPrefs.pixelRatioCap !== prevRendererPrefs.pixelRatioCap) {
+      const effectivePixelRatio = Math.min(window.devicePixelRatio, newRendererPrefs.pixelRatioCap);
+      this.renderer.setPixelRatio(effectivePixelRatio);
+    }
+    
+    // Handle background changes
+    if (JSON.stringify(newRendererPrefs.background) !== JSON.stringify(prevRendererPrefs.background)) {
+      this.updateSceneBackground();
+    }
+    
+    // Handle antialiasing changes (requires renderer recreation)
+    if (newRendererPrefs.antialiasing !== prevRendererPrefs.antialiasing) {
+      console.warn('Antialiasing changes require application restart to take effect.');
+      // TODO: Implement renderer recreation if needed in the future
+    }
+    
+    // Handle post-processing changes
+    if (newRendererPrefs.postProcessing.enabled !== prevRendererPrefs.postProcessing.enabled ||
+        JSON.stringify(newRendererPrefs.postProcessing.passes) !== JSON.stringify(prevRendererPrefs.postProcessing.passes) ||
+        newRendererPrefs.postProcessing.bloomStrength !== prevRendererPrefs.postProcessing.bloomStrength ||
+        newRendererPrefs.postProcessing.ssaoKernelRadius !== prevRendererPrefs.postProcessing.ssaoKernelRadius ||
+        newRendererPrefs.postProcessing.ssaoMinDistance !== prevRendererPrefs.postProcessing.ssaoMinDistance ||
+        newRendererPrefs.postProcessing.ssaoMaxDistance !== prevRendererPrefs.postProcessing.ssaoMaxDistance ||
+        newRendererPrefs.postProcessing.ssaoIntensity !== prevRendererPrefs.postProcessing.ssaoIntensity) {
+      this.updatePostProcessing();
+    }
+  }
+  
+  private updatePostProcessing() {
+    const { preferences } = useUIStore.getState();
+    const { postProcessing } = preferences.renderer;
+    
+    if (postProcessing.enabled && postProcessing.passes.length > 0) {
+      this.initializePostProcessing();
+    } else {
+      this.disposePostProcessing();
+    }
+  }
+  
+  private initializePostProcessing() {
+    if (!this.renderer || !this.scene) return;
+    
+    // Dispose existing composer
+    this.disposePostProcessing();
+    
+    const { preferences } = useUIStore.getState();
+    const { passes } = preferences.renderer.postProcessing;
+    
+    // Create composer
+    this.composer = new EffectComposer(this.renderer);
+    
+    // Add render pass (always needed) 
+    this.renderPass = new RenderPass(this.scene, this.getCurrentCamera());
+    this.composer.addPass(this.renderPass);
+    
+    // Add effect passes in correct order: SSAO → Bloom
+    
+    // Add SSAO pass (comes before bloom)
+    // Note: SSAO only works properly with perspective cameras
+    if (passes.includes('ssao') && !this.isOrthographic) {
+      try {
+        const { 
+          ssaoKernelRadius, 
+          ssaoMinDistance, 
+          ssaoMaxDistance, 
+          ssaoIntensity 
+        } = preferences.renderer.postProcessing;
+        
+        // Get actual renderer size instead of window size to avoid render target mismatch
+        const canvas = this.renderer.domElement;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        
+        console.log('Initializing SSAO pass:', { width, height, camera: this.getCurrentCamera().type });
+        this.ssaoPass = new SSAOPass(this.scene, this.getCurrentCamera(), width, height);
+      
+      // Apply user parameters with performance-safe clamping
+      this.ssaoPass.kernelRadius = Math.min(Math.max(ssaoKernelRadius, 1), 32);
+      this.ssaoPass.minDistance = Math.min(Math.max(ssaoMinDistance, 0.001), 0.02);
+      this.ssaoPass.maxDistance = Math.min(Math.max(ssaoMaxDistance, 0.05), 0.5);
+      
+      // Set output mode (SSAOPass supports different output modes)
+      this.ssaoPass.output = SSAOPass.OUTPUT.Default;
+      
+      // Handle intensity by modifying the SSAO material uniforms
+      if (this.ssaoPass.ssaoMaterial && this.ssaoPass.ssaoMaterial.uniforms) {
+        // Some SSAO passes have intensity uniforms we can modify
+        if (this.ssaoPass.ssaoMaterial.uniforms.intensity) {
+          this.ssaoPass.ssaoMaterial.uniforms.intensity.value = Math.min(Math.max(ssaoIntensity, 0.1), 2.0);
+        }
+        }
+        
+        this.composer.addPass(this.ssaoPass);
+        console.log('SSAO pass initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize SSAO pass:', error);
+        this.ssaoPass = null; // Ensure we don't have a broken reference
+      }
+    }
+    
+    // Add bloom pass (comes after SSAO)
+    if (passes.includes('bloom')) {
+      const { bloomStrength } = preferences.renderer.postProcessing;
+      // Use same canvas size as SSAO for consistency
+      const canvas = this.renderer.domElement;
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      this.bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(width, height),
+        bloomStrength, // strength - now using user preference
+        0.4, // radius  
+        0.4 // threshold - lowered from 0.85 for better visibility on standard materials
+      );
+      this.composer.addPass(this.bloomPass);
+    }
+    
+    // Determine which pass should render to screen (the last one)
+    // Note: SSAO is only available in perspective mode
+    const hasSSAO = passes.includes('ssao') && !this.isOrthographic;
+    const hasBloom = passes.includes('bloom');
+    
+    if (hasBloom) {
+      this.bloomPass!.renderToScreen = true;
+    } else if (hasSSAO && this.ssaoPass) {
+      this.ssaoPass.renderToScreen = true;
+    }
+    
+    // Note: Tone mapping removed as requested - it's handled by the Materials tab
+    
+    // Update composer size - use same dimensions as passes
+    const canvas = this.renderer.domElement;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    this.composer.setSize(width, height);
+  }
+  
+  private disposePostProcessing() {
+    if (this.composer) {
+      this.composer.dispose();
+      this.composer = null;
+    }
+    if (this.renderPass) {
+      this.renderPass = null;
+    }
+    if (this.bloomPass) {
+      this.bloomPass = null;
+    }
+    if (this.ssaoPass) {
+      this.ssaoPass = null;
     }
   }
   private updateGridColors() {
@@ -226,25 +622,114 @@ export class SceneManager {
   private showGridPlane(plane: "xy" | "xz" | "yz") {
     if (this.currentGridPlane === plane) return;
     this.currentGridPlane = plane;
-    const { showGridInRenderView } = useUIStore.getState();
-    if (this.gridHelper) this.gridHelper.visible = false;
-    if (this.xyGrid) this.xyGrid.visible = false;
-    if (this.xzGrid) this.xzGrid.visible = false;
-    if (this.yzGrid) this.yzGrid.visible = false;
-    if (showGridInRenderView) {
+    const { showGridInRenderView, preferences } = useUIStore.getState();
+    
+    // Hide all grid planes (both old and new system)
+    this.hideAllGrids();
+    
+    // Show the selected plane if grid is enabled
+    if (showGridInRenderView && preferences.guides.grid.enabled) {
       switch (plane) {
         case "xy":
-          if (this.xyGrid) this.xyGrid.visible = true;
+          if (this.xyMinorGrid) this.xyMinorGrid.visible = true;
+          if (this.xyMajorGrid) this.xyMajorGrid.visible = true;
           break;
         case "xz":
-          if (this.xzGrid) this.xzGrid.visible = true;
+          if (this.xzMinorGrid) this.xzMinorGrid.visible = true;
+          if (this.xzMajorGrid) this.xzMajorGrid.visible = true;
           break;
         case "yz":
-          if (this.yzGrid) this.yzGrid.visible = true;
+          if (this.yzMinorGrid) this.yzMinorGrid.visible = true;
+          if (this.yzMajorGrid) this.yzMajorGrid.visible = true;
           break;
       }
     }
   }
+  
+  private hideAllGrids() {
+    // Hide old grid system
+    if (this.gridHelper) this.gridHelper.visible = false;
+    if (this.xyGrid) this.xyGrid.visible = false;
+    if (this.xzGrid) this.xzGrid.visible = false;
+    if (this.yzGrid) this.yzGrid.visible = false;
+    
+    // Hide new two-level grid system
+    if (this.xyMinorGrid) this.xyMinorGrid.visible = false;
+    if (this.xyMajorGrid) this.xyMajorGrid.visible = false;
+    if (this.xzMinorGrid) this.xzMinorGrid.visible = false;
+    if (this.xzMajorGrid) this.xzMajorGrid.visible = false;
+    if (this.yzMinorGrid) this.yzMinorGrid.visible = false;
+    if (this.yzMajorGrid) this.yzMajorGrid.visible = false;
+  }
+  
+  private recreateGridsFromPreferences() {
+    // Dispose existing grids
+    this.disposeGrids();
+    
+    // Create new grids with updated preferences
+    this.createTwoLevelGrids();
+    
+    // Update visibility
+    const { showGridInRenderView } = useUIStore.getState();
+    this.updateGridVisibility(showGridInRenderView);
+  }
+  
+  private disposeGrids() {
+    // Dispose old grid system
+    if (this.gridHelper) {
+      this.scene.remove(this.gridHelper);
+      this.gridHelper.dispose();
+      this.gridHelper = null;
+    }
+    if (this.xyGrid) {
+      this.scene.remove(this.xyGrid);
+      this.xyGrid.dispose();
+      this.xyGrid = null;
+    }
+    if (this.xzGrid) {
+      this.scene.remove(this.xzGrid);
+      this.xzGrid.dispose();
+      this.xzGrid = null;
+    }
+    if (this.yzGrid) {
+      this.scene.remove(this.yzGrid);
+      this.yzGrid.dispose();
+      this.yzGrid = null;
+    }
+    
+    // Dispose new two-level grid system
+    if (this.xyMinorGrid) {
+      this.scene.remove(this.xyMinorGrid);
+      this.xyMinorGrid.dispose();
+      this.xyMinorGrid = null;
+    }
+    if (this.xyMajorGrid) {
+      this.scene.remove(this.xyMajorGrid);
+      this.xyMajorGrid.dispose();
+      this.xyMajorGrid = null;
+    }
+    if (this.xzMinorGrid) {
+      this.scene.remove(this.xzMinorGrid);
+      this.xzMinorGrid.dispose();
+      this.xzMinorGrid = null;
+    }
+    if (this.xzMajorGrid) {
+      this.scene.remove(this.xzMajorGrid);
+      this.xzMajorGrid.dispose();
+      this.xzMajorGrid = null;
+    }
+    if (this.yzMinorGrid) {
+      this.scene.remove(this.yzMinorGrid);
+      this.yzMinorGrid.dispose();
+      this.yzMinorGrid = null;
+    }
+    if (this.yzMajorGrid) {
+      this.scene.remove(this.yzMajorGrid);
+      this.yzMajorGrid.dispose();
+      this.yzMajorGrid = null;
+    }
+  }
+  
   private getGridPlaneForView(
     view: "top" | "front" | "left" | "right" | "bottom" | "perspective"
   ): "xy" | "xz" | "yz" {
@@ -283,36 +768,139 @@ export class SceneManager {
       if (state.xRay !== prevState?.xRay) this.updateXRayMode(state.xRay);
       if (state.showAxisGizmo !== prevState?.showAxisGizmo)
         this.updateAxisGizmoVisibility(state.showAxisGizmo);
+      
+      // Grid preferences changes
+      if (prevState && (
+        state.preferences.guides.grid.enabled !== prevState.preferences.guides.grid.enabled ||
+        state.preferences.guides.grid.majorSpacing !== prevState.preferences.guides.grid.majorSpacing ||
+        state.preferences.guides.grid.minorSubdivisions !== prevState.preferences.guides.grid.minorSubdivisions ||
+        state.preferences.guides.grid.majorGridLines !== prevState.preferences.guides.grid.majorGridLines
+      )) {
+        this.recreateGridsFromPreferences();
+      }
+      
+      // Axis gizmo preferences changes
+      if (prevState && (
+        state.preferences.guides.axisGizmo.enabled !== prevState.preferences.guides.axisGizmo.enabled ||
+        state.preferences.guides.axisGizmo.size !== prevState.preferences.guides.axisGizmo.size
+      )) {
+        this.createAxisGizmo();
+      }
+      
+      // Ground plane preferences changes
+      if (prevState && (
+        state.preferences.guides.groundPlane.enabled !== prevState.preferences.guides.groundPlane.enabled ||
+        state.preferences.guides.groundPlane.shadowsEnabled !== prevState.preferences.guides.groundPlane.shadowsEnabled ||
+        state.preferences.guides.groundPlane.elevation !== prevState.preferences.guides.groundPlane.elevation
+      )) {
+        this.createGroundPlane();
+      }
+      
+      // Camera preferences changes
+      if (prevState && state.preferences.camera !== prevState.preferences.camera) {
+        this.updateCameraFromPreferences(state.preferences.camera, prevState.preferences.camera);
+      }
+      
+      // Renderer preferences changes
+      if (prevState && state.preferences.renderer !== prevState.preferences.renderer) {
+        this.updateRendererFromPreferences(state.preferences.renderer, prevState.preferences.renderer);
+      }
     });
   }
   private updateGridVisibility(visible: boolean) {
-    if (this.gridHelper) {
-      this.gridHelper.visible = false;
-    }
-    if (visible) {
+    const { preferences } = useUIStore.getState();
+    const gridEnabled = preferences.guides.grid.enabled;
+    
+    // Hide all grids first
+    this.hideAllGrids();
+    
+    // Show current plane if both conditions are met
+    if (visible && gridEnabled) {
       switch (this.currentGridPlane) {
         case "xy":
-          if (this.xyGrid) this.xyGrid.visible = true;
+          if (this.xyMinorGrid) this.xyMinorGrid.visible = true;
+          if (this.xyMajorGrid) this.xyMajorGrid.visible = true;
           break;
         case "xz":
-          if (this.xzGrid) this.xzGrid.visible = true;
+          if (this.xzMinorGrid) this.xzMinorGrid.visible = true;
+          if (this.xzMajorGrid) this.xzMajorGrid.visible = true;
           break;
         case "yz":
-          if (this.yzGrid) this.yzGrid.visible = true;
+          if (this.yzMinorGrid) this.yzMinorGrid.visible = true;
+          if (this.yzMajorGrid) this.yzMajorGrid.visible = true;
           break;
       }
-    } else {
-      if (this.xyGrid) this.xyGrid.visible = false;
-      if (this.xzGrid) this.xzGrid.visible = false;
-      if (this.yzGrid) this.yzGrid.visible = false;
     }
   }
   private updateSceneBackground() {
     if (!this.scene) return;
     const storeState = useUIStore.getState();
-    const { isDarkTheme } = storeState;
-    const backgroundColor = isDarkTheme ? 0x191919 : 0xf5f5f5;
-    this.scene.background = new THREE.Color(backgroundColor);
+    const { isDarkTheme, preferences } = storeState;
+    const { renderer: rendererPrefs } = preferences;
+    
+    if (rendererPrefs.background.type === "gradient" && rendererPrefs.background.color2) {
+      // Create gradient background texture with higher resolution for better color accuracy
+      const canvas = document.createElement('canvas');
+      canvas.width = 16; // Increased for better quality
+      canvas.height = 512; // Increased for smoother gradients
+      const ctx = canvas.getContext('2d');
+      
+      if (ctx) {
+        // Use colors directly from preferences without theme fallback for gradients
+        const color1 = rendererPrefs.background.color;
+        const color2 = rendererPrefs.background.color2;
+        
+        // Debug: Verify colors
+        console.log(`Creating gradient with colors: ${color1} (top) → ${color2} (bottom)`);
+        
+        // Create the gradient with more explicit settings
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, color1); // Top color (sky)
+        gradient.addColorStop(1, color2); // Bottom color (ground)
+        
+        // Clear canvas first to ensure clean gradient
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Apply gradient
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Debug: Test if canvas has the gradient by checking a few pixels
+        const imageData = ctx.getImageData(0, 0, 1, canvas.height);
+        const topPixel = `rgb(${imageData.data[0]}, ${imageData.data[1]}, ${imageData.data[2]})`;
+        const bottomIndex = (canvas.height - 1) * 4;
+        const bottomPixel = `rgb(${imageData.data[bottomIndex]}, ${imageData.data[bottomIndex + 1]}, ${imageData.data[bottomIndex + 2]})`;
+        console.log(`Canvas gradient verification - Top: ${topPixel}, Bottom: ${bottomPixel}`);
+        
+        // Create texture with proper settings for background
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.flipY = false;
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.magFilter = THREE.LinearFilter;
+        texture.minFilter = THREE.LinearFilter;
+        texture.generateMipmaps = false; // Disable mipmaps for background
+        texture.needsUpdate = true;
+        
+        this.scene.background = texture;
+        
+        console.log(`Applied gradient background: ${color1} → ${color2}`);
+      } else {
+        // Fallback to single color if canvas context fails
+        this.scene.background = new THREE.Color(rendererPrefs.background.color);
+      }
+    } else {
+      // Single color background with theme fallback
+      const themeFallbackColor = isDarkTheme ? "#191919" : "#f5f5f5";
+      const backgroundColorHex = rendererPrefs.background.color === "#191919" 
+        ? themeFallbackColor 
+        : rendererPrefs.background.color;
+      
+      this.scene.background = new THREE.Color(backgroundColorHex);
+      console.log(`Applied single color background: ${backgroundColorHex}`);
+    }
   }
   private updateWireframeMode(wireframe: boolean) {
     this.scene.traverse((object) => {
@@ -363,8 +951,14 @@ export class SceneManager {
   }
   private updateAxisGizmo() {
     if (!this.axisGizmo) return;
+    
+    // Get user's preferred gizmo size
+    const { preferences } = useUIStore.getState();
+    const userSize = this.getGizmoSize(preferences.guides.axisGizmo.size);
+    
     const camera = this.getCurrentCamera();
     if (this.isOrthographic) {
+      // For orthographic view, keep the original full-screen axis behavior
       const orthoCamera = camera as THREE.OrthographicCamera;
       const left = orthoCamera.left / orthoCamera.zoom;
       const right = orthoCamera.right / orthoCamera.zoom;
@@ -373,6 +967,7 @@ export class SceneManager {
       const maxExtentX = Math.max(Math.abs(left), Math.abs(right));
       const maxExtentY = Math.max(Math.abs(top), Math.abs(bottom));
       const maxExtentZ = maxExtentX;
+      
       const children = this.axisGizmo.children as THREE.Line[];
       if (children.length >= 3) {
         const xGeometry = new THREE.BufferGeometry().setFromPoints([
@@ -395,7 +990,8 @@ export class SceneManager {
         children[2].geometry = zGeometry;
       }
     } else {
-      const axisLength = 1.5;
+      // For perspective camera, use the user's preferred size directly
+      const axisLength = userSize;
       const children = this.axisGizmo.children as THREE.Line[];
       if (children.length >= 3) {
         const xGeometry = new THREE.BufferGeometry().setFromPoints([
@@ -443,6 +1039,24 @@ export class SceneManager {
     this.isOrthographic = isOrthographic;
     this.updateCameraControls();
     this.updateAxisGizmo();
+    
+    // Update post-processing camera if composer exists
+    if (this.renderPass) {
+      this.renderPass.camera = this.getCurrentCamera();
+    }
+    
+    // Update SSAO camera reference if it exists
+    if (this.ssaoPass) {
+      this.ssaoPass.camera = this.getCurrentCamera();
+    }
+    
+    // Reinitialize post-processing since SSAO availability changed
+    // (SSAO only works in perspective mode)
+    const { preferences } = useUIStore.getState();
+    if (preferences.renderer.postProcessing.enabled && preferences.renderer.postProcessing.passes.includes('ssao')) {
+      this.updatePostProcessing();
+    }
+    
     if (!isOrthographic) {
       this.showGridPlane("xz");
     }
@@ -496,7 +1110,14 @@ export class SceneManager {
         object !== this.xyGrid &&
         object !== this.xzGrid &&
         object !== this.yzGrid &&
+        object !== this.xyMinorGrid &&
+        object !== this.xyMajorGrid &&
+        object !== this.xzMinorGrid &&
+        object !== this.xzMajorGrid &&
+        object !== this.yzMinorGrid &&
+        object !== this.yzMajorGrid &&
         object !== this.axisGizmo &&
+        object !== this.groundPlane &&
         object.type !== "Light"
       )
         visibleObjects.push(object);
@@ -511,12 +1132,15 @@ export class SceneManager {
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
     const camera = this.getCurrentCamera();
+    
+    // Use consistent padding for fit view operations
+    const paddingMultiplier = 1.2;
+    
     if (this.isOrthographic) {
       const orthoCamera = camera as THREE.OrthographicCamera;
-      const padding = 1.2;
       const newZoom = Math.min(
-        Math.abs(orthoCamera.right - orthoCamera.left) / (size.x * padding),
-        Math.abs(orthoCamera.top - orthoCamera.bottom) / (size.y * padding)
+        Math.abs(orthoCamera.right - orthoCamera.left) / (size.x * paddingMultiplier),
+        Math.abs(orthoCamera.top - orthoCamera.bottom) / (size.y * paddingMultiplier)
       );
       orthoCamera.zoom = newZoom;
       orthoCamera.updateProjectionMatrix();
@@ -526,11 +1150,12 @@ export class SceneManager {
       const perspCamera = camera as THREE.PerspectiveCamera;
       const distance = maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(perspCamera.fov) / 2));
       const direction = camera.position.clone().sub(center).normalize();
-      camera.position.copy(center).add(direction.multiplyScalar(distance * 1.5));
+      camera.position.copy(center).add(direction.multiplyScalar(distance * paddingMultiplier));
     }
     this.controls.target.copy(center);
     this.controls.update();
   }
+  
   private subscribeToStore() {
     this.storeUnsubscribe = useGraphStore.subscribe(() => {
       this.updateSceneFromRenderableObjects();
@@ -544,6 +1169,7 @@ export class SceneManager {
         continue;
       }
       if (runtime.isDirty) {
+        // Node is dirty, handle updates if needed
       }
       if (runtime.type.includes("Light")) {
         const lightVisible = runtime.params?.rendering?.visible !== false;
@@ -561,7 +1187,9 @@ export class SceneManager {
             try {
               const clonedLight = lightObject.clone();
               renderableObjects.push(clonedLight);
-            } catch (error) {}
+            } catch (error) {
+              // Ignore cloning errors for light objects
+            }
           }
         }
         continue;
@@ -585,6 +1213,7 @@ export class SceneManager {
           continue;
         }
         if (outputNodeRuntime.isDirty) {
+          // Output node is dirty, handle updates if needed
         }
         const outputNodeVisible = outputNodeRuntime.params?.rendering?.visible === true;
         if (!outputNodeVisible) continue;
@@ -682,15 +1311,43 @@ export class SceneManager {
         this.scene.add(object3D);
         this.nodeObjects.set(objectId, object3D);
       } else {
+        // Object is not a valid 3D object, skip
       }
     });
   }
   private startRenderLoop() {
+    let isRendering = false; // Prevent render loop feedback
+    
     const render = () => {
+      if (isRendering) {
+        console.warn('Render loop feedback detected, skipping frame');
+        return;
+      }
+      
       this.animationId = requestAnimationFrame(render);
-      this.controls.update();
-      this.updateAxisGizmo();
-      this.renderer.render(this.scene, this.getCurrentCamera());
+      isRendering = true;
+      
+      try {
+        this.controls.update();
+        this.updateAxisGizmo();
+        
+        // Use post-processing composer if available, otherwise direct render
+        if (this.composer) {
+          this.composer.render();
+        } else {
+          this.renderer.render(this.scene, this.getCurrentCamera());
+        }
+      } catch (error) {
+        console.error('Render failed:', error);
+        // Fallback to direct rendering
+        try {
+          this.renderer.render(this.scene, this.getCurrentCamera());
+        } catch (fallbackError) {
+          console.error('Fallback render also failed:', fallbackError);
+        }
+      } finally {
+        isRendering = false;
+      }
     };
     render();
   }
@@ -709,23 +1366,60 @@ export class SceneManager {
     this.orthographicCamera.bottom = -frustumSize / 2;
     this.orthographicCamera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
+    
+    // Update post-processing composer size if it exists
+    if (this.composer) {
+      this.composer.setSize(width, height);
+      
+      // Update SSAO pass size if it exists
+      if (this.ssaoPass) {
+        this.ssaoPass.setSize(width, height);
+      }
+      
+      // Update bloom pass size if it exists  
+      if (this.bloomPass) {
+        this.bloomPass.setSize(width, height);
+      }
+    }
+    
     this.updateAxisGizmo();
   }
-  public captureScreenshot(multiplier: number = 2): string {
+  public captureScreenshot(dimensions: { 
+    width: number; 
+    height: number; 
+    multiplier: number | null;
+    overlays: {
+      transparentBackground: boolean;
+      grid: boolean;
+      gizmos: boolean;
+    }
+  }): string {
     if (!this.renderer || !this.scene) {
       throw new Error("Renderer or scene not initialized");
     }
-    const canvas = this.renderer.domElement;
-    const originalWidth = canvas.width;
-    const originalHeight = canvas.height;
-    let targetWidth = originalWidth * multiplier;
-    let targetHeight = originalHeight * multiplier;
+    
+    let targetWidth = Math.floor(dimensions.width);
+    let targetHeight = Math.floor(dimensions.height);
+    
     const maxDimension = 4096;
     if (targetWidth > maxDimension || targetHeight > maxDimension) {
       const scale = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
       targetWidth = Math.floor(targetWidth * scale);
       targetHeight = Math.floor(targetHeight * scale);
     }
+    
+    // Store current overlay visibility states
+    const { showGridInRenderView } = useUIStore.getState();
+    const originalGizmoVisibility = this.axisGizmo?.visible || false;
+    
+    // Apply overlay preferences (hide if render option is false)
+    if (!dimensions.overlays.grid) {
+      this.updateGridVisibility(false);
+    }
+    if (!dimensions.overlays.gizmos && this.axisGizmo) {
+      this.axisGizmo.visible = false;
+    }
+    
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = targetWidth;
     tempCanvas.height = targetHeight;
@@ -733,20 +1427,35 @@ export class SceneManager {
       canvas: tempCanvas,
       antialias: true,
       preserveDrawingBuffer: true,
+      alpha: true, // Enable alpha channel for transparency support
     });
     tempRenderer.setSize(targetWidth, targetHeight);
     tempRenderer.setPixelRatio(1); // Use pixel ratio 1 for temp renderer
     tempRenderer.shadowMap.enabled = this.renderer.shadowMap.enabled;
     tempRenderer.shadowMap.type = this.renderer.shadowMap.type;
-    const clearColor = new THREE.Color();
-    this.renderer.getClearColor(clearColor);
-    tempRenderer.setClearColor(clearColor, this.renderer.getClearAlpha());
+    
+    // Handle background transparency
+    const originalBackground = this.scene.background;
+    
+    if (dimensions.overlays.transparentBackground) {
+      // Remove scene background to allow renderer clear color transparency
+      this.scene.background = null;
+      tempRenderer.setClearColor(new THREE.Color(0x000000), 0);
+    } else {
+      // Keep scene background for solid background - copy to temp renderer's scene
+      // No need to modify scene.background, it will be used as-is
+      const clearColor = new THREE.Color();
+      this.renderer.getClearColor(clearColor);
+      tempRenderer.setClearColor(clearColor, this.renderer.getClearAlpha());
+    }
+    
     const camera = this.getCurrentCamera();
     const originalAspect =
       camera instanceof THREE.PerspectiveCamera
         ? camera.aspect
         : (camera as THREE.OrthographicCamera).right / (camera as THREE.OrthographicCamera).top;
     const newAspect = targetWidth / targetHeight;
+    
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.aspect = newAspect;
       camera.updateProjectionMatrix();
@@ -758,8 +1467,14 @@ export class SceneManager {
       orthoCamera.right = currentWidth / 2;
       orthoCamera.updateProjectionMatrix();
     }
+    
     tempRenderer.render(this.scene, camera);
     const dataURL = tempCanvas.toDataURL("image/png");
+    
+    // Restore original scene background
+    this.scene.background = originalBackground;
+    
+    // Restore original camera aspect ratio
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.aspect = originalAspect;
       camera.updateProjectionMatrix();
@@ -771,6 +1486,13 @@ export class SceneManager {
       orthoCamera.right = currentWidth / 2;
       orthoCamera.updateProjectionMatrix();
     }
+    
+    // Restore original overlay visibility states
+    this.updateGridVisibility(showGridInRenderView);
+    if (this.axisGizmo) {
+      this.axisGizmo.visible = originalGizmoVisibility;
+    }
+    
     tempRenderer.dispose();
     return dataURL;
   }
@@ -784,6 +1506,9 @@ export class SceneManager {
       this.uiStoreUnsubscribe();
       this.uiStoreUnsubscribe = null;
     }
+    
+    // Dispose post-processing
+    this.disposePostProcessing();
     if (this.gridHelper) {
       this.scene.remove(this.gridHelper);
       this.gridHelper.dispose();
@@ -803,6 +1528,46 @@ export class SceneManager {
       this.scene.remove(this.yzGrid);
       this.yzGrid.dispose();
       this.yzGrid = null;
+    }
+    
+    // Dispose two-level grid system
+    if (this.xyMinorGrid) {
+      this.scene.remove(this.xyMinorGrid);
+      this.xyMinorGrid.dispose();
+      this.xyMinorGrid = null;
+    }
+    if (this.xyMajorGrid) {
+      this.scene.remove(this.xyMajorGrid);
+      this.xyMajorGrid.dispose();
+      this.xyMajorGrid = null;
+    }
+    if (this.xzMinorGrid) {
+      this.scene.remove(this.xzMinorGrid);
+      this.xzMinorGrid.dispose();
+      this.xzMinorGrid = null;
+    }
+    if (this.xzMajorGrid) {
+      this.scene.remove(this.xzMajorGrid);
+      this.xzMajorGrid.dispose();
+      this.xzMajorGrid = null;
+    }
+    if (this.yzMinorGrid) {
+      this.scene.remove(this.yzMinorGrid);
+      this.yzMinorGrid.dispose();
+      this.yzMinorGrid = null;
+    }
+    if (this.yzMajorGrid) {
+      this.scene.remove(this.yzMajorGrid);
+      this.yzMajorGrid.dispose();
+      this.yzMajorGrid = null;
+    }
+    if (this.groundPlane) {
+      this.scene.remove(this.groundPlane);
+      this.groundPlane.geometry.dispose();
+      if (this.groundPlane.material instanceof THREE.Material) {
+        this.groundPlane.material.dispose();
+      }
+      this.groundPlane = null;
     }
     if (this.xRayMaterial) {
       this.xRayMaterial.dispose();
@@ -827,6 +1592,7 @@ export class SceneManager {
       this.setCameraViewHandler as EventListener
     );
     window.removeEventListener("minimystx:toggleAxisGizmo", this.toggleAxisGizmoHandler);
+    
     this.controls.dispose();
     this.renderer.dispose();
     if (this.axisGizmo) {

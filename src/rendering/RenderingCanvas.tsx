@@ -5,8 +5,10 @@ import MaximizeToggleButton from "../components/MaximizeToggleButton";
 import ViewportControls from "../components/ViewportControls";
 import ScreenshotButton from "../components/ScreenshotButton";
 import { ScreenshotModal } from "../components/ScreenshotModal";
+import { useUIStore } from "../store/uiStore";
 export default function RenderingCanvas() {
   const { containerRef: keyboardContainerRef } = useKeyboardShortcuts({ context: "render" });
+  const screenshotPreferences = useUIStore((state) => state.preferences.screenshot);
   const resizeContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneManagerRef = useRef<SceneManager | null>(null);
@@ -29,10 +31,48 @@ export default function RenderingCanvas() {
     const seconds = String(now.getSeconds()).padStart(2, "0");
     return `minimystx-screenshot-${year}-${month}-${day}-${hours}-${minutes}-${seconds}.png`;
   }, []);
+
+  const calculateScreenshotDimensions = useCallback(() => {
+    if (!sceneManagerRef.current?.renderer) return { width: 1920, height: 1080, multiplier: 2 };
+    
+    const canvas = sceneManagerRef.current.renderer.domElement;
+    const baseWidth = canvas.clientWidth;  // CSS dimensions 
+    const baseHeight = canvas.clientHeight;
+    
+    const { preset, customWidth, customHeight } = screenshotPreferences.resolution;
+    
+    switch (preset) {
+      case "Viewport":
+        return { width: baseWidth, height: baseHeight, multiplier: 1 };
+      case "1.5x":
+        return { width: baseWidth * 1.5, height: baseHeight * 1.5, multiplier: 1.5 };
+      case "2x":
+        return { width: baseWidth * 2, height: baseHeight * 2, multiplier: 2 };
+      case "4x":
+        return { width: baseWidth * 4, height: baseHeight * 4, multiplier: 4 };
+      case "Custom":
+        return { 
+          width: customWidth || 1920, 
+          height: customHeight || 1080, 
+          multiplier: null // Custom uses exact dimensions
+        };
+      default:
+        return { width: baseWidth * 2, height: baseHeight * 2, multiplier: 2 };
+    }
+  }, [screenshotPreferences.resolution]);
   const handleScreenshot = useCallback(() => {
     if (!sceneManagerRef.current) return;
     try {
-      const imageUrl = sceneManagerRef.current.captureScreenshot(2); // 2x multiplier
+      const dimensions = calculateScreenshotDimensions();
+      const screenshotParams = {
+        ...dimensions,
+        overlays: {
+          transparentBackground: screenshotPreferences.overlays.transparentBackground,
+          grid: screenshotPreferences.overlays.grid,
+          gizmos: screenshotPreferences.overlays.gizmos,
+        }
+      };
+      const imageUrl = sceneManagerRef.current.captureScreenshot(screenshotParams);
       const filename = generateFilename();
       setScreenshotModal({
         isOpen: true,
@@ -40,7 +80,7 @@ export default function RenderingCanvas() {
         filename,
       });
     } catch (error) {}
-  }, [generateFilename]);
+  }, [generateFilename, calculateScreenshotDimensions, screenshotPreferences.overlays]);
   const handleCloseModal = useCallback(() => {
     setScreenshotModal({
       isOpen: false,

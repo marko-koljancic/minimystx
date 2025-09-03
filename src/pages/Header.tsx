@@ -4,6 +4,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { useUIStore, useCurrentContext } from "../store";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { PromptModal } from "../components/PromptModal";
+import { PreferencesModal } from "../components/Preferences";
 import { sanitizeFilename, getDefaultFilename } from "../utils";
 import {
   exportToMxScene,
@@ -61,6 +62,8 @@ export default function Header() {
     percentage: number;
     message: string;
   } | null>(null);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  
   const handleSave = useCallback(() => {
     setShowSaveModal(true);
   }, []);
@@ -99,6 +102,15 @@ export default function Header() {
   const handleSaveCancel = useCallback(() => {
     setShowSaveModal(false);
   }, []);
+
+  const handleOpenPreferences = useCallback(() => {
+    setShowPreferencesModal(true);
+  }, []);
+
+  const handleClosePreferences = useCallback(() => {
+    setShowPreferencesModal(false);
+  }, []);
+
   const handleNewScene = useCallback(async () => {
     setIsCreatingNew(true);
     try {
@@ -234,6 +246,15 @@ export default function Header() {
       testId: "file-open",
     },
   ];
+
+  const editDropdownItems = [
+    {
+      label: "Preferences...",
+      onClick: handleOpenPreferences,
+      testId: "edit-preferences",
+    },
+  ];
+
   const viewDropdownItems = useMemo(
     () => [
       {
@@ -377,7 +398,7 @@ export default function Header() {
     <header className={styles.header}>
       <div className={styles.menuBar}>
         <MenuItem title="File" dropdownItems={fileDropdownItems} />
-        <MenuItem title="Edit" />
+        <MenuItem title="Edit" dropdownItems={editDropdownItems} />
         <MenuItem title="Components" dropdownItems={componentsDropdownItems} />
         <MenuItem title="View" dropdownItems={viewDropdownItems} />
         <MenuItem title="Help" dropdownItems={helpDropdownItems} />
@@ -403,6 +424,9 @@ export default function Header() {
           onSave={handleSaveConfirm}
           onCancel={handleSaveCancel}
         />
+      )}
+      {showPreferencesModal && (
+        <PreferencesModal onClose={handleClosePreferences} />
       )}
     </header>
   );

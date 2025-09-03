@@ -16,25 +16,26 @@ export const FloatInput: React.FC<FloatInputProps> = ({
   onChange,
   disabled = false,
 }) => {
-  const [inputValue, setInputValue] = useState(value.toString());
+  const [inputValue, setInputValue] = useState((value ?? metadata.default ?? 0).toString());
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [hasFocus, setHasFocus] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const lastValidValue = useRef(value);
-  const precisionDrag = useMiddleMousePrecisionDrag(value, onChange, {
+  const lastValidValue = useRef(value ?? metadata.default ?? 0);
+  const precisionDrag = useMiddleMousePrecisionDrag(value ?? metadata.default ?? 0, onChange, {
     min: metadata.min,
     max: metadata.max,
     sensitivity: 0.5,
   });
   useEffect(() => {
     if (!hasFocus && !precisionDrag.state.isDragging) {
-      setInputValue(value.toString());
-      lastValidValue.current = value;
+      const safeValue = value ?? metadata.default ?? 0;
+      setInputValue(safeValue.toString());
+      lastValidValue.current = safeValue;
       setHasError(false);
       setErrorMessage("");
     }
-  }, [value, hasFocus, precisionDrag.state.isDragging]);
+  }, [value, hasFocus, precisionDrag.state.isDragging, metadata.default]);
   const commitValue = useCallback(
     (textValue: string) => {
       const numValue = parseFloat(textValue);
