@@ -95,13 +95,7 @@ export class SubflowManager {
     if (!subflow) return;
     subflow.scheduler.onInputChange(nodeId, inputKey, value);
   }
-  addSubflowConnection(
-    geoNodeId: string,
-    sourceId: string,
-    targetId: string,
-    _sourceHandle?: string,
-    _targetHandle?: string
-  ): boolean {
+  addSubflowConnection(geoNodeId: string, sourceId: string, targetId: string): boolean {
     const subflow = this.subflows.get(geoNodeId);
     if (!subflow) return false;
     const connected = subflow.internalGraph.connect(sourceId, targetId);
@@ -111,7 +105,9 @@ export class SubflowManager {
     subflow.scheduler.onConnectionChange(sourceId, targetId, true);
     try {
       const predecessors = subflow.internalGraph.getAllPredecessors(targetId);
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error computing predecessors after adding connection:", error);
+    }
     return true;
   }
   removeSubflowConnection(geoNodeId: string, sourceId: string, targetId: string): void {

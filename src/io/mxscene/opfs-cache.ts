@@ -136,10 +136,13 @@ export class OpfsAssetCache implements AssetCache {
       if (this.assetsDir) {
         try {
           await this.assetsDir.removeEntry(testHash);
-        } catch {}
+        } catch {
+          console.error("Error removing test entry:", error);
+        }
       }
       return retrieved !== null && new Uint8Array(retrieved).every((val, i) => val === testData[i]);
     } catch (error) {
+      console.error("Error checking asset cache health:", error);
       return false;
     }
   }
@@ -151,7 +154,9 @@ export class OpfsAssetCache implements AssetCache {
         for await (const [name] of this.assetsDir as any) {
           assets.push(name);
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error("Error listing assets:", error);
+      }
     }
     const allAssets = new Set([...assets, ...this.memoryCache.keys()]);
     return Array.from(allAssets);

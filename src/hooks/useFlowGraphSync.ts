@@ -68,7 +68,7 @@ export const useFlowGraphSync = () => {
             break;
           case "remove":
             if ("id" in change && currentEdges) {
-              const edgeToRemove = currentEdges.find(edge => edge.id === change.id);
+              const edgeToRemove = currentEdges.find((edge) => edge.id === change.id);
               if (edgeToRemove) {
                 const result = removeEdge(
                   edgeToRemove.source,
@@ -80,13 +80,17 @@ export const useFlowGraphSync = () => {
                 results.push({
                   success: result.ok,
                   error: result.ok ? undefined : result.error,
-                  edgeId: change.id
+                  edgeId: change.id,
                 });
               } else {
                 results.push({ success: false, error: "Edge data not found", edgeId: change.id });
               }
             } else {
-              results.push({ success: false, error: "No current edges provided", edgeId: (change as any).id });
+              results.push({
+                success: false,
+                error: "No current edges provided",
+                edgeId: (change as any).id,
+              });
             }
             break;
           case "select":

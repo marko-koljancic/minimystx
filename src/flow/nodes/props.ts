@@ -33,10 +33,8 @@ export interface LightProps extends BaseLightProps {
   distance: number;
   decay: number;
 }
-export interface AmbientLightProps extends Omit<BaseLightProps, "castShadow"> {
-}
-export interface DirectionalLightProps extends BaseLightProps {
-}
+export interface AmbientLightProps extends Omit<BaseLightProps, "castShadow"> {}
+export interface DirectionalLightProps extends BaseLightProps {}
 export interface SpotLightProps extends BaseLightProps {
   distance: number;
   angle: number;
@@ -46,8 +44,7 @@ export interface SpotLightProps extends BaseLightProps {
 export interface DirectionalLightRenderingProps extends BaseLightRenderingProps {
   helperSize: number;
 }
-export interface SpotLightRenderingProps extends BaseLightRenderingProps {
-}
+export interface SpotLightRenderingProps extends BaseLightRenderingProps {}
 export interface HemisphereLightProps extends Omit<BaseLightProps, "color" | "castShadow"> {
   skyColor: string;
   groundColor: string;

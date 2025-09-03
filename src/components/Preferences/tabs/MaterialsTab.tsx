@@ -13,7 +13,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
       <div className={styles.tabDescription}>
         Configure default material properties and tone mapping settings for realistic rendering.
       </div>
-      
+
       <div className={styles.controlGroup}>
         <h4 className={styles.controlGroupTitle}>Default Material</h4>
         <div className={styles.parameterGrid}>
@@ -35,7 +35,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
             </div>
           </div>
 
-{preferences.defaultMaterial === "meshStandard" && (
+          {preferences.defaultMaterial === "meshStandard" && (
             <>
               <div className={styles.parameterRow}>
                 <div className={styles.labelColumn}>
@@ -341,10 +341,18 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
             <strong>Tone Mapping Algorithms:</strong>
           </p>
           <ul className={styles.infoList}>
-            <li><strong>None:</strong> No tone mapping applied</li>
-            <li><strong>Linear:</strong> Simple linear tone mapping</li>
-            <li><strong>Reinhard:</strong> Classic tone mapping operator</li>
-            <li><strong>ACES Filmic:</strong> Film-like tone mapping used in cinema (recommended)</li>
+            <li>
+              <strong>None:</strong> No tone mapping applied
+            </li>
+            <li>
+              <strong>Linear:</strong> Simple linear tone mapping
+            </li>
+            <li>
+              <strong>Reinhard:</strong> Classic tone mapping operator
+            </li>
+            <li>
+              <strong>ACES Filmic:</strong> Film-like tone mapping used in cinema (recommended)
+            </li>
           </ul>
         </div>
       </div>
@@ -372,8 +380,8 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            sRGB encoding ensures proper color space handling for web display. 
-            Disable only for specialized workflows requiring linear color space.
+            sRGB encoding ensures proper color space handling for web display. Disable only for
+            specialized workflows requiring linear color space.
           </p>
         </div>
       </div>

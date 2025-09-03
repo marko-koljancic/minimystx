@@ -140,9 +140,13 @@ async function storeAssetsInCache(
           continue;
         }
         await assetCache.put(assetEntry.id, assetData.buffer);
-      } catch (error) {}
+      } catch (error) {
+        console.error("Error storing asset in cache:", error);
+      }
     }
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error storing assets in cache:", error);
+  }
 }
 export async function applyImportedScene(result: ImportResult): Promise<void> {
   const { scene } = result;
@@ -182,6 +186,7 @@ export async function applyImportedScene(result: ImportResult): Promise<void> {
     if (!syncResults.ui.success) failedSyncs.push("ui");
     if (!syncResults.renderer.success) failedSyncs.push("renderer");
     if (failedSyncs.length > 0) {
+      // To Do fix this
     }
     if (scene.meta.name && scene.meta.name !== "Untitled Project") {
       document.title = `${scene.meta.name} - Minimystx`;
@@ -268,7 +273,9 @@ export async function createAssetReferencesFromImport(
         importSettings: sceneAsset?.importSettings,
       };
       assetReferences.push(assetReference);
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error creating asset reference:", error);
+    }
   }
   return assetReferences;
 }
@@ -316,8 +323,11 @@ async function restoreAssetsFromReferences(
             };
           }
         } else if (objectParams?.file) {
+          // To Do fix this
         } else if (objectParams?.assetHash) {
+          // To Do fix this
         } else {
+          // To Do fix this
         }
         return { ...node, params: updatedParams };
       }
@@ -359,8 +369,11 @@ async function restoreAssetsFromReferences(
               };
             }
           } else if (objectParams?.file) {
+            // To Do fix this
           } else if (objectParams?.assetHash) {
+            // To Do fix this
           } else {
+            // To Do fix this
           }
           return { ...node, params: updatedParams };
         }
@@ -462,10 +475,14 @@ async function ensureAssetsReady(result: ImportResult): Promise<void> {
     }
   }
   if (missingAssets.length > 0) {
+    // To Do fix this
   }
   try {
     const isHealthy = await assetCache.isHealthy();
     if (!isHealthy) {
+      // To Do fix this
     }
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error checking asset cache health:", error);
+  }
 }

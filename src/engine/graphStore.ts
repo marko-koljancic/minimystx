@@ -293,7 +293,9 @@ export const useGraphStore = create<GraphState>()(
                   state.rootNodeRuntime[node.id].output = result;
                   nodeState.output = result;
                 }
-              } catch { void 0; }
+              } catch {
+                void 0;
+              }
             }
             const renderTarget = state.rootRenderTarget;
             if (renderTarget) {
@@ -350,7 +352,9 @@ export const useGraphStore = create<GraphState>()(
                             new Object3DContainer(new Object3D());
                         }
                       }
-                    } catch { void 0; }
+                    } catch {
+                      void 0;
+                    }
                   }
                   const result = nodeDefinition.computeTyped(validatedParams, inputs, {
                     nodeId: node.id,
@@ -371,7 +375,9 @@ export const useGraphStore = create<GraphState>()(
                   }
                 } else {
                 }
-              } catch { void 0; }
+              } catch {
+                void 0;
+              }
             } else {
               if (!validatedParams.rendering) {
                 validatedParams.rendering = {};
@@ -498,7 +504,9 @@ export const useGraphStore = create<GraphState>()(
                               new Object3DContainer(new Object3D());
                           }
                         }
-                      } catch { void 0; }
+                      } catch {
+                        void 0;
+                      }
                     }
                     const result = nodeDefinition.computeTyped(nodeState.params, inputs, {
                       nodeId,
@@ -516,7 +524,9 @@ export const useGraphStore = create<GraphState>()(
                       subflow.nodeRuntime[nodeId].output = result;
                     }
                   }
-                } catch { void 0; }
+                } catch {
+                  void 0;
+                }
               }
               state.subflowManager.onSubflowParameterChange(
                 context.geoNodeId,
@@ -531,7 +541,9 @@ export const useGraphStore = create<GraphState>()(
                   state.rootNodeRuntime[nodeId].output = result;
                   nodeState.output = result;
                 }
-              } catch { void 0; }
+              } catch {
+                void 0;
+              }
             }
           }
         });
@@ -591,7 +603,9 @@ export const useGraphStore = create<GraphState>()(
                                 new Object3DContainer(new Object3D());
                             }
                           }
-                        } catch { void 0; }
+                        } catch {
+                          void 0;
+                        }
                       }
                       const result = nodeDefinition.computeTyped(nodeState.params, inputs, {
                         nodeId: target,
@@ -609,7 +623,9 @@ export const useGraphStore = create<GraphState>()(
                         subflow.nodeRuntime[target].output = result;
                       }
                     }
-                  } catch { void 0; }
+                  } catch {
+                    void 0;
+                  }
                 }
               }
             });
@@ -661,7 +677,9 @@ export const useGraphStore = create<GraphState>()(
                       subflow.nodeRuntime[target].output = result;
                     }
                   }
-                } catch { void 0; }
+                } catch {
+                  void 0;
+                }
               }
             }
           });
@@ -892,7 +910,9 @@ export const useGraphStore = create<GraphState>()(
               }
             }
           }
-        } catch { void 0; }
+        } catch {
+          void 0;
+        }
       },
       computeNode: async (nodeId: string, _context: GraphContext) => {
         const store = useGraphStore.getState();
@@ -900,7 +920,9 @@ export const useGraphStore = create<GraphState>()(
           store.cache.invalidateNode(nodeId);
           store.markDirty(nodeId);
           store.recomputeFrom(nodeId);
-        } catch { void 0; }
+        } catch {
+          void 0;
+        }
       },
       getNodes: (context: GraphContext): NodeState[] => {
         const state = get();

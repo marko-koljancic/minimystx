@@ -62,7 +62,7 @@ export interface CameraData {
   isOrthographic?: boolean;
 }
 export interface RendererData {
-  background: string; // Color hex
+  background: string;
   exposure: number;
   wireframe?: boolean;
   xRay?: boolean;

@@ -32,8 +32,8 @@ export class RenderConeScheduler {
   private nodeOutputs = new Map<string, Record<string, BaseContainer>>();
   private nodeParams = new Map<string, Record<string, any>>();
   private nodeInputs = new Map<string, Record<string, BaseContainer>>();
-  private inputConnections = new Map<string, Map<string, string>>(); // nodeId -> inputName -> sourceNodeId
-  private outputConnections = new Map<string, Map<string, Set<string>>>(); // nodeId -> outputName -> Set<targetNodeIds>
+  private inputConnections = new Map<string, Map<string, string>>();
+  private outputConnections = new Map<string, Map<string, Set<string>>>();
   private dirtyNodes = new Set<string>();
   private computingNodes = new Set<string>();
   private abortControllers = new Map<string, AbortController>();
@@ -55,7 +55,7 @@ export class RenderConeScheduler {
   onParameterChange(nodeId: string, params: Record<string, any>): void {
     this.nodeParams.set(nodeId, { ...this.nodeParams.get(nodeId), ...params });
     if (!this.isInRenderCone(nodeId)) {
-      return; // Zero recomputation outside cone
+      return;
     }
     this.markDirtyInCone(nodeId);
     this.scheduleComputation();
@@ -228,11 +228,13 @@ export class RenderConeScheduler {
     try {
       const sortedDirtyNodes = this.graph.topologicalSort(dirtyInCone);
       for (const nodeId of sortedDirtyNodes) {
-        if (this.computingNodes.has(nodeId)) continue; // Skip if already computing
+        if (this.computingNodes.has(nodeId)) continue;
         await this.computeNode(nodeId);
       }
       this.emitEvent({ type: "cone-updated", nodeId: this.renderTarget });
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error processing computation:", error);
+    }
   }
   private async computeNode(nodeId: string): Promise<void> {
     if (!this.isInRenderCone(nodeId)) return;
@@ -281,7 +283,7 @@ export class RenderConeScheduler {
       this.emitEvent({
         type: "node-computed",
         nodeId,
-        output: result?.default, // Legacy compatibility
+        output: result?.default,
         outputs: result,
       });
     } catch (error) {

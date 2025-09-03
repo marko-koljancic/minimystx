@@ -13,7 +13,7 @@ export function CameraTab({ preferences, onChange }: CameraTabProps) {
       <div className={styles.tabDescription}>
         Configure default camera settings and projection parameters for the 3D viewport.
       </div>
-      
+
       <div className={styles.controlGroup}>
         <h4 className={styles.controlGroupTitle}>Camera Settings</h4>
         <div className={styles.parameterGrid}>
@@ -123,10 +123,14 @@ export function CameraTab({ preferences, onChange }: CameraTabProps) {
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            <span className={styles.badge} style={{ backgroundColor: "var(--warning-subtle)", color: "var(--warning-primary)" }}>
+            <span
+              className={styles.badge}
+              style={{ backgroundColor: "var(--warning-subtle)", color: "var(--warning-primary)" }}
+            >
               WARNING
-            </span>
-            {" "}Extreme clipping plane values can cause depth buffer precision issues or object disappearing.
+            </span>{" "}
+            Extreme clipping plane values can cause depth buffer precision issues or object
+            disappearing.
           </p>
         </div>
       </div>
@@ -149,9 +153,11 @@ export function CameraTab({ preferences, onChange }: CameraTabProps) {
                   default: 1.0,
                   displayName: "Rotation Speed",
                 }}
-                onChange={(value) => onChange({ 
-                  orbitControls: { ...preferences.orbitControls, rotateSpeed: value as number }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    orbitControls: { ...preferences.orbitControls, rotateSpeed: value as number },
+                  })
+                }
               />
             </div>
           </div>
@@ -171,9 +177,11 @@ export function CameraTab({ preferences, onChange }: CameraTabProps) {
                   default: 1.0,
                   displayName: "Pan Speed",
                 }}
-                onChange={(value) => onChange({ 
-                  orbitControls: { ...preferences.orbitControls, panSpeed: value as number }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    orbitControls: { ...preferences.orbitControls, panSpeed: value as number },
+                  })
+                }
               />
             </div>
           </div>
@@ -193,9 +201,11 @@ export function CameraTab({ preferences, onChange }: CameraTabProps) {
                   default: 1.0,
                   displayName: "Dolly (Zoom) Speed",
                 }}
-                onChange={(value) => onChange({ 
-                  orbitControls: { ...preferences.orbitControls, dollySpeed: value as number }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    orbitControls: { ...preferences.orbitControls, dollySpeed: value as number },
+                  })
+                }
               />
             </div>
           </div>
@@ -212,17 +222,19 @@ export function CameraTab({ preferences, onChange }: CameraTabProps) {
                   default: true,
                   displayName: "Enable Damping",
                 }}
-                onChange={(value) => onChange({ 
-                  orbitControls: { ...preferences.orbitControls, dampingEnabled: value as boolean }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    orbitControls: {
+                      ...preferences.orbitControls,
+                      dampingEnabled: value as boolean,
+                    },
+                  })
+                }
               />
             </div>
           </div>
-
-
         </div>
       </div>
-
     </div>
   );
 }

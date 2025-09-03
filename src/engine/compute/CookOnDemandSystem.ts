@@ -1,10 +1,10 @@
-import { RenderConeScheduler, type SchedulerEvent } from '../scheduler/RenderConeScheduler';
-import { ContentCache } from '../cache/ContentCache';
-import { GraphLibAdapter } from '../graph/GraphLibAdapter';
-import { BaseContainer } from '../containers/BaseContainer';
+import { RenderConeScheduler, type SchedulerEvent } from "../scheduler/RenderConeScheduler";
+import { ContentCache } from "../cache/ContentCache";
+import { GraphLibAdapter } from "../graph/GraphLibAdapter";
+import { BaseContainer } from "../containers/BaseContainer";
 export interface CookRequest {
   nodeId: string;
-  reason: 'parameter_change' | 'input_change' | 'connection_change' | 'render_target_change';
+  reason: "parameter_change" | "input_change" | "connection_change" | "render_target_change";
   details?: {
     parameterName?: string;
     inputName?: string;
@@ -27,7 +27,7 @@ export interface CookStats {
   cacheMisses: number;
   avgComputeTime: number;
   nodesCooked: number;
-  redundantCooks: number; // Cooks that were unnecessary
+  redundantCooks: number;
 }
 export class CookOnDemandSystem {
   private scheduler: RenderConeScheduler;
@@ -47,7 +47,7 @@ export class CookOnDemandSystem {
       cacheMisses: 0,
       avgComputeTime: 0,
       nodesCooked: 0,
-      redundantCooks: 0
+      redundantCooks: 0,
     };
     this.scheduler.addListener(this.handleSchedulerEvent.bind(this));
   }
@@ -60,16 +60,16 @@ export class CookOnDemandSystem {
     }
   }
   requestCookForParameterChange(
-    nodeId: string, 
-    parameterName: string, 
-    oldValue: unknown, 
+    nodeId: string,
+    parameterName: string,
+    oldValue: unknown,
     newValue: unknown
   ): void {
     if (this.isParameterChangeSignificant(nodeId, parameterName, oldValue, newValue)) {
       this.requestCook({
         nodeId,
-        reason: 'parameter_change',
-        details: { parameterName, oldValue, newValue }
+        reason: "parameter_change",
+        details: { parameterName, oldValue, newValue },
       });
     } else {
       this.stats.redundantCooks++;
@@ -79,37 +79,37 @@ export class CookOnDemandSystem {
     const oldConnection = this.graph.getInputSource(nodeId, inputName);
     this.requestCook({
       nodeId,
-      reason: 'input_change',
-      details: { 
-        inputName, 
-        oldValue: oldConnection, 
-        newValue: newValue.getContentHash() 
-      }
+      reason: "input_change",
+      details: {
+        inputName,
+        oldValue: oldConnection,
+        newValue: newValue.getContentHash(),
+      },
     });
   }
   requestCookForConnectionChange(_sourceId: string, targetId: string, added: boolean): void {
-    const affectedNodes = added 
+    const affectedNodes = added
       ? [targetId, ...this.graph.getDownstreamNodes(targetId)]
       : [targetId, ...this.graph.getDownstreamNodes(targetId)];
-    affectedNodes.forEach(nodeId => {
+    affectedNodes.forEach((nodeId) => {
       this.requestCook({
         nodeId,
-        reason: 'connection_change',
-        details: { 
-          oldValue: !added, 
-          newValue: added 
-        }
+        reason: "connection_change",
+        details: {
+          oldValue: !added,
+          newValue: added,
+        },
       });
     });
   }
   requestCookForRenderTargetChange(oldTargetId: string | null, newTargetId: string | null): void {
     if (newTargetId) {
       const newCone = this.graph.getRenderCone(newTargetId);
-      newCone.forEach(nodeId => {
+      newCone.forEach((nodeId) => {
         this.requestCook({
           nodeId,
-          reason: 'render_target_change',
-          details: { oldValue: oldTargetId, newValue: newTargetId }
+          reason: "render_target_change",
+          details: { oldValue: oldTargetId, newValue: newTargetId },
         });
       });
     }
@@ -121,10 +121,10 @@ export class CookOnDemandSystem {
     }
     const requests = Array.from(this.cookQueue.values());
     this.cookQueue.clear();
-    const nodeIds = requests.map(req => req.nodeId);
+    const nodeIds = requests.map((req) => req.nodeId);
     const sortedNodeIds = this.graph.topologicalSort(nodeIds);
     const sortedRequests = sortedNodeIds
-      .map(nodeId => requests.find(req => req.nodeId === nodeId))
+      .map((nodeId) => requests.find((req) => req.nodeId === nodeId))
       .filter(Boolean) as CookRequest[];
     for (const request of sortedRequests) {
       await this.processRequest(request);
@@ -151,7 +151,7 @@ export class CookOnDemandSystem {
           outputs: cacheResult.outputContainers,
           cacheHit: true,
           computeTime,
-          affectedNodes: []
+          affectedNodes: [],
         };
       }
       this.stats.cacheMisses++;
@@ -163,7 +163,7 @@ export class CookOnDemandSystem {
         success: true,
         cacheHit: false,
         computeTime,
-        affectedNodes: this.graph.getDownstreamNodes(request.nodeId)
+        affectedNodes: this.graph.getDownstreamNodes(request.nodeId),
       };
     } catch (error) {
       const computeTime = performance.now() - startTime;
@@ -174,7 +174,7 @@ export class CookOnDemandSystem {
         error: errorMessage,
         cacheHit: false,
         computeTime,
-        affectedNodes: []
+        affectedNodes: [],
       };
     }
   }
@@ -187,7 +187,7 @@ export class CookOnDemandSystem {
     if (oldValue === newValue) {
       return false;
     }
-    if (typeof oldValue === 'number' && typeof newValue === 'number') {
+    if (typeof oldValue === "number" && typeof newValue === "number") {
       const threshold = 0.0001;
       return Math.abs(newValue - oldValue) > threshold;
     }
@@ -208,7 +208,7 @@ export class CookOnDemandSystem {
     return inputs;
   }
   private handleSchedulerEvent(event: SchedulerEvent): void {
-    if (event.type === 'node-computed') {
+    if (event.type === "node-computed") {
       this.stats.nodesCooked++;
       if (event.outputs && !event.error) {
         const params = this.getNodeParameters(event.nodeId);
@@ -216,11 +216,10 @@ export class CookOnDemandSystem {
         this.cache.setCachedOutput(event.nodeId, params, inputs, event.output, event.outputs);
       }
     }
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
         listener(event);
-      } catch (error) {
-      }
+      } catch (error) {}
     });
   }
   private updateStats(cacheHit: boolean, computeTime: number): void {
@@ -228,7 +227,8 @@ export class CookOnDemandSystem {
       this.stats.cacheHits++;
     }
     const totalComputes = this.stats.cacheHits + this.stats.cacheMisses;
-    this.stats.avgComputeTime = (this.stats.avgComputeTime * (totalComputes - 1) + computeTime) / totalComputes;
+    this.stats.avgComputeTime =
+      (this.stats.avgComputeTime * (totalComputes - 1) + computeTime) / totalComputes;
   }
   addListener(listener: (event: SchedulerEvent) => void): void {
     this.listeners.add(listener);
@@ -246,7 +246,7 @@ export class CookOnDemandSystem {
       cacheMisses: 0,
       avgComputeTime: 0,
       nodesCooked: 0,
-      redundantCooks: 0
+      redundantCooks: 0,
     };
   }
   clearQueue(): void {
@@ -264,10 +264,10 @@ export class CookOnDemandSystem {
   } {
     return {
       cacheHitRate: this.getCacheHitRate(),
-      redundantCookRate: this.stats.totalRequests > 0 ? 
-        this.stats.redundantCooks / this.stats.totalRequests : 0,
+      redundantCookRate:
+        this.stats.totalRequests > 0 ? this.stats.redundantCooks / this.stats.totalRequests : 0,
       avgComputeTime: this.stats.avgComputeTime,
-      totalNodesCooked: this.stats.nodesCooked
+      totalNodesCooked: this.stats.nodesCooked,
     };
   }
 }

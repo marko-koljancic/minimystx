@@ -15,7 +15,7 @@ export interface NodeInput<T = any> {
   required: boolean;
   defaultValue?: T;
   description: string;
-  accepts?: ConnectionType[]; // Additional types this input can accept (for ANY type)
+  accepts?: ConnectionType[];
 }
 export interface NodeOutput {
   name: string;
@@ -42,15 +42,15 @@ export interface NodeIOSpec {
   outputs: NodeOutput[];
 }
 export const CONNECTION_COLORS: Record<ConnectionType, string> = {
-  [ConnectionType.GEOMETRY]: "#4CAF50", // Green
-  [ConnectionType.OBJECT3D]: "#2196F3", // Blue
-  [ConnectionType.NUMBER]: "#FF9800", // Orange
-  [ConnectionType.VECTOR3]: "#9C27B0", // Purple
-  [ConnectionType.VECTOR2]: "#673AB7", // Deep Purple
-  [ConnectionType.COLOR]: "#E91E63", // Pink
-  [ConnectionType.STRING]: "#607D8B", // Blue Grey
-  [ConnectionType.BOOLEAN]: "#795548", // Brown
-  [ConnectionType.ANY]: "#9E9E9E", // Grey
+  [ConnectionType.GEOMETRY]: "#4CAF50",
+  [ConnectionType.OBJECT3D]: "#2196F3",
+  [ConnectionType.NUMBER]: "#FF9800",
+  [ConnectionType.VECTOR3]: "#9C27B0",
+  [ConnectionType.VECTOR2]: "#673AB7",
+  [ConnectionType.COLOR]: "#E91E63",
+  [ConnectionType.STRING]: "#607D8B",
+  [ConnectionType.BOOLEAN]: "#795548",
+  [ConnectionType.ANY]: "#9E9E9E",
 };
 const TYPE_COMPATIBILITY: Record<ConnectionType, ConnectionType[]> = {
   [ConnectionType.GEOMETRY]: [ConnectionType.GEOMETRY, ConnectionType.ANY],
@@ -61,7 +61,7 @@ const TYPE_COMPATIBILITY: Record<ConnectionType, ConnectionType[]> = {
   [ConnectionType.COLOR]: [ConnectionType.COLOR, ConnectionType.VECTOR3, ConnectionType.ANY],
   [ConnectionType.STRING]: [ConnectionType.STRING, ConnectionType.ANY],
   [ConnectionType.BOOLEAN]: [ConnectionType.BOOLEAN, ConnectionType.ANY],
-  [ConnectionType.ANY]: Object.values(ConnectionType), // ANY accepts everything
+  [ConnectionType.ANY]: Object.values(ConnectionType),
 };
 export function validateConnection(
   sourceType: ConnectionType,

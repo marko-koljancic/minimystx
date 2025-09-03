@@ -43,6 +43,7 @@ export async function exportToMxScene(
     });
     const { valid: validAssets, invalid: invalidAssets } = await validateAssets(discoveredAssets);
     if (invalidAssets.length > 0) {
+      // To Do fix this
     }
     onProgress?.({
       phase: "collecting",
@@ -65,7 +66,9 @@ export async function exportToMxScene(
           await assetCache.put(asset.hash, asset.data);
         }
       }
-    } catch (cacheError) {}
+    } catch (cacheError) {
+      console.error("Error caching assets:", cacheError);
+    }
     return result;
   } catch (error) {
     const exportError = error instanceof Error ? error : new Error("Unknown export error");
@@ -262,7 +265,6 @@ async function replaceAssetsWithReferences(graphData: {
               file: null,
               assetHash,
             };
-          } else {
           }
         }
         return { ...node, params: updatedParams };
@@ -288,7 +290,6 @@ async function replaceAssetsWithReferences(graphData: {
                 file: null,
                 assetHash,
               };
-            } else {
             }
           }
           return { ...node, params: updatedParams };

@@ -6,12 +6,7 @@ interface ScreenshotModalProps {
   onClose: () => void;
   onDownload: () => void;
 }
-export function ScreenshotModal({
-  imageUrl,
-  filename,
-  onClose,
-  onDownload,
-}: ScreenshotModalProps) {
+export function ScreenshotModal({ imageUrl, filename, onClose, onDownload }: ScreenshotModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -29,7 +24,7 @@ export function ScreenshotModal({
     }
   };
   const handleDownload = useCallback(() => {
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = imageUrl;
     link.download = filename;
     document.body.appendChild(link);
@@ -42,11 +37,7 @@ export function ScreenshotModal({
       <div className={styles.modal}>
         <h3 className={styles.title}>Screenshot Result</h3>
         <div className={styles.imageContainer}>
-          <img 
-            src={imageUrl} 
-            alt="Screenshot preview" 
-            className={styles.preview}
-          />
+          <img src={imageUrl} alt="Screenshot preview" className={styles.preview} />
         </div>
         <div className={styles.buttons}>
           <button className={styles.closeButton} onClick={onClose}>

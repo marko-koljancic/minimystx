@@ -13,7 +13,7 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
       <div className={styles.tabDescription}>
         Configure rendering quality, performance, and visual settings for the 3D viewport.
       </div>
-      
+
       <div className={styles.controlGroup}>
         <h4 className={styles.controlGroupTitle}>Rendering Options</h4>
         <div className={styles.parameterGrid}>
@@ -54,7 +54,6 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
               />
             </div>
           </div>
-
         </div>
       </div>
 
@@ -73,12 +72,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                   default: false,
                   displayName: "Enable Post-Processing",
                 }}
-                onChange={(value) => onChange({ 
-                  postProcessing: {
-                    ...preferences.postProcessing,
-                    enabled: value as boolean
-                  }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    postProcessing: {
+                      ...preferences.postProcessing,
+                      enabled: value as boolean,
+                    },
+                  })
+                }
               />
             </div>
           </div>
@@ -99,14 +100,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                     }}
                     onChange={(value) => {
                       const currentPasses = preferences.postProcessing.passes;
-                      const newPasses = value 
-                        ? [...currentPasses.filter(p => p !== "bloom"), "bloom"]
-                        : currentPasses.filter(p => p !== "bloom");
-                      onChange({ 
+                      const newPasses = value
+                        ? [...currentPasses.filter((p) => p !== "bloom"), "bloom"]
+                        : currentPasses.filter((p) => p !== "bloom");
+                      onChange({
                         postProcessing: {
                           ...preferences.postProcessing,
-                          passes: newPasses
-                        }
+                          passes: newPasses,
+                        },
                       });
                     }}
                   />
@@ -129,12 +130,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                         default: 0.5,
                         displayName: "Bloom Strength",
                       }}
-                      onChange={(value) => onChange({ 
-                        postProcessing: {
-                          ...preferences.postProcessing,
-                          bloomStrength: value as number
-                        }
-                      })}
+                      onChange={(value) =>
+                        onChange({
+                          postProcessing: {
+                            ...preferences.postProcessing,
+                            bloomStrength: value as number,
+                          },
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -154,14 +157,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                     }}
                     onChange={(value) => {
                       const currentPasses = preferences.postProcessing.passes;
-                      const newPasses = value 
-                        ? [...currentPasses.filter(p => p !== "ssao"), "ssao"]
-                        : currentPasses.filter(p => p !== "ssao");
-                      onChange({ 
+                      const newPasses = value
+                        ? [...currentPasses.filter((p) => p !== "ssao"), "ssao"]
+                        : currentPasses.filter((p) => p !== "ssao");
+                      onChange({
                         postProcessing: {
                           ...preferences.postProcessing,
-                          passes: newPasses
-                        }
+                          passes: newPasses,
+                        },
                       });
                     }}
                   />
@@ -185,12 +188,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                           default: 16,
                           displayName: "SSAO Kernel Radius",
                         }}
-                        onChange={(value) => onChange({ 
-                          postProcessing: {
-                            ...preferences.postProcessing,
-                            ssaoKernelRadius: value as number
-                          }
-                        })}
+                        onChange={(value) =>
+                          onChange({
+                            postProcessing: {
+                              ...preferences.postProcessing,
+                              ssaoKernelRadius: value as number,
+                            },
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -210,12 +215,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                           default: 0.005,
                           displayName: "SSAO Min Distance",
                         }}
-                        onChange={(value) => onChange({ 
-                          postProcessing: {
-                            ...preferences.postProcessing,
-                            ssaoMinDistance: value as number
-                          }
-                        })}
+                        onChange={(value) =>
+                          onChange({
+                            postProcessing: {
+                              ...preferences.postProcessing,
+                              ssaoMinDistance: value as number,
+                            },
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -235,12 +242,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                           default: 0.1,
                           displayName: "SSAO Max Distance",
                         }}
-                        onChange={(value) => onChange({ 
-                          postProcessing: {
-                            ...preferences.postProcessing,
-                            ssaoMaxDistance: value as number
-                          }
-                        })}
+                        onChange={(value) =>
+                          onChange({
+                            postProcessing: {
+                              ...preferences.postProcessing,
+                              ssaoMaxDistance: value as number,
+                            },
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -260,18 +269,19 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                           default: 1.0,
                           displayName: "SSAO Intensity",
                         }}
-                        onChange={(value) => onChange({ 
-                          postProcessing: {
-                            ...preferences.postProcessing,
-                            ssaoIntensity: value as number
-                          }
-                        })}
+                        onChange={(value) =>
+                          onChange({
+                            postProcessing: {
+                              ...preferences.postProcessing,
+                              ssaoIntensity: value as number,
+                            },
+                          })
+                        }
                       />
                     </div>
                   </div>
                 </>
               )}
-
             </>
           )}
         </div>
@@ -293,12 +303,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                   default: "single",
                   displayName: "Background Type",
                 }}
-                onChange={(value) => onChange({ 
-                  background: {
-                    ...preferences.background,
-                    type: value as any
-                  }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    background: {
+                      ...preferences.background,
+                      type: value as any,
+                    },
+                  })
+                }
               />
             </div>
           </div>
@@ -315,12 +327,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                   default: "#191919",
                   displayName: "Background Color",
                 }}
-                onChange={(value) => onChange({ 
-                  background: {
-                    ...preferences.background,
-                    color: value as string
-                  }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    background: {
+                      ...preferences.background,
+                      color: value as string,
+                    },
+                  })
+                }
               />
             </div>
           </div>
@@ -338,12 +352,14 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                     default: "#333333",
                     displayName: "Second Gradient Color",
                   }}
-                  onChange={(value) => onChange({ 
-                    background: {
-                      ...preferences.background,
-                      color2: value as string
-                    }
-                  })}
+                  onChange={(value) =>
+                    onChange({
+                      background: {
+                        ...preferences.background,
+                        color2: value as string,
+                      },
+                    })
+                  }
                 />
               </div>
             </div>
@@ -353,4 +369,3 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
     </div>
   );
 }
-

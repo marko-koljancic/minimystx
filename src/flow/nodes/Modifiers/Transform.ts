@@ -27,7 +27,11 @@ export const processor: NodeProcessor<
     const mesh = input.object as Mesh;
     obj = new Mesh(
       mesh.geometry.clone(),
-      mesh.material ? (Array.isArray(mesh.material) ? mesh.material.map(m => m.clone()) : mesh.material.clone()) : undefined
+      mesh.material
+        ? Array.isArray(mesh.material)
+          ? mesh.material.map((m) => m.clone())
+          : mesh.material.clone()
+        : undefined
     );
     obj.copy(input.object, false);
   } else if (input.object instanceof Group) {
@@ -48,11 +52,9 @@ export const processor: NodeProcessor<
   );
   const scale = data.transform.scale || { x: 1, y: 1, z: 1, factor: 1 };
   const scaleFactor = scale.factor || 1;
-  obj.scale.multiply(new Vector3(
-    scale.x * scaleFactor,
-    scale.y * scaleFactor,
-    scale.z * scaleFactor
-  ));
+  obj.scale.multiply(
+    new Vector3(scale.x * scaleFactor, scale.y * scaleFactor, scale.z * scaleFactor)
+  );
   obj.visible = data.rendering?.visible !== false;
   if (!geometry && (obj as any).geometry) {
     geometry = (obj as any).geometry;
@@ -77,7 +79,12 @@ export const transformNodeCompute = (params: Record<string, any>, inputs: Record
   let inputObject: { object: Object3D; geometry?: BufferGeometry } | undefined = undefined;
   if (inputKeys.length > 0) {
     const input = inputs[inputKeys[0]];
-    if (input && typeof input === "object" && (input as any).object && (input as any).object.isObject3D) {
+    if (
+      input &&
+      typeof input === "object" &&
+      (input as any).object &&
+      (input as any).object.isObject3D
+    ) {
       inputObject = input as { object: Object3D; geometry?: BufferGeometry };
     } else {
     }
@@ -88,15 +95,15 @@ export const transformNodeCompute = (params: Record<string, any>, inputs: Record
     transform: {
       position: params.transform?.position || { x: 0, y: 0, z: 0 },
       rotation: params.transform?.rotation || { x: 0, y: 0, z: 0 },
-      scale: { 
+      scale: {
         ...params.transform?.scale,
-        factor: params.transform?.scaleFactor || 1
+        factor: params.transform?.scaleFactor || 1,
       },
       rotationOrder: params.transform?.rotationOrder || "XYZ",
     },
     rendering: {
       visible: params.rendering?.visible !== false,
-      ...params.rendering
+      ...params.rendering,
     },
   };
   return processor(data, inputObject);
@@ -115,15 +122,15 @@ export const transformNodeComputeTyped = (
     transform: {
       position: params.transform?.position || { x: 0, y: 0, z: 0 },
       rotation: params.transform?.rotation || { x: 0, y: 0, z: 0 },
-      scale: { 
+      scale: {
         ...params.transform?.scale,
-        factor: params.transform?.scaleFactor || 1
+        factor: params.transform?.scaleFactor || 1,
       },
       rotationOrder: params.transform?.rotationOrder || "XYZ",
     },
     rendering: {
       visible: params.rendering?.visible !== false,
-      ...params.rendering
+      ...params.rendering,
     },
   };
   const inputObject = { object: inputContainer.value };

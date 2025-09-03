@@ -32,14 +32,18 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                   default: true,
                   displayName: "Show Grid",
                 }}
-                onChange={(value) => onChange({ 
-                  grid: { ...preferences.grid, enabled: value as boolean }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    grid: { ...preferences.grid, enabled: value as boolean },
+                  })
+                }
               />
             </div>
           </div>
 
-          <div className={`${styles.toggleGroup} ${preferences.grid.enabled ? styles.enabled : ""}`}>
+          <div
+            className={`${styles.toggleGroup} ${preferences.grid.enabled ? styles.enabled : ""}`}
+          >
             <div className={styles.parameterRow}>
               <div className={styles.labelColumn}>
                 <label className={styles.parameterLabel}>Major Lines</label>
@@ -55,9 +59,11 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                     default: 10,
                     displayName: "Major Lines",
                   }}
-                  onChange={(value) => onChange({ 
-                    grid: { ...preferences.grid, majorGridLines: value as number }
-                  })}
+                  onChange={(value) =>
+                    onChange({
+                      grid: { ...preferences.grid, majorGridLines: value as number },
+                    })
+                  }
                   disabled={!preferences.grid.enabled}
                 />
               </div>
@@ -78,9 +84,11 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                     default: 10.0,
                     displayName: "Major Grid Spacing",
                   }}
-                  onChange={(value) => onChange({ 
-                    grid: { ...preferences.grid, majorSpacing: value as number }
-                  })}
+                  onChange={(value) =>
+                    onChange({
+                      grid: { ...preferences.grid, majorSpacing: value as number },
+                    })
+                  }
                   disabled={!preferences.grid.enabled}
                 />
               </div>
@@ -101,22 +109,22 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                     default: 5,
                     displayName: "Minor Subdivisions",
                   }}
-                  onChange={(value) => onChange({ 
-                    grid: { ...preferences.grid, minorSubdivisions: value as number }
-                  })}
+                  onChange={(value) =>
+                    onChange({
+                      grid: { ...preferences.grid, minorSubdivisions: value as number },
+                    })
+                  }
                   disabled={!preferences.grid.enabled}
                 />
               </div>
             </div>
-
           </div>
         </div>
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            Grid spacing is displayed in the current display unit. 
-            Major Lines sets the number of prominent grid lines (default 10x10), 
-            Major Spacing defines the distance between them, 
+            Grid spacing is displayed in the current display unit. Major Lines sets the number of
+            prominent grid lines (default 10x10), Major Spacing defines the distance between them,
             and Minor Subdivisions create smaller intermediate lines.
           </p>
         </div>
@@ -137,14 +145,20 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                   default: true,
                   displayName: "Show Axis Gizmo",
                 }}
-                onChange={(value) => onChange({ 
-                  axisGizmo: { ...preferences.axisGizmo, enabled: value as boolean }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    axisGizmo: { ...preferences.axisGizmo, enabled: value as boolean },
+                  })
+                }
               />
             </div>
           </div>
 
-          <div className={`${styles.toggleGroup} ${preferences.axisGizmo.enabled ? styles.enabled : ""}`}>
+          <div
+            className={`${styles.toggleGroup} ${
+              preferences.axisGizmo.enabled ? styles.enabled : ""
+            }`}
+          >
             <div className={styles.parameterRow}>
               <div className={styles.labelColumn}>
                 <label className={styles.parameterLabel}>Size</label>
@@ -158,9 +172,11 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                     default: "Small",
                     displayName: "Gizmo Size",
                   }}
-                  onChange={(value) => onChange({ 
-                    axisGizmo: { ...preferences.axisGizmo, size: value as any }
-                  })}
+                  onChange={(value) =>
+                    onChange({
+                      axisGizmo: { ...preferences.axisGizmo, size: value as any },
+                    })
+                  }
                   disabled={!preferences.axisGizmo.enabled}
                 />
               </div>
@@ -170,8 +186,8 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            The axis gizmo shows coordinate system orientation with colored arrows: 
-            Red (X), Green (Y), Blue (Z). Toggle with <strong>A</strong> key.
+            The axis gizmo shows coordinate system orientation with colored arrows: Red (X), Green
+            (Y), Blue (Z). Toggle with <strong>A</strong> key.
           </p>
         </div>
       </div>
@@ -191,14 +207,20 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                   default: false,
                   displayName: "Show Ground Plane",
                 }}
-                onChange={(value) => onChange({ 
-                  groundPlane: { ...preferences.groundPlane, enabled: value as boolean }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    groundPlane: { ...preferences.groundPlane, enabled: value as boolean },
+                  })
+                }
               />
             </div>
           </div>
 
-          <div className={`${styles.toggleGroup} ${preferences.groundPlane.enabled ? styles.enabled : ""}`}>
+          <div
+            className={`${styles.toggleGroup} ${
+              preferences.groundPlane.enabled ? styles.enabled : ""
+            }`}
+          >
             <div className={styles.parameterRow}>
               <div className={styles.labelColumn}>
                 <label className={styles.parameterLabel}>Elevation</label>
@@ -214,9 +236,11 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                     default: -0.001,
                     displayName: "Ground Plane Elevation",
                   }}
-                  onChange={(value) => onChange({ 
-                    groundPlane: { ...preferences.groundPlane, elevation: value as number }
-                  })}
+                  onChange={(value) =>
+                    onChange({
+                      groundPlane: { ...preferences.groundPlane, elevation: value as number },
+                    })
+                  }
                   disabled={!preferences.groundPlane.enabled}
                 />
               </div>
@@ -234,9 +258,11 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                     default: false,
                     displayName: "Enable Ground Shadows",
                   }}
-                  onChange={(value) => onChange({ 
-                    groundPlane: { ...preferences.groundPlane, shadowsEnabled: value as boolean }
-                  })}
+                  onChange={(value) =>
+                    onChange({
+                      groundPlane: { ...preferences.groundPlane, shadowsEnabled: value as boolean },
+                    })
+                  }
                   disabled={!preferences.groundPlane.enabled}
                 />
               </div>
@@ -246,15 +272,21 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            The ground plane provides a reference surface at Y=0. 
-            Enable shadows to see object shadows cast on the ground plane.
+            The ground plane provides a reference surface at Y=0. Enable shadows to see object
+            shadows cast on the ground plane.
           </p>
           {preferences.groundPlane.enabled && preferences.groundPlane.shadowsEnabled && (
             <p className={styles.infoText}>
-              <span className={styles.badge} style={{ backgroundColor: "var(--warning-subtle)", color: "var(--warning-primary)" }}>
+              <span
+                className={styles.badge}
+                style={{
+                  backgroundColor: "var(--warning-subtle)",
+                  color: "var(--warning-primary)",
+                }}
+              >
                 PERFORMANCE
-              </span>
-              {" "}Ground shadows may impact rendering performance on complex scenes.
+              </span>{" "}
+              Ground shadows may impact rendering performance on complex scenes.
             </p>
           )}
         </div>

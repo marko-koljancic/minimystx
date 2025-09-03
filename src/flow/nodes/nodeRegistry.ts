@@ -1,9 +1,7 @@
 import { NodeDefinition, InputCloneMode } from "../../engine/graphStore";
 import {
-  // Container Nodes
   geoNodeParams,
   geoNodeCompute,
-  // 3D Primitive Nodes
   boxNodeParams,
   boxNodeComputeTyped,
   sphereNodeParams,
@@ -18,12 +16,10 @@ import {
   torusNodeComputeTyped,
   torusKnotNodeParams,
   torusKnotNodeComputeTyped,
-  // Import Nodes
   importObjNodeParams,
   importObjNodeComputeTyped,
   importGltfNodeParams,
   importGltfNodeComputeTyped,
-  // Light Nodes
   pointLightNodeParams,
   pointLightNodeCompute,
   ambientLightNodeParams,
@@ -36,10 +32,8 @@ import {
   hemisphereLightNodeCompute,
   rectAreaLightNodeParams,
   rectAreaLightNodeCompute,
-  // Modifier Nodes
   transformNodeParams,
   transformNodeComputeTyped,
-  // Utility Nodes
   noteNodeParams,
   noteNodeCompute,
 } from ".";

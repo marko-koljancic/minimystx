@@ -63,7 +63,7 @@ export default function Header() {
     message: string;
   } | null>(null);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
-  
+
   const handleSave = useCallback(() => {
     setShowSaveModal(true);
   }, []);
@@ -145,8 +145,7 @@ export default function Header() {
       if (result) {
         await applyImportedScene(result);
         setImportProgress({ percentage: 100, message: "Project loaded successfully!" });
-        if (result.warnings && result.warnings.length > 0) {
-        }
+
         setTimeout(() => {
           setImportProgress(null);
           setIsImporting(false);
@@ -158,11 +157,6 @@ export default function Header() {
     } catch (error) {
       setImportProgress(null);
       setIsImporting(false);
-      if (error instanceof Error) {
-        if (error.message.includes("Unsupported")) {
-        } else if (error.message.includes("integrity")) {
-        }
-      }
     }
   }, []);
   const handleCreateNodeAtCenter = useCallback((nodeType: string) => {
@@ -425,9 +419,7 @@ export default function Header() {
           onCancel={handleSaveCancel}
         />
       )}
-      {showPreferencesModal && (
-        <PreferencesModal onClose={handleClosePreferences} />
-      )}
+      {showPreferencesModal && <PreferencesModal onClose={handleClosePreferences} />}
     </header>
   );
 }

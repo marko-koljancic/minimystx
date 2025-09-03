@@ -27,42 +27,63 @@ export default function NoteNode(props: NodeProps) {
   }, []);
   const handleTextBlur = useCallback(() => {
     setIsEditing(false);
-    setParams(id, {
-      note: {
-        ...nodeData.note,
-        text: text,
+    setParams(
+      id,
+      {
+        note: {
+          ...nodeData.note,
+          text: text,
+        },
       },
-    }, currentContext);
+      currentContext
+    );
   }, [id, nodeData.note, setParams, text, currentContext]);
-  const handleTextKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      setIsEditing(false);
-      setText(nodeData.note?.text || "");
-    } else if (e.key === "Enter" && e.ctrlKey) {
-      handleTextBlur();
-    }
-    e.stopPropagation();
-  }, [handleTextBlur, nodeData.note?.text]);
-  const handleColorClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const nextIndex = (colorIndex + 1) % NOTE_COLORS.length;
-    const nextColor = NOTE_COLORS[nextIndex];
-    setParams(id, {
-      note: {
-        ...nodeData.note,
-        color: nextColor,
-      },
-    }, currentContext);
-  }, [colorIndex, id, nodeData.note, setParams, currentContext]);
-  const handleResize = useCallback((_event: unknown, data: { width: number; height: number }) => {
-    setParams(id, {
-      note: {
-        ...nodeData.note,
-        width: data.width,
-        height: data.height,
-      },
-    }, currentContext);
-  }, [id, nodeData.note, setParams, currentContext]);
+  const handleTextKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsEditing(false);
+        setText(nodeData.note?.text || "");
+      } else if (e.key === "Enter" && e.ctrlKey) {
+        handleTextBlur();
+      }
+      e.stopPropagation();
+    },
+    [handleTextBlur, nodeData.note?.text]
+  );
+  const handleColorClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const nextIndex = (colorIndex + 1) % NOTE_COLORS.length;
+      const nextColor = NOTE_COLORS[nextIndex];
+      setParams(
+        id,
+        {
+          note: {
+            ...nodeData.note,
+            color: nextColor,
+          },
+        },
+        currentContext
+      );
+    },
+    [colorIndex, id, nodeData.note, setParams, currentContext]
+  );
+  const handleResize = useCallback(
+    (_event: unknown, data: { width: number; height: number }) => {
+      setParams(
+        id,
+        {
+          note: {
+            ...nodeData.note,
+            width: data.width,
+            height: data.height,
+          },
+        },
+        currentContext
+      );
+    },
+    [id, nodeData.note, setParams, currentContext]
+  );
   useEffect(() => {
     if (isEditing && textAreaRef.current) {
       textAreaRef.current.focus();
@@ -91,11 +112,11 @@ export default function NoteNode(props: NodeProps) {
         color="#3b82f6"
         onResize={handleResize}
         handleStyle={{
-          backgroundColor: '#3b82f6',
-          border: '1px solid #ffffff',
-          borderRadius: '2px',
-          width: '8px',
-          height: '8px',
+          backgroundColor: "#3b82f6",
+          border: "1px solid #ffffff",
+          borderRadius: "2px",
+          width: "8px",
+          height: "8px",
         }}
       />
       {isEditing ? (
@@ -109,9 +130,7 @@ export default function NoteNode(props: NodeProps) {
           placeholder="Enter note text..."
         />
       ) : (
-        <div className={styles.textDisplay}>
-          {nodeData.note?.text || "Double-click to edit"}
-        </div>
+        <div className={styles.textDisplay}>{nodeData.note?.text || "Double-click to edit"}</div>
       )}
       <div
         className={styles.colorSwitcher}

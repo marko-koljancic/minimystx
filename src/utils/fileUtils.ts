@@ -11,7 +11,9 @@ export function downloadObjectAsJson(obj: unknown, filename: string): void {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error downloading JSON file:", error);
+  }
 }
 export function selectJsonFile(): Promise<unknown | null> {
   return new Promise((resolve) => {

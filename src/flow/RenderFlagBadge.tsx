@@ -48,8 +48,8 @@ export default function RenderFlagBadge({
           style={{
             width: `${(nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 10}rem`,
             height: `${(nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 10}rem`,
-            left: `${((nodeWidth - nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 2) / 10}rem`,
-            top: `${((nodeHeight - nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 2) / 10}rem`,
+            left: `${(nodeWidth - nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 2 / 10}rem`,
+            top: `${(nodeHeight - nodeWidth * (isGeoNode ? 1.5 : 0.8)) / 2 / 10}rem`,
           }}
         />
       )}

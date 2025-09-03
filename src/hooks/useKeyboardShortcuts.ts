@@ -7,7 +7,12 @@ interface UseKeyboardShortcutsProps {
   onDeleteSelectedEdges?: () => void;
   onAutoLayoutCycle?: (forceAllNodes?: boolean) => void;
 }
-export function useKeyboardShortcuts({ context, enabled = true, onDeleteSelectedEdges, onAutoLayoutCycle }: UseKeyboardShortcutsProps) {
+export function useKeyboardShortcuts({
+  context,
+  enabled = true,
+  onDeleteSelectedEdges,
+  onAutoLayoutCycle,
+}: UseKeyboardShortcutsProps) {
   const {
     toggleGridInFlowCanvas,
     toggleGridInRenderView,

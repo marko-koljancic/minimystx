@@ -77,14 +77,39 @@
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }
 
-
-/* Color palette variables */
-.color0 { --note-color: rgba(253, 230, 138, 0.7); --note-color-dark: #F59E0B; }
-.color1 { --note-color: rgba(167, 243, 208, 0.7); --note-color-dark: #059669; }
-.color2 { --note-color: rgba(191, 219, 254, 0.7); --note-color-dark: #3B82F6; }
-.color3 { --note-color: rgba(251, 207, 232, 0.7); --note-color-dark: #EC4899; }
-.color4 { --note-color: rgba(253, 226, 226, 0.7); --note-color-dark: #EF4444; }
-.color5 { --note-color: rgba(209, 250, 229, 0.7); --note-color-dark: #10B981; }
-.color6 { --note-color: rgba(237, 233, 254, 0.7); --note-color-dark: #8B5CF6; }
-.color7 { --note-color: rgba(255, 228, 230, 0.7); --note-color-dark: #F43F5E; }
-.color8 { --note-color: rgba(233, 213, 255, 0.7); --note-color-dark: #A855F7; }
+.color0 {
+  --note-color: rgba(253, 230, 138, 0.7);
+  --note-color-dark: #f59e0b;
+}
+.color1 {
+  --note-color: rgba(167, 243, 208, 0.7);
+  --note-color-dark: #059669;
+}
+.color2 {
+  --note-color: rgba(191, 219, 254, 0.7);
+  --note-color-dark: #3b82f6;
+}
+.color3 {
+  --note-color: rgba(251, 207, 232, 0.7);
+  --note-color-dark: #ec4899;
+}
+.color4 {
+  --note-color: rgba(253, 226, 226, 0.7);
+  --note-color-dark: #ef4444;
+}
+.color5 {
+  --note-color: rgba(209, 250, 229, 0.7);
+  --note-color-dark: #10b981;
+}
+.color6 {
+  --note-color: rgba(237, 233, 254, 0.7);
+  --note-color-dark: #8b5cf6;
+}
+.color7 {
+  --note-color: rgba(255, 228, 230, 0.7);
+  --note-color-dark: #f43f5e;
+}
+.color8 {
+  --note-color: rgba(233, 213, 255, 0.7);
+  --note-color-dark: #a855f7;
+}

@@ -11,17 +11,17 @@ const NODE_WIDTH = 90;
 export default function ImportObjNode(props: NodeProps) {
   const { data, selected, id } = props;
   const nodeData = data as ImportObjNodeData;
-  const recomputeFrom = useGraphStore(state => state.recomputeFrom);
-  const markDirty = useGraphStore(state => state.markDirty);
+  const recomputeFrom = useGraphStore((state) => state.recomputeFrom);
+  const markDirty = useGraphStore((state) => state.markDirty);
   const lastFileRef = useRef<File | SerializableObjFile | null>(null);
   useEffect(() => {
     const currentFile = nodeData.object?.file;
-    const filesAreDifferent = currentFile && (
-      !lastFileRef.current ||
-      currentFile.name !== lastFileRef.current.name ||
-      currentFile.size !== lastFileRef.current.size ||
-      currentFile.lastModified !== lastFileRef.current.lastModified
-    );
+    const filesAreDifferent =
+      currentFile &&
+      (!lastFileRef.current ||
+        currentFile.name !== lastFileRef.current.name ||
+        currentFile.size !== lastFileRef.current.size ||
+        currentFile.lastModified !== lastFileRef.current.lastModified);
     if (filesAreDifferent) {
       lastFileRef.current = currentFile;
       loadObjFile(currentFile)
@@ -30,6 +30,7 @@ export default function ImportObjNode(props: NodeProps) {
           recomputeFrom(id);
         })
         .catch((_error) => {
+          console.error("Error loading OBJ file:", _error);
         });
     } else if (!currentFile) {
       lastFileRef.current = null;

@@ -1,22 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUIStore } from "../../store";
 import { PreferencesState } from "../../store/uiStore";
-import { 
-  UnitsTab, 
-  RendererTab, 
-  MaterialsTab, 
-  CameraTab, 
-  GuidesTab, 
-  ScreenshotTab 
-} from "./tabs";
+import { UnitsTab, RendererTab, MaterialsTab, CameraTab, GuidesTab, ScreenshotTab } from "./tabs";
 import styles from "./PreferencesModal.module.css";
 
-export type PreferencesTabType = 
-  | "units" 
-  | "renderer" 
-  | "materials" 
-  | "camera" 
-  | "guides" 
+export type PreferencesTabType =
+  | "units"
+  | "renderer"
+  | "materials"
+  | "camera"
+  | "guides"
   | "screenshot";
 
 interface PreferencesModalProps {
@@ -24,24 +17,20 @@ interface PreferencesModalProps {
 }
 
 export function PreferencesModal({ onClose }: PreferencesModalProps) {
-  const { preferences, updatePreferences, resetPreferencesToDefaults } = useUIStore();
+  const { preferences, updatePreferences } = useUIStore();
   const modalRef = useRef<HTMLDivElement>(null);
-  
-  // Local state for temporary changes (not saved until user clicks Save)
+
   const [localPreferences, setLocalPreferences] = useState<PreferencesState>(preferences);
   const [activeTab, setActiveTab] = useState<PreferencesTabType>("units");
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
-  
-  // Track if there are unsaved changes
+
   const hasUnsavedChanges = JSON.stringify(localPreferences) !== JSON.stringify(preferences);
 
   const handleCancel = useCallback(() => {
-    // Discard any unsaved changes
     setLocalPreferences(preferences);
     onClose();
   }, [preferences, onClose]);
 
-  // Handle ESC key to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -53,17 +42,17 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleCancel]);
 
-  // Handle click outside modal to close
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === modalRef.current) {
-      handleCancel();
-    }
-  }, [handleCancel]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === modalRef.current) {
+        handleCancel();
+      }
+    },
+    [handleCancel]
+  );
 
   const handleApply = useCallback(() => {
     updatePreferences(localPreferences);
-    // After applying, local changes are now in sync with stored preferences
-    // The hasUnsavedChanges should now be false since both are identical
   }, [localPreferences, updatePreferences]);
 
   const handleSave = useCallback(() => {
@@ -76,7 +65,6 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
   }, []);
 
   const handleConfirmReset = useCallback(() => {
-    // Define default preferences (matching the values in uiStore resetPreferencesToDefaults)
     const defaultPrefs: PreferencesState = {
       units: {
         displayUnit: "m",
@@ -159,8 +147,7 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
         },
       },
     };
-    
-    // Update local state with defaults
+
     setLocalPreferences(defaultPrefs);
     setShowResetConfirmation(false);
   }, []);
@@ -171,26 +158,32 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
 
   const getTabDisplayName = (tab: PreferencesTabType): string => {
     switch (tab) {
-      case "units": return "Units";
-      case "renderer": return "Renderer";
-      case "materials": return "Materials";
-      case "camera": return "Camera";
-      case "guides": return "Guides";
-      case "screenshot": return "Screenshot";
+      case "units":
+        return "Units";
+      case "renderer":
+        return "Renderer";
+      case "materials":
+        return "Materials";
+      case "camera":
+        return "Camera";
+      case "guides":
+        return "Guides";
+      case "screenshot":
+        return "Screenshot";
     }
   };
 
   const availableTabs: PreferencesTabType[] = [
     "units",
-    "renderer", 
+    "renderer",
     "materials",
     "camera",
     "guides",
-    "screenshot"
+    "screenshot",
   ];
 
   const updateTabPreferences = useCallback((tabKey: keyof PreferencesState, updates: any) => {
-    setLocalPreferences(prev => ({
+    setLocalPreferences((prev) => ({
       ...prev,
       [tabKey]: {
         ...prev[tabKey],
@@ -205,35 +198,47 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
         {(() => {
           switch (activeTab) {
             case "units":
-              return <UnitsTab 
-                preferences={localPreferences[activeTab]}
-                onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
-              />;
+              return (
+                <UnitsTab
+                  preferences={localPreferences[activeTab]}
+                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                />
+              );
             case "renderer":
-              return <RendererTab 
-                preferences={localPreferences[activeTab]}
-                onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
-              />;
+              return (
+                <RendererTab
+                  preferences={localPreferences[activeTab]}
+                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                />
+              );
             case "materials":
-              return <MaterialsTab 
-                preferences={localPreferences[activeTab]}
-                onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
-              />;
+              return (
+                <MaterialsTab
+                  preferences={localPreferences[activeTab]}
+                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                />
+              );
             case "camera":
-              return <CameraTab 
-                preferences={localPreferences[activeTab]}
-                onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
-              />;
+              return (
+                <CameraTab
+                  preferences={localPreferences[activeTab]}
+                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                />
+              );
             case "guides":
-              return <GuidesTab 
-                preferences={localPreferences.guides}
-                onChange={(updates: any) => updateTabPreferences("guides", updates)}
-              />;
+              return (
+                <GuidesTab
+                  preferences={localPreferences.guides}
+                  onChange={(updates: any) => updateTabPreferences("guides", updates)}
+                />
+              );
             case "screenshot":
-              return <ScreenshotTab 
-                preferences={localPreferences[activeTab]}
-                onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
-              />;
+              return (
+                <ScreenshotTab
+                  preferences={localPreferences[activeTab]}
+                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                />
+              );
           }
         })()}
       </div>
@@ -244,9 +249,7 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
     <div className={styles.backdrop} ref={modalRef} onClick={handleBackdropClick}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2 className={styles.title}>
-            Preferences{hasUnsavedChanges && " *"}
-          </h2>
+          <h2 className={styles.title}>Preferences{hasUnsavedChanges && " *"}</h2>
         </div>
 
         <div className={styles.content}>
@@ -275,15 +278,15 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
             <button className={styles.cancelButton} onClick={handleCancel}>
               Cancel
             </button>
-            <button 
-              className={styles.applyButton} 
+            <button
+              className={styles.applyButton}
               onClick={handleApply}
               disabled={!hasUnsavedChanges}
             >
               Apply
             </button>
-            <button 
-              className={styles.saveButton} 
+            <button
+              className={styles.saveButton}
               onClick={handleSave}
               disabled={!hasUnsavedChanges}
             >
@@ -293,17 +296,15 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
         </div>
       </div>
 
-      {/* Reset Confirmation Dialog */}
       {showResetConfirmation && (
         <div className={styles.confirmationOverlay}>
           <div className={styles.confirmationDialog}>
             <h3 className={styles.confirmationTitle}>Reset to Defaults</h3>
             <p className={styles.confirmationMessage}>
-              This will reset all preferences to their default values. Any unsaved changes will be lost.
+              This will reset all preferences to their default values. Any unsaved changes will be
+              lost.
             </p>
-            <p className={styles.confirmationMessage}>
-              Are you sure you want to continue?
-            </p>
+            <p className={styles.confirmationMessage}>Are you sure you want to continue?</p>
             <div className={styles.confirmationButtons}>
               <button className={styles.cancelButton} onClick={handleCancelReset}>
                 Cancel

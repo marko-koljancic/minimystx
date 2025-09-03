@@ -1,10 +1,5 @@
-// Central export for all node types
-// This provides a single import source for all nodes organized by category
-
-// Container Nodes
 export { geoNodeParams, geoNodeCompute } from "./Geometry/GeoNode";
 
-// 3D Primitive Nodes
 export { boxNodeParams, boxNodeComputeTyped } from "./3D_Primitives/Box";
 export { sphereNodeParams, sphereNodeComputeTyped } from "./3D_Primitives/Sphere";
 export { cylinderNodeParams, cylinderNodeComputeTyped } from "./3D_Primitives/Cylinder";
@@ -13,11 +8,9 @@ export { planeNodeParams, planeNodeComputeTyped } from "./3D_Primitives/Plane";
 export { torusNodeParams, torusNodeComputeTyped } from "./3D_Primitives/Torus";
 export { torusKnotNodeParams, torusKnotNodeComputeTyped } from "./3D_Primitives/TorusKnot";
 
-// Import Nodes
 export { importObjNodeParams, importObjNodeComputeTyped } from "./3D_Primitives/ImportObj";
 export { importGltfNodeParams, importGltfNodeComputeTyped } from "./3D_Primitives/ImportGltf";
 
-// Light Nodes
 export { pointLightNodeParams, pointLightNodeCompute } from "./Lights/PointLight";
 export { ambientLightNodeParams, ambientLightNodeCompute } from "./Lights/AmbientLight";
 export { directionalLightNodeParams, directionalLightNodeCompute } from "./Lights/DirectionalLight";
@@ -25,13 +18,10 @@ export { spotLightNodeParams, spotLightNodeCompute } from "./Lights/SpotLight";
 export { hemisphereLightNodeParams, hemisphereLightNodeCompute } from "./Lights/HemisphereLight";
 export { rectAreaLightNodeParams, rectAreaLightNodeCompute } from "./Lights/RectAreaLight";
 
-// Modifier Nodes
 export { transformNodeParams, transformNodeComputeTyped } from "./Modifiers/Transform";
 
-// Utility Nodes
 export { noteNodeParams, noteNodeCompute } from "./Utility/Note";
 
-// Export all NodeData types for type definitions
 export type { GeoNodeData } from "./Geometry/GeoNode";
 export type { BoxNodeData } from "./3D_Primitives/Box";
 export type { SphereNodeData } from "./3D_Primitives/Sphere";
@@ -51,7 +41,6 @@ export type { RectAreaLightNodeData } from "./Lights/RectAreaLight";
 export type { TransformNodeData } from "./Modifiers/Transform";
 export type { NoteNodeData } from "./Utility/Note";
 
-// Re-export everything imported above for grouped access
 import * as _geoNode from "./Geometry/GeoNode";
 import * as _box from "./3D_Primitives/Box";
 import * as _sphere from "./3D_Primitives/Sphere";
@@ -71,7 +60,6 @@ import * as _rectAreaLight from "./Lights/RectAreaLight";
 import * as _transform from "./Modifiers/Transform";
 import * as _note from "./Utility/Note";
 
-// Grouped exports for easy category-based imports
 export const geometryNodes = {
   geoNodeParams: _geoNode.geoNodeParams,
   geoNodeCompute: _geoNode.geoNodeCompute,
@@ -126,8 +114,7 @@ export const utilityNodes = {
   noteNodeCompute: _note.noteNodeCompute,
 };
 
-// Export nodeRegistry and related functions for convenience
-export { 
+export {
   nodeRegistry,
   getAvailableNodeTypes,
   isValidNodeType,
@@ -139,5 +126,5 @@ export {
   getNodesByCategoryForContext,
   getAvailableCategoriesForContext,
   searchNodesForContext,
-  getFilteredNodesByCategoryForContext
+  getFilteredNodesByCategoryForContext,
 } from "./nodeRegistry";

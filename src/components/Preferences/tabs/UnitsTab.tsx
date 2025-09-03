@@ -13,7 +13,7 @@ export function UnitsTab({ preferences, onChange }: UnitsTabProps) {
       <div className={styles.tabDescription}>
         Configure display units for measurements and dimensions throughout the application.
       </div>
-      
+
       <div className={styles.section}>
         <div className={styles.parameterGrid}>
           <div className={styles.parameterRow}>
@@ -29,7 +29,9 @@ export function UnitsTab({ preferences, onChange }: UnitsTabProps) {
                   default: "m",
                   displayName: "Display Unit",
                 }}
-                onChange={(value) => onChange({ displayUnit: value as PreferencesState["units"]["displayUnit"] })}
+                onChange={(value) =>
+                  onChange({ displayUnit: value as PreferencesState["units"]["displayUnit"] })
+                }
               />
             </div>
           </div>

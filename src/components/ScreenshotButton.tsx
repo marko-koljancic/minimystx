@@ -5,11 +5,7 @@ interface ScreenshotButtonProps {
 }
 const ScreenshotButton = ({ onCapture }: ScreenshotButtonProps) => {
   return (
-    <button
-      className={styles.screenshotButton}
-      onClick={onCapture}
-      title="Capture screenshot"
-    >
+    <button className={styles.screenshotButton} onClick={onCapture} title="Capture screenshot">
       <FaCamera size={14} />
     </button>
   );

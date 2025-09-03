@@ -28,8 +28,7 @@ export const useAutoLayout = () => {
         },
       });
       window.dispatchEvent(event);
-    } catch (error) {
-    }
+    } catch (error) {}
   }, [contextNodes, contextEdges]);
   const applyELK = useCallback(async () => {
     if (contextNodes.length === 0) {
@@ -50,8 +49,7 @@ export const useAutoLayout = () => {
         },
       });
       window.dispatchEvent(event);
-    } catch (error) {
-    }
+    } catch (error) {}
   }, [contextNodes, contextEdges]);
   const applyDagreToSelection = useCallback(
     async (selectedNodeIds: string[]) => {
@@ -83,8 +81,7 @@ export const useAutoLayout = () => {
           },
         });
         window.dispatchEvent(event);
-      } catch (error) {
-      }
+      } catch (error) {}
     },
     [contextNodes, contextEdges]
   );
@@ -118,8 +115,7 @@ export const useAutoLayout = () => {
           },
         });
         window.dispatchEvent(event);
-      } catch (error) {
-      }
+      } catch (error) {}
     },
     [contextNodes, contextEdges]
   );

@@ -34,13 +34,13 @@ export default function RenderingCanvas() {
 
   const calculateScreenshotDimensions = useCallback(() => {
     if (!sceneManagerRef.current?.renderer) return { width: 1920, height: 1080, multiplier: 2 };
-    
+
     const canvas = sceneManagerRef.current.renderer.domElement;
-    const baseWidth = canvas.clientWidth;  // CSS dimensions 
+    const baseWidth = canvas.clientWidth; // CSS dimensions
     const baseHeight = canvas.clientHeight;
-    
+
     const { preset, customWidth, customHeight } = screenshotPreferences.resolution;
-    
+
     switch (preset) {
       case "Viewport":
         return { width: baseWidth, height: baseHeight, multiplier: 1 };
@@ -51,10 +51,10 @@ export default function RenderingCanvas() {
       case "4x":
         return { width: baseWidth * 4, height: baseHeight * 4, multiplier: 4 };
       case "Custom":
-        return { 
-          width: customWidth || 1920, 
-          height: customHeight || 1080, 
-          multiplier: null // Custom uses exact dimensions
+        return {
+          width: customWidth || 1920,
+          height: customHeight || 1080,
+          multiplier: null,
         };
       default:
         return { width: baseWidth * 2, height: baseHeight * 2, multiplier: 2 };
@@ -70,7 +70,7 @@ export default function RenderingCanvas() {
           transparentBackground: screenshotPreferences.overlays.transparentBackground,
           grid: screenshotPreferences.overlays.grid,
           gizmos: screenshotPreferences.overlays.gizmos,
-        }
+        },
       };
       const imageUrl = sceneManagerRef.current.captureScreenshot(screenshotParams);
       const filename = generateFilename();

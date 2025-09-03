@@ -17,8 +17,8 @@ import HemisphereLightNode from "../flow/nodes/Lights/HemisphereLightNode.tsx";
 import RectAreaLightNode from "../flow/nodes/Lights/RectAreaLightNode.tsx";
 import GeoNodeNode from "../flow/nodes/Geometry/GeoNodeNode.tsx";
 import EdgeLine from "../flow/edges/EdgeLine.tsx";
-// Import all node data types from central index
-import type { 
+
+import type {
   BoxNodeData,
   SphereNodeData,
   CylinderNodeData,
@@ -36,7 +36,7 @@ import type {
   HemisphereLightNodeData,
   RectAreaLightNodeData,
   GeoNodeData,
-  NoteNodeData
+  NoteNodeData,
 } from "../flow/nodes";
 
 import NoteNode from "../flow/nodes/Utility/NoteNode.tsx";

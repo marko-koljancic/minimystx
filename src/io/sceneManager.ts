@@ -25,56 +25,70 @@ export function getSceneState(): SceneState {
 async function createDefaultScene(): Promise<void> {
   const { useGraphStore } = await import("../engine/graphStore");
   const graphStore = useGraphStore.getState();
-  
-  // Create DirectionalLight node
+
   const directionalLightId = uuid();
-  graphStore.addNode({
-    id: directionalLightId,
-    type: "directionalLightNode",
-    params: {}
-  }, { type: "root" });
-  
-  // Create HemisphereLight node
+  graphStore.addNode(
+    {
+      id: directionalLightId,
+      type: "directionalLightNode",
+      params: {},
+    },
+    { type: "root" }
+  );
+
   const hemisphereLightId = uuid();
-  graphStore.addNode({
-    id: hemisphereLightId,
-    type: "hemisphereLightNode",
-    params: {}
-  }, { type: "root" });
-  
-  // Create GeoNode
+  graphStore.addNode(
+    {
+      id: hemisphereLightId,
+      type: "hemisphereLightNode",
+      params: {},
+    },
+    { type: "root" }
+  );
+
   const geoNodeId = uuid();
-  graphStore.addNode({
-    id: geoNodeId,
-    type: "geoNode",
-    params: {}
-  }, { type: "root" });
-  
-  // Wait a bit for GeoNode to be properly initialized
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  // Create TorusKnotNode inside the GeoNode's subflow
+  graphStore.addNode(
+    {
+      id: geoNodeId,
+      type: "geoNode",
+      params: {},
+    },
+    { type: "root" }
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
   const torusKnotId = uuid();
-  graphStore.addNode({
-    id: torusKnotId,
-    type: "torusKnotNode",
-    params: {}
-  }, { type: "subflow", geoNodeId });
-  
-  // Dispatch positioning events for the root nodes
+  graphStore.addNode(
+    {
+      id: torusKnotId,
+      type: "torusKnotNode",
+      params: {},
+    },
+    { type: "subflow", geoNodeId }
+  );
+
   setTimeout(() => {
-    window.dispatchEvent(new CustomEvent("minimystx:setNodePosition", {
-      detail: { nodeId: directionalLightId, position: { x: -200, y: -50 } }
-    }));
-    window.dispatchEvent(new CustomEvent("minimystx:setNodePosition", {
-      detail: { nodeId: hemisphereLightId, position: { x: 0, y: -50 } }
-    }));
-    window.dispatchEvent(new CustomEvent("minimystx:setNodePosition", {
-      detail: { nodeId: geoNodeId, position: { x: 200, y: 50 } }
-    }));
-    window.dispatchEvent(new CustomEvent("minimystx:setSubflowNodePosition", {
-      detail: { geoNodeId, nodeId: torusKnotId, position: { x: 0, y: 0 } }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("minimystx:setNodePosition", {
+        detail: { nodeId: directionalLightId, position: { x: -200, y: -50 } },
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent("minimystx:setNodePosition", {
+        detail: { nodeId: hemisphereLightId, position: { x: 0, y: -50 } },
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent("minimystx:setNodePosition", {
+        detail: { nodeId: geoNodeId, position: { x: 200, y: 50 } },
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent("minimystx:setSubflowNodePosition", {
+        detail: { geoNodeId, nodeId: torusKnotId, position: { x: 0, y: 0 } },
+      })
+    );
   }, 200);
 }
 export async function initializeNewScene(options: SceneInitializationOptions = {}): Promise<void> {
@@ -88,9 +102,7 @@ export async function initializeNewScene(options: SceneInitializationOptions = {
     const { useGraphStore } = await import("../engine/graphStore");
     const graphStore = useGraphStore.getState();
     graphStore.clear();
-    
-    // Only reset UI preferences to defaults if explicitly requested
-    // Normal "New Scene" should preserve user's UI preferences
+
     if (resetUIToDefaults) {
       const { useUIStore } = await import("../store/uiStore");
       const uiStore = useUIStore.getState();
@@ -110,10 +122,9 @@ export async function initializeNewScene(options: SceneInitializationOptions = {
       }, 100);
     }
     document.title = "Minimystx";
-    
-    // Create default scene with initial nodes
+
     await createDefaultScene();
-    
+
     if (triggerRecomputation) {
       await triggerSceneRecomputation();
     }
@@ -199,8 +210,10 @@ export async function triggerSceneRecomputation(): Promise<void> {
           }
         }
       } catch (error) {}
-    }, 50); // 50ms debounce
-  } catch (error) {}
+    }, 50);
+  } catch (error) {
+    console.error("Error during scene recomputation:", error);
+  }
 }
 (triggerSceneRecomputation as any)._debounceTimeout = null;
 export async function validateSceneState(): Promise<{
@@ -270,6 +283,7 @@ async function validateSceneAssets(result: ImportResult): Promise<void> {
   for (const manifestAsset of result.manifest.assets) {
     const isAvailable = await assetCache.has(manifestAsset.id);
     if (!isAvailable) {
+      // To Do fix this
     }
   }
 }

@@ -154,8 +154,7 @@ async function loadGltfFile(file: File | SerializableGltfFile): Promise<Object3D
     if (!(await assetCache.has(assetHash))) {
       await assetCache.put(assetHash, arrayBuffer);
     }
-  } catch (cacheError) {
-  }
+  } catch (cacheError) {}
   return object.clone();
 }
 async function loadGltfFromCache(hash: string): Promise<Object3D | null> {
@@ -175,7 +174,7 @@ async function loadGltfFromCache(hash: string): Promise<Object3D | null> {
   }
 }
 export const processor = async (
-  data: ImportGltfNodeData, 
+  data: ImportGltfNodeData,
   input?: { object: Object3D; geometry?: BufferGeometry }
 ): Promise<{ object: Object3D; geometry?: BufferGeometry; shouldSetAsActiveOutput?: boolean }> => {
   const clonedData = {
@@ -183,31 +182,33 @@ export const processor = async (
       file: data.object?.file || null,
       scale: data.object?.scale || 1,
       centerToOrigin: data.object?.centerToOrigin || false,
-      preserveMaterials: data.object?.preserveMaterials !== undefined ? data.object.preserveMaterials : true
+      preserveMaterials:
+        data.object?.preserveMaterials !== undefined ? data.object.preserveMaterials : true,
     },
     transform: {
-      position: { 
-        x: data.transform?.position?.x || 0, 
-        y: data.transform?.position?.y || 0, 
-        z: data.transform?.position?.z || 0 
+      position: {
+        x: data.transform?.position?.x || 0,
+        y: data.transform?.position?.y || 0,
+        z: data.transform?.position?.z || 0,
       },
-      rotation: { 
-        x: data.transform?.rotation?.x || 0, 
-        y: data.transform?.rotation?.y || 0, 
-        z: data.transform?.rotation?.z || 0 
+      rotation: {
+        x: data.transform?.rotation?.x || 0,
+        y: data.transform?.rotation?.y || 0,
+        z: data.transform?.rotation?.z || 0,
       },
-      scale: { 
-        x: data.transform?.scale?.x || 1, 
-        y: data.transform?.scale?.y || 1, 
+      scale: {
+        x: data.transform?.scale?.x || 1,
+        y: data.transform?.scale?.y || 1,
         z: data.transform?.scale?.z || 1,
-        factor: data.transform?.scale?.factor || 1
-      }
+        factor: data.transform?.scale?.factor || 1,
+      },
     },
     rendering: {
       visible: data.rendering?.visible !== undefined ? data.rendering.visible : true,
       castShadow: data.rendering?.castShadow !== undefined ? data.rendering.castShadow : false,
-      receiveShadow: data.rendering?.receiveShadow !== undefined ? data.rendering.receiveShadow : false
-    }
+      receiveShadow:
+        data.rendering?.receiveShadow !== undefined ? data.rendering.receiveShadow : false,
+    },
   };
   if (!clonedData.object.file) {
     const emptyGroup = new Group();
@@ -232,7 +233,10 @@ export const processor = async (
   let loadedObject: Object3D;
   try {
     loadedObject = gltfCache.get(cacheKey)!.clone();
-    loadedObject = processGltfScene({ scene: loadedObject } as GLTF, clonedData.object.preserveMaterials);
+    loadedObject = processGltfScene(
+      { scene: loadedObject } as GLTF,
+      clonedData.object.preserveMaterials
+    );
   } catch (error) {
     return { object: new Group(), geometry: undefined };
   }
@@ -240,7 +244,11 @@ export const processor = async (
   if (validScale !== 1) loadedObject.scale.multiplyScalar(validScale);
   if (clonedData.object.centerToOrigin) centerObject(loadedObject);
   loadedObject.position.add(
-    new Vector3(clonedData.transform.position.x, clonedData.transform.position.y, clonedData.transform.position.z)
+    new Vector3(
+      clonedData.transform.position.x,
+      clonedData.transform.position.y,
+      clonedData.transform.position.z
+    )
   );
   loadedObject.rotation.set(
     loadedObject.rotation.x + clonedData.transform.rotation.x,
@@ -286,8 +294,7 @@ export const processor = async (
         if (input.object.matrixWorld) {
           loadedObject.applyMatrix4(input.object.matrixWorld);
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
   }
   return { object: loadedObject, geometry };

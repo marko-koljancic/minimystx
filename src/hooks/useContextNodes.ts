@@ -8,7 +8,7 @@ export const useContextNodes = () => {
     if (currentContext.type === "root") {
       return Object.entries(rootNodeState).map(([id, nodeState]) => ({
         id,
-        type: nodeState.type || 'unknown',
+        type: nodeState.type || "unknown",
         data: nodeState.params || {},
       }));
     } else if (currentContext.type === "subflow" && currentContext.geoNodeId) {
@@ -16,7 +16,7 @@ export const useContextNodes = () => {
       if (!subFlow) return [];
       return Object.entries(subFlow.nodeState).map(([id, nodeState]) => ({
         id,
-        type: nodeState.type || 'unknown', 
+        type: nodeState.type || "unknown",
         data: nodeState.params || {},
       }));
     }
@@ -38,8 +38,8 @@ export const useContextEdges = () => {
       return [];
     }
     const allEdges = graph.getAllEdges();
-    const contextEdges = allEdges.filter(edge => 
-      contextNodeIds.includes(edge.source) && contextNodeIds.includes(edge.target)
+    const contextEdges = allEdges.filter(
+      (edge) => contextNodeIds.includes(edge.source) && contextNodeIds.includes(edge.target)
     );
     return contextEdges.map((edge, index) => ({
       id: `${edge.source}->${edge.target}-${index}`,

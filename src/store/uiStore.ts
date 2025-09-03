@@ -7,7 +7,6 @@ type FocusedCanvas = "flow" | "render" | null;
 type FlowViewMode = "graph" | "list";
 type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
 
-// Preferences types
 type DisplayUnit = "mm" | "cm" | "m" | "in" | "ft" | "ft-in";
 type AntialiasingType = "none" | "fxaa" | "msaa" | "taa";
 type BackgroundType = "single" | "gradient";
@@ -494,69 +493,102 @@ export const useUIStore = create<UIStore>()(
           preferences: {
             ...state.preferences,
             ...preferences,
-            // Deep merge nested objects to ensure proper updates
-            units: preferences.units ? { ...state.preferences.units, ...preferences.units } : state.preferences.units,
-            renderer: preferences.renderer ? {
-              ...state.preferences.renderer,
-              ...preferences.renderer,
-              postProcessing: preferences.renderer.postProcessing ? {
-                ...state.preferences.renderer.postProcessing,
-                ...preferences.renderer.postProcessing
-              } : state.preferences.renderer.postProcessing,
-              background: preferences.renderer.background ? {
-                ...state.preferences.renderer.background,
-                ...preferences.renderer.background
-              } : state.preferences.renderer.background,
-            } : state.preferences.renderer,
-            materials: preferences.materials ? { ...state.preferences.materials, ...preferences.materials } : state.preferences.materials,
-            camera: preferences.camera ? {
-              ...state.preferences.camera,
-              ...preferences.camera,
-              orbitControls: preferences.camera.orbitControls ? {
-                ...state.preferences.camera.orbitControls,
-                ...preferences.camera.orbitControls
-              } : state.preferences.camera.orbitControls,
-            } : state.preferences.camera,
-            guides: preferences.guides ? {
-              ...state.preferences.guides,
-              ...preferences.guides,
-              grid: preferences.guides.grid ? {
-                ...state.preferences.guides.grid,
-                ...preferences.guides.grid
-              } : state.preferences.guides.grid,
-              axisGizmo: preferences.guides.axisGizmo ? {
-                ...state.preferences.guides.axisGizmo,
-                ...preferences.guides.axisGizmo
-              } : state.preferences.guides.axisGizmo,
-              groundPlane: preferences.guides.groundPlane ? {
-                ...state.preferences.guides.groundPlane,
-                ...preferences.guides.groundPlane
-              } : state.preferences.guides.groundPlane,
-            } : state.preferences.guides,
-            screenshot: preferences.screenshot ? {
-              ...state.preferences.screenshot,
-              ...preferences.screenshot,
-              resolution: preferences.screenshot.resolution ? {
-                ...state.preferences.screenshot.resolution,
-                ...preferences.screenshot.resolution
-              } : state.preferences.screenshot.resolution,
-              overlays: preferences.screenshot.overlays ? {
-                ...state.preferences.screenshot.overlays,
-                ...preferences.screenshot.overlays
-              } : state.preferences.screenshot.overlays,
-              colorManagement: preferences.screenshot.colorManagement ? {
-                ...state.preferences.screenshot.colorManagement,
-                ...preferences.screenshot.colorManagement
-              } : state.preferences.screenshot.colorManagement,
-              fileNaming: preferences.screenshot.fileNaming ? {
-                ...state.preferences.screenshot.fileNaming,
-                ...preferences.screenshot.fileNaming
-              } : state.preferences.screenshot.fileNaming,
-              captureFlow: preferences.screenshot.captureFlow ? {
-                ...state.preferences.screenshot.captureFlow,
-                ...preferences.screenshot.captureFlow
-              } : state.preferences.screenshot.captureFlow,
-            } : state.preferences.screenshot,
+            units: preferences.units
+              ? { ...state.preferences.units, ...preferences.units }
+              : state.preferences.units,
+            renderer: preferences.renderer
+              ? {
+                  ...state.preferences.renderer,
+                  ...preferences.renderer,
+                  postProcessing: preferences.renderer.postProcessing
+                    ? {
+                        ...state.preferences.renderer.postProcessing,
+                        ...preferences.renderer.postProcessing,
+                      }
+                    : state.preferences.renderer.postProcessing,
+                  background: preferences.renderer.background
+                    ? {
+                        ...state.preferences.renderer.background,
+                        ...preferences.renderer.background,
+                      }
+                    : state.preferences.renderer.background,
+                }
+              : state.preferences.renderer,
+            materials: preferences.materials
+              ? { ...state.preferences.materials, ...preferences.materials }
+              : state.preferences.materials,
+            camera: preferences.camera
+              ? {
+                  ...state.preferences.camera,
+                  ...preferences.camera,
+                  orbitControls: preferences.camera.orbitControls
+                    ? {
+                        ...state.preferences.camera.orbitControls,
+                        ...preferences.camera.orbitControls,
+                      }
+                    : state.preferences.camera.orbitControls,
+                }
+              : state.preferences.camera,
+            guides: preferences.guides
+              ? {
+                  ...state.preferences.guides,
+                  ...preferences.guides,
+                  grid: preferences.guides.grid
+                    ? {
+                        ...state.preferences.guides.grid,
+                        ...preferences.guides.grid,
+                      }
+                    : state.preferences.guides.grid,
+                  axisGizmo: preferences.guides.axisGizmo
+                    ? {
+                        ...state.preferences.guides.axisGizmo,
+                        ...preferences.guides.axisGizmo,
+                      }
+                    : state.preferences.guides.axisGizmo,
+                  groundPlane: preferences.guides.groundPlane
+                    ? {
+                        ...state.preferences.guides.groundPlane,
+                        ...preferences.guides.groundPlane,
+                      }
+                    : state.preferences.guides.groundPlane,
+                }
+              : state.preferences.guides,
+            screenshot: preferences.screenshot
+              ? {
+                  ...state.preferences.screenshot,
+                  ...preferences.screenshot,
+                  resolution: preferences.screenshot.resolution
+                    ? {
+                        ...state.preferences.screenshot.resolution,
+                        ...preferences.screenshot.resolution,
+                      }
+                    : state.preferences.screenshot.resolution,
+                  overlays: preferences.screenshot.overlays
+                    ? {
+                        ...state.preferences.screenshot.overlays,
+                        ...preferences.screenshot.overlays,
+                      }
+                    : state.preferences.screenshot.overlays,
+                  colorManagement: preferences.screenshot.colorManagement
+                    ? {
+                        ...state.preferences.screenshot.colorManagement,
+                        ...preferences.screenshot.colorManagement,
+                      }
+                    : state.preferences.screenshot.colorManagement,
+                  fileNaming: preferences.screenshot.fileNaming
+                    ? {
+                        ...state.preferences.screenshot.fileNaming,
+                        ...preferences.screenshot.fileNaming,
+                      }
+                    : state.preferences.screenshot.fileNaming,
+                  captureFlow: preferences.screenshot.captureFlow
+                    ? {
+                        ...state.preferences.screenshot.captureFlow,
+                        ...preferences.screenshot.captureFlow,
+                      }
+                    : state.preferences.screenshot.captureFlow,
+                }
+              : state.preferences.screenshot,
           },
         }));
       },
@@ -674,32 +706,42 @@ export const useUIStore = create<UIStore>()(
           }
           updateBodyTheme(state.theme);
 
-          // Migrate preferences to ensure all required properties exist
           if (state.preferences) {
-            // Ensure elevation property exists for groundPlane
-            if (state.preferences.guides?.groundPlane && typeof state.preferences.guides.groundPlane.elevation === 'undefined') {
+            if (
+              state.preferences.guides?.groundPlane &&
+              typeof state.preferences.guides.groundPlane.elevation === "undefined"
+            ) {
               state.preferences.guides.groundPlane.elevation = -0.001;
             }
-            // Ensure majorGridLines property exists for grid
-            if (state.preferences.guides?.grid && typeof state.preferences.guides.grid.majorGridLines === 'undefined') {
+            if (
+              state.preferences.guides?.grid &&
+              typeof state.preferences.guides.grid.majorGridLines === "undefined"
+            ) {
               state.preferences.guides.grid.majorGridLines = 10;
             }
-            // Ensure bloomStrength property exists for postProcessing
-            if (state.preferences.renderer?.postProcessing && typeof state.preferences.renderer.postProcessing.bloomStrength === 'undefined') {
+            if (
+              state.preferences.renderer?.postProcessing &&
+              typeof state.preferences.renderer.postProcessing.bloomStrength === "undefined"
+            ) {
               state.preferences.renderer.postProcessing.bloomStrength = 0.5;
             }
-            // Ensure SSAO properties exist for postProcessing
             if (state.preferences.renderer?.postProcessing) {
-              if (typeof state.preferences.renderer.postProcessing.ssaoKernelRadius === 'undefined') {
+              if (
+                typeof state.preferences.renderer.postProcessing.ssaoKernelRadius === "undefined"
+              ) {
                 state.preferences.renderer.postProcessing.ssaoKernelRadius = 16;
               }
-              if (typeof state.preferences.renderer.postProcessing.ssaoMinDistance === 'undefined') {
+              if (
+                typeof state.preferences.renderer.postProcessing.ssaoMinDistance === "undefined"
+              ) {
                 state.preferences.renderer.postProcessing.ssaoMinDistance = 0.005;
               }
-              if (typeof state.preferences.renderer.postProcessing.ssaoMaxDistance === 'undefined') {
+              if (
+                typeof state.preferences.renderer.postProcessing.ssaoMaxDistance === "undefined"
+              ) {
                 state.preferences.renderer.postProcessing.ssaoMaxDistance = 0.1;
               }
-              if (typeof state.preferences.renderer.postProcessing.ssaoIntensity === 'undefined') {
+              if (typeof state.preferences.renderer.postProcessing.ssaoIntensity === "undefined") {
                 state.preferences.renderer.postProcessing.ssaoIntensity = 1.0;
               }
             }

@@ -22,9 +22,7 @@ export const NOTE_COLORS = [
   "#FFE4E6",
   "#E9D5FF",
 ];
-export const processor: NodeProcessor<NoteNodeData, void> = (
-  _data: NoteNodeData
-): void => {
+export const processor: NodeProcessor<NoteNodeData, void> = (_data: NoteNodeData): void => {
   return undefined;
 };
 export const noteNodeParams: NodeParams = {
@@ -42,15 +40,15 @@ export const noteNodeParams: NodeParams = {
       max: 800,
     }),
     height: createParameterMetadata("number", 80, {
-      displayName: "Height", 
+      displayName: "Height",
       min: 60,
       max: 600,
     }),
   },
 };
 export const noteNodeCompute = (params: Record<string, unknown>) => {
-  const generalParams = params.general as Record<string, unknown> || {};
-  const noteParams = params.note as Record<string, unknown> || {};
+  const generalParams = (params.general as Record<string, unknown>) || {};
+  const noteParams = (params.note as Record<string, unknown>) || {};
   const data: NoteNodeData = {
     general: {
       name: (generalParams.name as string) || "Note",

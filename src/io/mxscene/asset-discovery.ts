@@ -160,7 +160,7 @@ class ImportGltfAssetProvider implements AssetProvider {
           importSettings: {
             scale: objectParams.scale || 1,
             centerToOrigin: objectParams.centerToOrigin || false,
-            preserveMaterials: objectParams.preserveMaterials !== false, // default to true
+            preserveMaterials: objectParams.preserveMaterials !== false,
           },
         },
       ];
@@ -198,14 +198,12 @@ class ImportGltfAssetProvider implements AssetProvider {
     const view = new DataView(data);
     const magic = view.getUint32(0, true);
     if (magic !== 0x46546c67) {
-      // "glTF" in little-endian
       return [];
     }
-    let offset = 12; // Skip GLB header
+    let offset = 12;
     const jsonChunkLength = view.getUint32(offset, true);
     const jsonChunkType = view.getUint32(offset + 4, true);
     if (jsonChunkType !== 0x4e4f534a) {
-      // "JSON" in little-endian
       return [];
     }
     const jsonBytes = new Uint8Array(data, offset + 8, jsonChunkLength);
@@ -218,7 +216,6 @@ class ImportGltfAssetProvider implements AssetProvider {
       const binaryChunkLength = view.getUint32(binaryOffset, true);
       const binaryChunkType = view.getUint32(binaryOffset + 4, true);
       if (binaryChunkType === 0x004e4942) {
-        // "BIN\0" in little-endian
         const binaryData = new Uint8Array(data, binaryOffset + 8, binaryChunkLength);
         const binaryTextures = await this.extractTexturesFromBinaryBuffer(gltf, binaryData);
         embeddedTextures.push(...binaryTextures);
@@ -260,8 +257,12 @@ class ImportGltfAssetProvider implements AssetProvider {
                 role: "texture",
                 importSettings: {},
               });
-            } catch (error) {}
-          } catch (error) {}
+            } catch (error) {
+              console.error("Error extracting texture:", error);
+            }
+          } catch (error) {
+            console.error("Error decoding base64 texture:", error);
+          }
         }
       }
     }
@@ -303,7 +304,9 @@ class ImportGltfAssetProvider implements AssetProvider {
                 role: "texture",
                 importSettings: {},
               });
-            } catch (error) {}
+            } catch (error) {
+              console.error("Error extracting texture:", error);
+            }
           }
         }
       }
@@ -376,7 +379,9 @@ export async function discoverAssets(graphData: {
             seenHashes.add(asset.hash);
           }
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error("Error discovering assets for node:", error);
+      }
     }
   }
   if (graphData.subFlows) {
@@ -392,7 +397,9 @@ export async function discoverAssets(graphData: {
                 seenHashes.add(asset.hash);
               }
             }
-          } catch (error) {}
+          } catch (error) {
+            console.error("Error discovering assets for subflow node:", error);
+          }
         }
       }
     }

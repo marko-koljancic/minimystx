@@ -62,9 +62,12 @@ const DesignLayout = ({ leftTop, right, children }: DesignLayoutProps) => {
   return (
     <div className={styles.container}>
       <Header />
-      <div ref={containerRef} className={`${styles.contentContainer} ${isRendererMaximized ? styles.maximized : ""}`}>
-        <div 
-          className={styles.leftPane} 
+      <div
+        ref={containerRef}
+        className={`${styles.contentContainer} ${isRendererMaximized ? styles.maximized : ""}`}
+      >
+        <div
+          className={styles.leftPane}
           style={{ width: isRendererMaximized ? "100%" : `${leftPaneWidth}%` }}
         >
           {leftTop}

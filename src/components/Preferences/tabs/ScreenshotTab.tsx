@@ -13,7 +13,7 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
       <div className={styles.tabDescription}>
         Configure screenshot capture settings, resolution, and output options.
       </div>
-      
+
       <div className={styles.controlGroup}>
         <h4 className={styles.controlGroupTitle}>Resolution</h4>
         <div className={styles.parameterGrid}>
@@ -30,9 +30,11 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
                   default: "2x",
                   displayName: "Resolution Preset",
                 }}
-                onChange={(value) => onChange({ 
-                  resolution: { ...preferences.resolution, preset: value as any }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    resolution: { ...preferences.resolution, preset: value as any },
+                  })
+                }
               />
             </div>
           </div>
@@ -54,9 +56,11 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
                       default: 1920,
                       displayName: "Custom Width",
                     }}
-                    onChange={(value) => onChange({ 
-                      resolution: { ...preferences.resolution, customWidth: value as number }
-                    })}
+                    onChange={(value) =>
+                      onChange({
+                        resolution: { ...preferences.resolution, customWidth: value as number },
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -76,15 +80,16 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
                       default: 1080,
                       displayName: "Custom Height",
                     }}
-                    onChange={(value) => onChange({ 
-                      resolution: { ...preferences.resolution, customHeight: value as number }
-                    })}
+                    onChange={(value) =>
+                      onChange({
+                        resolution: { ...preferences.resolution, customHeight: value as number },
+                      })
+                    }
                   />
                 </div>
               </div>
             </>
           )}
-
         </div>
       </div>
 
@@ -103,9 +108,11 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
                   default: false,
                   displayName: "Render Transparent Background",
                 }}
-                onChange={(value) => onChange({ 
-                  overlays: { ...preferences.overlays, transparentBackground: value as boolean }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    overlays: { ...preferences.overlays, transparentBackground: value as boolean },
+                  })
+                }
               />
             </div>
           </div>
@@ -122,9 +129,11 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
                   default: true,
                   displayName: "Render Grid",
                 }}
-                onChange={(value) => onChange({ 
-                  overlays: { ...preferences.overlays, grid: value as boolean }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    overlays: { ...preferences.overlays, grid: value as boolean },
+                  })
+                }
               />
             </div>
           </div>
@@ -141,14 +150,14 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
                   default: true,
                   displayName: "Render Gizmos",
                 }}
-                onChange={(value) => onChange({ 
-                  overlays: { ...preferences.overlays, gizmos: value as boolean }
-                })}
+                onChange={(value) =>
+                  onChange({
+                    overlays: { ...preferences.overlays, gizmos: value as boolean },
+                  })
+                }
               />
             </div>
           </div>
-
-
         </div>
       </div>
 
@@ -157,7 +166,7 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
           <strong>Current Template:</strong> {preferences.fileNaming.template}
         </p>
         <p className={styles.infoText}>
-          Captures use the resolution multiplier settings. Higher resolutions provide better quality 
+          Captures use the resolution multiplier settings. Higher resolutions provide better quality
           but may impact performance and file size.
         </p>
       </div>

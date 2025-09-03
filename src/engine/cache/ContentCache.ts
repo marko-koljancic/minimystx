@@ -7,7 +7,7 @@ const createHash = () => ({
       for (let i = 0; i < data.length; i++) {
         const char = data.charCodeAt(i);
         hash = (hash << 5) - hash + char;
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash & hash;
       }
       return Math.abs(hash).toString(16);
     },
@@ -20,8 +20,8 @@ export interface CacheEntry {
   timestamp: number;
   accessCount: number;
   lastAccess: number;
-  dependsOn: Set<string>; // nodeIds this entry depends on
-  inputHashes: Record<string, string>; // hash of each input for precise invalidation
+  dependsOn: Set<string>;
+  inputHashes: Record<string, string>;
 }
 export interface CacheStats {
   totalEntries: number;
@@ -32,7 +32,7 @@ export interface CacheStats {
 export class ContentCache {
   private cache = new Map<string, CacheEntry>();
   private nodeVersions = new Map<string, number>();
-  private dependencyIndex = new Map<string, Set<string>>(); // nodeId -> Set of cache keys that depend on it
+  private dependencyIndex = new Map<string, Set<string>>();
   private hitCount = 0;
   private missCount = 0;
   private evictionCount = 0;
@@ -141,7 +141,7 @@ export class ContentCache {
     this.nodeVersions.set(nodeId, currentVersion + 1);
     const dependentEntries = this.dependencyIndex.get(nodeId);
     if (!dependentEntries) {
-      return 0; // Nothing to invalidate
+      return 0;
     }
     let invalidatedCount = 0;
     dependentEntries.forEach((cacheKey) => {

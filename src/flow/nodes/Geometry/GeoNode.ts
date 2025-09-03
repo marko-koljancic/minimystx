@@ -27,7 +27,11 @@ export const geoNodeParams: NodeParams = {
   transform: createTransformParams(),
   rendering: createRenderingParams(),
 };
-export const geoNodeCompute = (params: Record<string, any>, _inputs?: any, context?: { nodeId?: string }) => {
+export const geoNodeCompute = (
+  params: Record<string, any>,
+  _inputs?: any,
+  context?: { nodeId?: string }
+) => {
   const data: GeoNodeData = {
     general: params.general,
     transform: {
@@ -48,14 +52,12 @@ export const geoNodeCompute = (params: Record<string, any>, _inputs?: any, conte
         if (outputNodeRuntime?.output) {
           if (outputNodeRuntime.output.default instanceof Object3DContainer) {
             subflowObject = outputNodeRuntime.output.default.value;
-          }
-          else if (outputNodeRuntime.output.object) {
+          } else if (outputNodeRuntime.output.object) {
             subflowObject = outputNodeRuntime.output.object;
           }
         }
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   } else {
   }
   return { object: subflowObject, data };
