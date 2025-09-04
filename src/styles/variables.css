@@ -37,6 +37,7 @@ body.dark-theme {
   --accent-yellow: #f7df1e;
 
   --edge-color: #4a90e2;
+  --edge-outline-color: #000000;
   --connection-line-default: #e5e7eb;
   --connection-line-valid: #55dd99;
   --connection-line-invalid: #ff6060;
@@ -107,6 +108,7 @@ body.light-theme {
   --accent-yellow: #f7df1e;
 
   --edge-color: #0078d4;
+  --edge-outline-color: #000000;
   --connection-line-default: #434343;
   --connection-line-valid: #55dd99;
   --connection-line-invalid: #ff6060;

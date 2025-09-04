@@ -49,15 +49,13 @@ function Dropdown({ items, isOpen, onClose, triggerRef }: DropdownProps) {
 }
 export default function ViewportControls() {
   const {
-    wireframe,
-    xRay,
+    displayMode,
     isOrthographicCamera,
     showAxisGizmo,
     showGridInRenderView,
     currentCameraView,
     toggleGridInRenderView,
-    toggleWireframe,
-    toggleXRay,
+    setDisplayMode,
     setOrthographicCamera,
     setCameraView,
     toggleAxisGizmo,
@@ -79,9 +77,18 @@ export default function ViewportControls() {
     return currentCameraView.charAt(0).toUpperCase() + currentCameraView.slice(1);
   };
   const getShadingLabel = () => {
-    if (wireframe) return "Wireframe";
-    if (xRay) return "X-Ray";
-    return "Shaded";
+    switch (displayMode) {
+      case "shaded": return "Shaded";
+      case "wireframe": return "Wireframe";
+      case "xray": return "X-Ray";
+      case "shadedWireframe": return "Shaded + Topo";
+      case "xrayWireframe": return "X-Ray + Topo";
+      case "normals": return "Normals";
+      case "normalsWireframe": return "Normals + Topo";
+      case "depth": return "Depth";
+      case "depthWireframe": return "Depth + Topo";
+      default: return "Shaded";
+    }
   };
   const viewsItems: DropdownItem[] = [
     {
@@ -134,22 +141,49 @@ export default function ViewportControls() {
   ];
   const shadingItems: DropdownItem[] = [
     {
-      label: "Wireframe",
-      onClick: toggleWireframe,
-      isActive: wireframe,
+      label: "Shaded",
+      onClick: () => setDisplayMode("shaded"),
+      isActive: displayMode === "shaded",
     },
     {
-      label: "Shaded",
-      onClick: () => {
-        if (wireframe) toggleWireframe();
-        if (xRay) toggleXRay();
-      },
-      isActive: !wireframe && !xRay,
+      label: "Shaded + Topo",
+      onClick: () => setDisplayMode("shadedWireframe"),
+      isActive: displayMode === "shadedWireframe",
+    },
+    {
+      label: "Wireframe",
+      onClick: () => setDisplayMode("wireframe"),
+      isActive: displayMode === "wireframe",
     },
     {
       label: "X-Ray",
-      onClick: toggleXRay,
-      isActive: xRay,
+      onClick: () => setDisplayMode("xray"),
+      isActive: displayMode === "xray",
+    },
+    {
+      label: "X-Ray + Topo",
+      onClick: () => setDisplayMode("xrayWireframe"),
+      isActive: displayMode === "xrayWireframe",
+    },
+    {
+      label: "Normals",
+      onClick: () => setDisplayMode("normals"),
+      isActive: displayMode === "normals",
+    },
+    {
+      label: "Normals + Topo",
+      onClick: () => setDisplayMode("normalsWireframe"),
+      isActive: displayMode === "normalsWireframe",
+    },
+    {
+      label: "Depth",
+      onClick: () => setDisplayMode("depth"),
+      isActive: displayMode === "depth",
+    },
+    {
+      label: "Depth + Topo",
+      onClick: () => setDisplayMode("depthWireframe"),
+      isActive: displayMode === "depthWireframe",
     },
   ];
   const displayItems: DropdownItem[] = [

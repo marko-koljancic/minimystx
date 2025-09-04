@@ -16,6 +16,7 @@ export interface EventManagerDependencies {
   onSetCameraMode: (event: CustomEvent) => void;
   onSetCameraView: (event: CustomEvent) => void;
   onToggleAxisGizmo: () => void;
+  onSceneUpdate: () => void;
 }
 
 export interface IEventManager extends RenderingSubsystem {

@@ -188,6 +188,9 @@ export class SceneObjectManager implements ISceneObjectManager {
   private subscribeToStore(): void {
     this.storeUnsubscribe = useGraphStore.subscribe(() => {
       this.updateSceneFromRenderableObjects();
+      
+      const event = new CustomEvent("minimystx:sceneUpdated");
+      window.dispatchEvent(event);
     });
   }
 

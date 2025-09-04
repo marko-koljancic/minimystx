@@ -19,8 +19,8 @@ export function useKeyboardShortcuts({
     toggleMinimap,
     toggleFlowControls,
     cycleConnectionLineStyle,
-    toggleWireframe,
-    toggleXRay,
+    displayMode,
+    setDisplayMode,
     setFocusedCanvas,
     fitView,
     fitNodes,
@@ -76,13 +76,13 @@ export function useKeyboardShortcuts({
         case "w":
           if (context === "render") {
             event.preventDefault();
-            toggleWireframe();
+            setDisplayMode(displayMode === "wireframe" ? "shaded" : "wireframe");
           }
           break;
         case "x":
           if (context === "render") {
             event.preventDefault();
-            toggleXRay();
+            setDisplayMode(displayMode === "xray" ? "shaded" : "xray");
           }
           break;
         case "f":
@@ -175,8 +175,6 @@ export function useKeyboardShortcuts({
     toggleMinimap,
     toggleFlowControls,
     cycleConnectionLineStyle,
-    toggleWireframe,
-    toggleXRay,
     setFocusedCanvas,
     fitView,
     fitNodes,

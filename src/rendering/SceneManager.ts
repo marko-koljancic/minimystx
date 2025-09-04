@@ -11,6 +11,9 @@ import { GroundPlane } from "./guides/GroundPlane";
 import { ScreenshotCapture } from "./capture/ScreenshotCapture";
 import { EventManager } from "./events/EventManager";
 import { CaptureDimensions } from "./capture/CaptureTypes";
+import { WireframeOverlayManager } from "./wireframe/WireframeOverlayManager";
+
+type DisplayMode = "shaded" | "wireframe" | "xray" | "shadedWireframe" | "xrayWireframe" | "normals" | "depth" | "normalsWireframe" | "depthWireframe";
 
 export class SceneManager {
   private scene!: THREE.Scene;
@@ -30,6 +33,7 @@ export class SceneManager {
   private groundPlane!: GroundPlane;
   private screenshotCapture!: ScreenshotCapture;
   private eventManager!: EventManager;
+  private wireframeOverlayManager!: WireframeOverlayManager;
 
   constructor(canvas: HTMLCanvasElement) {
     try {
@@ -127,6 +131,11 @@ export class SceneManager {
       cancelAnimationFrame(this.animationId);
     }
 
+    if (this.sceneUpdateTimeout) {
+      clearTimeout(this.sceneUpdateTimeout);
+      this.sceneUpdateTimeout = null;
+    }
+
     if (this.uiStoreUnsubscribe) {
       this.uiStoreUnsubscribe();
       this.uiStoreUnsubscribe = null;
@@ -146,6 +155,7 @@ export class SceneManager {
     this.groundPlane.dispose();
     this.screenshotCapture.dispose();
     this.eventManager.dispose();
+    this.wireframeOverlayManager.dispose();
 
     this._renderer.dispose();
 
@@ -264,6 +274,11 @@ export class SceneManager {
       onSetCameraMode: (event: CustomEvent) => this.handleSetCameraMode(event),
       onSetCameraView: (event: CustomEvent) => this.handleSetCameraView(event),
       onToggleAxisGizmo: () => this.handleToggleAxisGizmo(),
+      onSceneUpdate: () => this.handleSceneUpdate(),
+    });
+
+    this.wireframeOverlayManager = new WireframeOverlayManager({
+      scene: this.scene,
     });
   }
 
@@ -283,11 +298,8 @@ export class SceneManager {
         this.updateSceneBackground();
       }
 
-      if (state.wireframe !== prevState.wireframe) {
-        this.materialManager.updateWireframeMode(state.wireframe);
-      }
-      if (state.xRay !== prevState.xRay) {
-        this.materialManager.updateXRayMode(state.xRay);
+      if (state.displayMode !== prevState.displayMode) {
+        this.handleDisplayModeChange(state.displayMode);
       }
     });
   }
@@ -414,6 +426,30 @@ export class SceneManager {
     this.axisGizmo.updateVisibility(!showAxisGizmo);
   }
 
+  private sceneUpdateTimeout: number | null = null;
+
+  private handleSceneUpdate(): void {
+    if (this.sceneUpdateTimeout) {
+      clearTimeout(this.sceneUpdateTimeout);
+    }
+
+    this.sceneUpdateTimeout = window.setTimeout(() => {
+      const { displayMode } = useUIStore.getState();
+      
+      if (displayMode === "shadedWireframe" || displayMode === "xrayWireframe" || displayMode === "normalsWireframe" || displayMode === "depthWireframe") {
+        const meshes: THREE.Mesh[] = [];
+        this.scene.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            meshes.push(object);
+          }
+        });
+        this.wireframeOverlayManager.updateWireframeOverlays(meshes);
+      }
+      
+      this.sceneUpdateTimeout = null;
+    }, 50);
+  }
+
   private updateRendererFromPreferences(
     newRendererPrefs: PreferencesState["renderer"],
     prevRendererPrefs: PreferencesState["renderer"]
@@ -441,6 +477,22 @@ export class SceneManager {
     prevMaterialsPrefs: PreferencesState["materials"]
   ): void {
     this.materialManager.updateFromPreferences(newMaterialsPrefs, prevMaterialsPrefs);
+  }
+
+  private handleDisplayModeChange(mode: DisplayMode): void {
+    this.materialManager.updateDisplayMode(mode);
+    
+    if (mode === "shadedWireframe" || mode === "xrayWireframe" || mode === "normalsWireframe" || mode === "depthWireframe") {
+      const meshes: THREE.Mesh[] = [];
+      this.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          meshes.push(object);
+        }
+      });
+      this.wireframeOverlayManager.updateWireframeOverlays(meshes);
+    } else {
+      this.wireframeOverlayManager.clearAllOverlays();
+    }
   }
 
   private updateSceneBackground(): void {

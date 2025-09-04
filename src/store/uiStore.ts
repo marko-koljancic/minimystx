@@ -14,6 +14,7 @@ type ConnectionLineStyle = "bezier" | "straight" | "step" | "simpleBezier";
 type FocusedCanvas = "flow" | "render" | null;
 type FlowViewMode = "graph" | "list";
 type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
+type DisplayMode = "shaded" | "wireframe" | "xray" | "shadedWireframe" | "xrayWireframe" | "normals" | "depth" | "normalsWireframe" | "depthWireframe";
 
 
 interface UIState {
@@ -33,8 +34,7 @@ interface UIState {
   connectionLineStyle: ConnectionLineStyle;
   collapsed: boolean;
   bottomPaneHeight: number;
-  wireframe: boolean;
-  xRay: boolean;
+  displayMode: DisplayMode;
   focusedCanvas: FocusedCanvas;
   isOrthographicCamera: boolean;
   showAxisGizmo: boolean;
@@ -72,8 +72,7 @@ interface UIActions {
   toggleDrawer: () => void;
   setBottomPaneHeight: (height: number) => void;
   resetToDefaults: () => void;
-  toggleWireframe: () => void;
-  toggleXRay: () => void;
+  setDisplayMode: (mode: DisplayMode) => void;
   setFocusedCanvas: (canvas: FocusedCanvas) => void;
   fitView: () => void;
   fitNodes: () => void;
@@ -132,8 +131,7 @@ export const useUIStore = create<UIStore>()(
       connectionLineStyle: "bezier",
       collapsed: false,
       bottomPaneHeight: 260,
-      wireframe: false,
-      xRay: false,
+      displayMode: "shaded" as DisplayMode,
       focusedCanvas: null,
       isOrthographicCamera: false,
       showAxisGizmo: true,
@@ -283,15 +281,13 @@ export const useUIStore = create<UIStore>()(
           connectionLineStyle: "bezier",
           collapsed: false,
           bottomPaneHeight: 260,
-          wireframe: false,
-          xRay: false,
+          displayMode: "shaded" as DisplayMode,
           focusedCanvas: null,
           isOrthographicCamera: false,
           showAxisGizmo: true,
         });
       },
-      toggleWireframe: () => set((state) => ({ wireframe: !state.wireframe })),
-      toggleXRay: () => set((state) => ({ xRay: !state.xRay })),
+      setDisplayMode: (mode: DisplayMode) => set({ displayMode: mode }),
       setFocusedCanvas: (canvas: FocusedCanvas) => set({ focusedCanvas: canvas }),
       fitView: () => {
         window.dispatchEvent(new CustomEvent("minimystx:fitView"));
@@ -411,6 +407,7 @@ export const useUIStore = create<UIStore>()(
         showMinimap: state.showMinimap,
         showFlowControls: state.showFlowControls,
         connectionLineStyle: state.connectionLineStyle,
+        displayMode: state.displayMode,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -435,11 +432,9 @@ if (typeof window !== "undefined") {
   const initialTheme = useUIStore.getState().theme;
   updateBodyTheme(initialTheme);
 }
-export const useWireframe = () => useUIStore((state) => state.wireframe);
-export const useXRay = () => useUIStore((state) => state.xRay);
+export const useDisplayMode = () => useUIStore((state) => state.displayMode);
 export const useFocusedCanvas = () => useUIStore((state) => state.focusedCanvas);
-export const useToggleWireframe = () => useUIStore((state) => state.toggleWireframe);
-export const useToggleXRay = () => useUIStore((state) => state.toggleXRay);
+export const useSetDisplayMode = () => useUIStore((state) => state.setDisplayMode);
 export const useSetFocusedCanvas = () => useUIStore((state) => state.setFocusedCanvas);
 export const useFitView = () => useUIStore((state) => state.fitView);
 export const useFitNodes = () => useUIStore((state) => state.fitNodes);

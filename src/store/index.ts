@@ -1,10 +1,8 @@
 export {
   useUIStore,
-  useWireframe,
-  useXRay,
+  useDisplayMode,
   useFocusedCanvas,
-  useToggleWireframe,
-  useToggleXRay,
+  useSetDisplayMode,
   useSetFocusedCanvas,
   useFitView,
   useFitNodes,

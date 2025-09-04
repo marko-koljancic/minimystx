@@ -21,15 +21,13 @@ import {
 } from "../flow/nodes/nodeRegistry";
 export default function Header() {
   const {
-    wireframe,
-    xRay,
+    displayMode,
     focusedCanvas,
     isOrthographicCamera,
     showAxisGizmo,
     toggleGridInFlowCanvas,
     toggleGridInRenderView,
-    toggleWireframe,
-    toggleXRay,
+    setDisplayMode,
     toggleAxisGizmo,
     setOrthographicCamera,
     setCameraView,
@@ -256,12 +254,12 @@ export default function Header() {
         onClick: focusedCanvas === "flow" ? toggleGridInFlowCanvas : toggleGridInRenderView,
       },
       {
-        label: `Wireframe: ${wireframe ? "On" : "Off"} (W)`,
-        onClick: toggleWireframe,
+        label: `Wireframe: ${displayMode === "wireframe" ? "On" : "Off"} (W)`,
+        onClick: () => setDisplayMode(displayMode === "wireframe" ? "shaded" : "wireframe"),
       },
       {
-        label: `X-Ray: ${xRay ? "On" : "Off"} (X)`,
-        onClick: toggleXRay,
+        label: `X-Ray: ${displayMode === "xray" ? "On" : "Off"} (X)`,
+        onClick: () => setDisplayMode(displayMode === "xray" ? "shaded" : "xray"),
       },
       {
         label: `Axis Gizmo: ${showAxisGizmo ? "On" : "Off"} (A)`,
@@ -350,14 +348,12 @@ export default function Header() {
     ],
     [
       focusedCanvas,
-      wireframe,
-      xRay,
+      displayMode,
       showAxisGizmo,
       isOrthographicCamera,
       toggleGridInRenderView,
       toggleGridInFlowCanvas,
-      toggleWireframe,
-      toggleXRay,
+      setDisplayMode,
       toggleAxisGizmo,
       setOrthographicCamera,
       setCameraView,

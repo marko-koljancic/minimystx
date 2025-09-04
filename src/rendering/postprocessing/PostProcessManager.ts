@@ -4,7 +4,6 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
 import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore"
-import { useUIStore } from "../../store/uiStore";
 import { PostProcessManagerDependencies, IPostProcessManager } from "./PostProcessTypes";
 
 export class PostProcessManager implements IPostProcessManager {

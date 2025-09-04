@@ -26,6 +26,7 @@ export class EventManager implements IEventManager {
       this.dependencies.onSetCameraView as EventListener
     );
     window.addEventListener("minimystx:toggleAxisGizmo", this.dependencies.onToggleAxisGizmo);
+    window.addEventListener("minimystx:sceneUpdated", this.dependencies.onSceneUpdate);
 
     this.isSetup = true;
   }
@@ -51,6 +52,7 @@ export class EventManager implements IEventManager {
       this.dependencies.onSetCameraView as EventListener
     );
     window.removeEventListener("minimystx:toggleAxisGizmo", this.dependencies.onToggleAxisGizmo);
+    window.removeEventListener("minimystx:sceneUpdated", this.dependencies.onSceneUpdate);
 
     this.isSetup = false;
   }
