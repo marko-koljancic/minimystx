@@ -1,5 +1,4 @@
-import { NodeProps, Position } from "@xyflow/react";
-import IOHandle from "../../handles/IOHandle";
+import { NodeProps } from "@xyflow/react";
 import LightNodeBaseDesign from "./LightNodeBaseDesign";
 import RenderFlagBadge from "../../RenderFlagBadge";
 import styles from "../Styles/FlowNode.module.css";
@@ -20,16 +19,6 @@ export default function HemisphereLightNode(props: NodeProps) {
         render={nodeData.rendering?.visible ?? true}
         nodeWidth={NODE_WIDTH}
         nodeHeight={NODE_HEIGHT}
-      />
-      <IOHandle
-        type="source"
-        position={Position.Bottom}
-        className={`${styles.sourceHandle} ${styles.handleYellow}`}
-        style={{
-          bottom: -8,
-          left: NODE_WIDTH / 2,
-        }}
-        id="light_output"
       />
     </div>
   );
