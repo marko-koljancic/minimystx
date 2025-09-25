@@ -1,4 +1,4 @@
-import { AmbientLight as ThreeAmbientLight, Object3D, Group } from "three";
+import { AmbientLight as ThreeAmbientLight, Object3D, Group, SphereGeometry, MeshBasicMaterial, Mesh } from "three";
 import type {
   GeneralProps,
   AmbientLightProps,
@@ -14,7 +14,10 @@ export interface AmbientLightNodeData extends Record<string, unknown> {
     position: { x: number; y: number; z: number };
   };
   light: AmbientLightProps;
-  rendering: AmbientLightRenderingProps;
+  rendering: AmbientLightRenderingProps & {
+    showHelper: boolean;
+    helperSize: number;
+  };
 }
 export const processor: NodeProcessor<AmbientLightNodeData, { object: Object3D }> = (
   data: AmbientLightNodeData
@@ -28,6 +31,12 @@ export const processor: NodeProcessor<AmbientLightNodeData, { object: Object3D }
   light.visible = data.rendering.visible;
   const lightGroup = new Group();
   lightGroup.add(light);
+  if (data.rendering.showHelper) {
+    const helperGeometry = new SphereGeometry(data.rendering.helperSize * 0.1, 8, 6);
+    const helperMaterial = new MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+    const helper = new Mesh(helperGeometry, helperMaterial);
+    lightGroup.add(helper);
+  }
   return { object: lightGroup };
 };
 export const ambientLightNodeParams: NodeParams = {
@@ -54,16 +63,32 @@ export const ambientLightNodeParams: NodeParams = {
   },
   rendering: {
     visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
+    showHelper: createParameterMetadata("boolean", false, { displayName: "Show Helper" }),
+    helperSize: createParameterMetadata("number", 1, {
+      displayName: "Helper Size",
+      min: 0.1,
+      max: 10,
+      step: 0.1,
+    }),
   },
 };
 export const ambientLightNodeCompute = (params: Record<string, unknown>) => {
+  const renderingParams = params.rendering as any;
+  if (renderingParams && renderingParams.helperSize <= 0) {
+    renderingParams.helperSize = 1;
+  }
   const data: AmbientLightNodeData = {
     general: params.general as GeneralProps,
     transform: {
       position: (params.transform as { position: { x: number; y: number; z: number } }).position,
     },
     light: params.light as AmbientLightProps,
-    rendering: params.rendering as AmbientLightRenderingProps,
+    rendering: {
+      visible: (params.rendering as any)?.visible !== false,
+      showHelper: (params.rendering as any)?.showHelper || false,
+      helperSize: (params.rendering as any)?.helperSize || 1,
+      ...(params.rendering || {}),
+    } as AmbientLightRenderingProps & { showHelper: boolean; helperSize: number },
   };
   return processor(data);
 };

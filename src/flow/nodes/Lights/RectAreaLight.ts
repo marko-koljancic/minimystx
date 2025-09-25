@@ -8,7 +8,7 @@ import type {
   NodeProcessor,
 } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
-import { createLightTransformParams } from "../../../engine/nodeParameterFactories";
+import { createTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
 let rectAreaLibInitialized = false;
 if (!rectAreaLibInitialized) {
@@ -19,9 +19,14 @@ export interface RectAreaLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
   transform: {
     position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+    scale: { x: number; y: number; z: number };
+    scaleFactor: number;
   };
   light: RectAreaLightProps;
-  rendering: RectAreaLightRenderingProps;
+  rendering: RectAreaLightRenderingProps & {
+    helperSize: number;
+  };
 }
 export const processor: NodeProcessor<RectAreaLightNodeData, { object: Object3D }> = (
   data: RectAreaLightNodeData
@@ -37,11 +42,23 @@ export const processor: NodeProcessor<RectAreaLightNodeData, { object: Object3D 
     data.transform.position.y,
     data.transform.position.z
   );
+  light.rotation.set(
+    data.transform.rotation.x * (Math.PI / 180),
+    data.transform.rotation.y * (Math.PI / 180),
+    data.transform.rotation.z * (Math.PI / 180)
+  );
+  const scaleFactor = data.transform.scaleFactor;
+  light.scale.set(
+    data.transform.scale.x * scaleFactor,
+    data.transform.scale.y * scaleFactor,
+    data.transform.scale.z * scaleFactor
+  );
   light.visible = data.rendering.visible;
   const lightGroup = new Group();
   lightGroup.add(light);
   if (data.rendering.showHelper) {
     const helper = new RectAreaLightHelper(light);
+    helper.scale.setScalar(data.rendering.helperSize);
     lightGroup.add(helper);
   }
   return { object: lightGroup };
@@ -58,13 +75,13 @@ export const rectAreaLightNodeParams: NodeParams = {
       { displayName: "Description", displayMode: "description" }
     ),
   },
-  transform: createLightTransformParams({ x: 0, y: 0, z: 5 }),
+  transform: createTransformParams(),
   light: {
     color: createParameterMetadata("color", "#ffffff", { displayName: "Color" }),
-    intensity: createParameterMetadata("number", 1.0, {
+    intensity: createParameterMetadata("number", 1.5, {
       displayName: "Intensity",
       min: 0,
-      max: 100,
+      max: 10,
       step: 0.1,
     }),
     width: createParameterMetadata("number", 10, {
@@ -83,6 +100,12 @@ export const rectAreaLightNodeParams: NodeParams = {
   rendering: {
     visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
     showHelper: createParameterMetadata("boolean", false, { displayName: "Show Helper" }),
+    helperSize: createParameterMetadata("number", 1, {
+      displayName: "Helper Size",
+      min: 0.1,
+      max: 10,
+      step: 0.1,
+    }),
   },
 };
 export const rectAreaLightNodeCompute = (params: Record<string, unknown>) => {
@@ -98,13 +121,20 @@ export const rectAreaLightNodeCompute = (params: Record<string, unknown>) => {
       lightParams.height = 0.1;
     }
   }
+  const renderingParams = params.rendering as any;
+  if (renderingParams && renderingParams.helperSize <= 0) {
+    renderingParams.helperSize = 1;
+  }
   const data: RectAreaLightNodeData = {
     general: params.general as GeneralProps,
     transform: {
-      position: (params.transform as { position: { x: number; y: number; z: number } }).position,
+      position: (params.transform as any).position || { x: 0, y: 0, z: 0 },
+      rotation: (params.transform as any).rotation || { x: 0, y: 0, z: 0 },
+      scale: (params.transform as any).scale || { x: 1, y: 1, z: 1 },
+      scaleFactor: (params.transform as any).scaleFactor || 1,
     },
     light: lightParams,
-    rendering: params.rendering as RectAreaLightRenderingProps,
+    rendering: params.rendering as RectAreaLightRenderingProps & { helperSize: number },
   };
   return processor(data);
 };

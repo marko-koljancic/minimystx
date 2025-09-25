@@ -103,14 +103,14 @@ export const directionalLightNodeParams: NodeParams = {
     }),
     bias: createParameterMetadata("number", 0.0001, {
       displayName: "Shadow Bias",
-      min: -0.01,
-      max: 0.01,
+      min: -0.1,
+      max: 0.1,
       step: 0.0001,
     }),
     normalBias: createParameterMetadata("number", 0, {
       displayName: "Normal Bias",
       min: 0,
-      max: 1,
+      max: 10,
       step: 0.001,
     }),
     cameraNear: createParameterMetadata("number", 0.1, {
@@ -165,6 +165,10 @@ export const directionalLightNodeCompute = (params: Record<string, unknown>) => 
   const shadowParams = params.shadow as DirectionalLightShadowProps;
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
+  }
+  const renderingParams = params.rendering as any;
+  if (renderingParams && renderingParams.helperSize <= 0) {
+    renderingParams.helperSize = 1;
   }
   const data: DirectionalLightNodeData = {
     general: params.general as GeneralProps,

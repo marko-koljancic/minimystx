@@ -8,15 +8,19 @@ import type {
 } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
-import { validateAndFixShadowCamera, validateShadowMapSize } from "../../../utils/shadowValidation";
+import { validateAndFixShadowCamera } from "../../../utils/shadowValidation";
 export interface PointLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
   transform: {
     position: { x: number; y: number; z: number };
   };
   light: LightProps;
-  shadow: ShadowProps;
-  rendering: BaseLightRenderingProps;
+  shadow: ShadowProps & {
+    mapSize: string;
+  };
+  rendering: BaseLightRenderingProps & {
+    helperSize: number;
+  };
 }
 export const processor: NodeProcessor<PointLightNodeData, { object: Object3D }> = (
   data: PointLightNodeData
@@ -34,19 +38,19 @@ export const processor: NodeProcessor<PointLightNodeData, { object: Object3D }> 
   );
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
-    light.shadow.mapSize.width = data.shadow.mapSizeWidth;
-    light.shadow.mapSize.height = data.shadow.mapSizeHeight;
+    const mapSize = parseInt(data.shadow.mapSize);
+    light.shadow.mapSize.width = mapSize;
+    light.shadow.mapSize.height = mapSize;
     light.shadow.bias = data.shadow.bias;
     light.shadow.radius = data.shadow.radius;
     light.shadow.camera.near = data.shadow.cameraNear;
     light.shadow.camera.far = data.shadow.cameraFar;
-    validateShadowMapSize(data.shadow.mapSizeWidth, data.shadow.mapSizeHeight, "PointLight");
   }
   light.visible = data.rendering.visible;
   const lightGroup = new Group();
   lightGroup.add(light);
   if (data.rendering.showHelper) {
-    const helper = new PointLightHelper(light, 0.5, data.light.color);
+    const helper = new PointLightHelper(light, data.rendering.helperSize, data.light.color);
     lightGroup.add(helper);
   }
   return { object: lightGroup };
@@ -59,19 +63,19 @@ export const pointLightNodeParams: NodeParams = {
     }),
     description: createParameterMetadata(
       "string",
-      "Creates a point light source that emits light in all directions",
+      "Creates a point light source that emits light in all directions.",
       { displayName: "Description", displayMode: "description" }
     ),
   },
   transform: {
-    position: createParameterMetadata("vector3", { x: 0, y: 5, z: 0 }, { displayName: "Position" }),
+    position: createParameterMetadata("vector3", { x: 10, y: 10, z: 5 }, { displayName: "Position" }),
   },
   light: {
     color: createParameterMetadata("color", "#ffffff", { displayName: "Color" }),
     intensity: createParameterMetadata("number", 1.5, {
       displayName: "Intensity",
       min: 0,
-      max: 100,
+      max: 10,
       step: 0.1,
     }),
     distance: createParameterMetadata("number", 0, {
@@ -89,17 +93,9 @@ export const pointLightNodeParams: NodeParams = {
     castShadow: createParameterMetadata("boolean", true, { displayName: "Cast Shadow" }),
   },
   shadow: {
-    mapSizeWidth: createParameterMetadata("number", 1024, {
-      displayName: "Shadow Map Width",
-      min: 16,
-      max: 4096,
-      step: 1,
-    }),
-    mapSizeHeight: createParameterMetadata("number", 1024, {
-      displayName: "Shadow Map Height",
-      min: 16,
-      max: 4096,
-      step: 1,
+    mapSize: createParameterMetadata("enum", "1024", {
+      displayName: "Shadow Map Size",
+      enumValues: ["512", "1024", "2048"],
     }),
     bias: createParameterMetadata("number", -0.0001, {
       displayName: "Shadow Bias",
@@ -129,6 +125,12 @@ export const pointLightNodeParams: NodeParams = {
   rendering: {
     visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
     showHelper: createParameterMetadata("boolean", false, { displayName: "Show Helper" }),
+    helperSize: createParameterMetadata("number", 1, {
+      displayName: "Helper Size",
+      min: 0.1,
+      max: 10,
+      step: 0.1,
+    }),
   },
 };
 export const pointLightNodeCompute = (params: Record<string, unknown>) => {
@@ -136,14 +138,26 @@ export const pointLightNodeCompute = (params: Record<string, unknown>) => {
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
   }
+  const renderingParams = params.rendering as any;
+  if (renderingParams && renderingParams.helperSize <= 0) {
+    renderingParams.helperSize = 1;
+  }
   const data: PointLightNodeData = {
     general: params.general as GeneralProps,
     transform: {
       position: (params.transform as { position: { x: number; y: number; z: number } }).position,
     },
     light: params.light as LightProps,
-    shadow: shadowParams,
-    rendering: params.rendering as BaseLightRenderingProps,
+    shadow: {
+      mapSize: (params.shadow as any)?.mapSize || "1024",
+      ...(shadowParams || {}),
+    } as ShadowProps & { mapSize: string },
+    rendering: {
+      visible: (params.rendering as any)?.visible !== false,
+      showHelper: (params.rendering as any)?.showHelper || false,
+      helperSize: (params.rendering as any)?.helperSize || 1,
+      ...(params.rendering || {}),
+    } as BaseLightRenderingProps & { helperSize: number },
   };
   return processor(data);
 };

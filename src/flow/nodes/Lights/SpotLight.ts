@@ -17,7 +17,9 @@ export interface SpotLightNodeData extends Record<string, unknown> {
   };
   light: SpotLightProps;
   shadow: SpotLightShadowProps;
-  rendering: SpotLightRenderingProps;
+  rendering: SpotLightRenderingProps & {
+    helperSize: number;
+  };
 }
 export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> = (
   data: SpotLightNodeData
@@ -26,7 +28,7 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
     data.light.color,
     data.light.intensity,
     data.light.distance,
-    data.light.angle,
+    data.light.angle * (Math.PI / 180),
     data.light.penumbra,
     data.light.decay
   );
@@ -56,6 +58,7 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
   lightGroup.add(light.target);
   if (data.rendering.showHelper) {
     const helper = new SpotLightHelper(light, data.light.color);
+    helper.scale.setScalar(data.rendering.helperSize);
     lightGroup.add(helper);
   }
   return { object: lightGroup };
@@ -98,11 +101,11 @@ export const spotLightNodeParams: NodeParams = {
       max: 1000,
       step: 1,
     }),
-    angle: createParameterMetadata("number", 0.785, {
-      displayName: "Angle (radians)",
-      min: 0.017,
-      max: 1.571,
-      step: 0.001,
+    angle: createParameterMetadata("number", 45, {
+      displayName: "Angle (degrees)",
+      min: 1,
+      max: 89,
+      step: 1,
     }),
     penumbra: createParameterMetadata("number", 0.0, {
       displayName: "Penumbra",
@@ -113,7 +116,7 @@ export const spotLightNodeParams: NodeParams = {
     decay: createParameterMetadata("number", 2, {
       displayName: "Decay",
       min: 0,
-      max: 4,
+      max: 10,
       step: 0.1,
     }),
     castShadow: createParameterMetadata("boolean", true, { displayName: "Cast Shadow" }),
@@ -125,14 +128,14 @@ export const spotLightNodeParams: NodeParams = {
     }),
     bias: createParameterMetadata("number", -0.0001, {
       displayName: "Shadow Bias",
-      min: -0.01,
-      max: 0.01,
+      min: -0.1,
+      max: 0.1,
       step: 0.0001,
     }),
     normalBias: createParameterMetadata("number", 0, {
       displayName: "Normal Bias",
       min: 0,
-      max: 1,
+      max: 10,
       step: 0.001,
     }),
     cameraNear: createParameterMetadata("number", 0.5, {
@@ -151,6 +154,12 @@ export const spotLightNodeParams: NodeParams = {
   rendering: {
     visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
     showHelper: createParameterMetadata("boolean", false, { displayName: "Show Helper" }),
+    helperSize: createParameterMetadata("number", 1, {
+      displayName: "Helper Size",
+      min: 0.1,
+      max: 10,
+      step: 0.1,
+    }),
   },
 };
 export const spotLightNodeCompute = (params: Record<string, unknown>) => {
@@ -161,11 +170,15 @@ export const spotLightNodeCompute = (params: Record<string, unknown>) => {
   const lightParams = params.light as SpotLightProps;
   if (lightParams?.angle) {
     if (lightParams.angle <= 0) {
-      lightParams.angle = 0.017;
+      lightParams.angle = 1;
     }
-    if (lightParams.angle > Math.PI / 2) {
-      lightParams.angle = Math.PI / 2;
+    if (lightParams.angle > 89) {
+      lightParams.angle = 89;
     }
+  }
+  const renderingParams = params.rendering as any;
+  if (renderingParams && renderingParams.helperSize <= 0) {
+    renderingParams.helperSize = 1;
   }
   const data: SpotLightNodeData = {
     general: params.general as GeneralProps,
@@ -175,7 +188,12 @@ export const spotLightNodeCompute = (params: Record<string, unknown>) => {
     },
     light: lightParams,
     shadow: shadowParams,
-    rendering: params.rendering as SpotLightRenderingProps,
+    rendering: {
+      visible: (params.rendering as any)?.visible !== false,
+      showHelper: (params.rendering as any)?.showHelper || false,
+      helperSize: (params.rendering as any)?.helperSize || 1,
+      ...(params.rendering || {}),
+    } as SpotLightRenderingProps & { helperSize: number },
   };
   return processor(data);
 };
