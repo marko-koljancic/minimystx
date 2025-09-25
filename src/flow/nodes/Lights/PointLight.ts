@@ -51,7 +51,7 @@ export const processor: NodeProcessor<PointLightNodeData, { object: Object3D }> 
   const lightGroup = new Group();
   lightGroup.add(light);
   if (data.rendering.showHelper) {
-    const helper = new PointLightHelper(light, data.rendering.helperSize, data.light.color);
+    const helper = new PointLightHelper(light, data.rendering.helperSize, 0xff00ff);
     lightGroup.add(helper);
   }
   return { object: lightGroup };

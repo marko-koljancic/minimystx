@@ -59,7 +59,7 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
   lightGroup.add(light);
   lightGroup.add(light.target);
   if (data.rendering.showHelper) {
-    const helper = new DirectionalLightHelper(light, data.rendering.helperSize, data.light.color);
+    const helper = new DirectionalLightHelper(light, data.rendering.helperSize, 0xff00ff);
     lightGroup.add(helper);
   }
   return { object: lightGroup };

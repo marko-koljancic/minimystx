@@ -34,7 +34,7 @@ export const processor: NodeProcessor<AmbientLightNodeData, { object: Object3D }
   lightGroup.add(light);
   if (data.rendering.showHelper) {
     const helperGeometry = new SphereGeometry(data.rendering.helperSize * 0.1, 8, 6);
-    const helperMaterial = new MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+    const helperMaterial = new MeshBasicMaterial({ color: 0xff00ff, wireframe: true });
     const helper = new Mesh(helperGeometry, helperMaterial);
     lightGroup.add(helper);
   }

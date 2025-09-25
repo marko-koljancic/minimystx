@@ -59,7 +59,7 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
   lightGroup.add(light);
   lightGroup.add(light.target);
   if (data.rendering.showHelper) {
-    const helper = new SpotLightHelper(light, data.light.color);
+    const helper = new SpotLightHelper(light, 0xff00ff);
     helper.scale.setScalar(data.rendering.helperSize);
     lightGroup.add(helper);
   }
