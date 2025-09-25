@@ -38,6 +38,7 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
     data.transform.target.y,
     data.transform.target.z
   );
+  light.target.updateMatrixWorld();
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
     const mapSize = parseInt(data.shadow.mapSize);
@@ -53,6 +54,7 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
     light.shadow.camera.bottom = data.shadow.cameraBottom;
   }
   light.visible = data.rendering.visible;
+  light.updateMatrixWorld();
   const lightGroup = new Group();
   lightGroup.add(light);
   lightGroup.add(light.target);
@@ -176,7 +178,12 @@ export const directionalLightNodeCompute = (params: Record<string, unknown>) => 
       position: (params.transform as { position: { x: number; y: number; z: number } }).position,
       target: (params.transform as { target: { x: number; y: number; z: number } }).target,
     },
-    light: params.light as DirectionalLightProps,
+    light: (params.light as DirectionalLightProps) || {
+      color: "#ffffff",
+      intensity: 1.5,
+      visible: true,
+      castShadow: true,
+    },
     shadow: shadowParams,
     rendering: params.rendering as DirectionalLightRenderingProps,
   };

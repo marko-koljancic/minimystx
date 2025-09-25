@@ -47,6 +47,7 @@ export const processor: NodeProcessor<PointLightNodeData, { object: Object3D }> 
     light.shadow.camera.far = data.shadow.cameraFar;
   }
   light.visible = data.rendering.visible;
+  light.updateMatrixWorld();
   const lightGroup = new Group();
   lightGroup.add(light);
   if (data.rendering.showHelper) {
@@ -147,7 +148,14 @@ export const pointLightNodeCompute = (params: Record<string, unknown>) => {
     transform: {
       position: (params.transform as { position: { x: number; y: number; z: number } }).position,
     },
-    light: params.light as LightProps,
+    light: (params.light as LightProps) || {
+      color: "#ffffff",
+      intensity: 1.5,
+      visible: true,
+      castShadow: true,
+      distance: 0,
+      decay: 2,
+    },
     shadow: {
       mapSize: (params.shadow as any)?.mapSize || "1024",
       ...(shadowParams || {}),

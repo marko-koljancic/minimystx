@@ -29,6 +29,7 @@ export const processor: NodeProcessor<AmbientLightNodeData, { object: Object3D }
     data.transform.position.z
   );
   light.visible = data.rendering.visible;
+  light.updateMatrixWorld();
   const lightGroup = new Group();
   lightGroup.add(light);
   if (data.rendering.showHelper) {
@@ -82,7 +83,11 @@ export const ambientLightNodeCompute = (params: Record<string, unknown>) => {
     transform: {
       position: (params.transform as { position: { x: number; y: number; z: number } }).position,
     },
-    light: params.light as AmbientLightProps,
+    light: (params.light as AmbientLightProps) || {
+      color: "#ffffff",
+      intensity: 0.5,
+      visible: true,
+    },
     rendering: {
       visible: (params.rendering as any)?.visible !== false,
       showHelper: (params.rendering as any)?.showHelper || false,

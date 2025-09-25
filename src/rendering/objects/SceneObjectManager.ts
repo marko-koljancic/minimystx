@@ -34,13 +34,8 @@ export class SceneObjectManager implements ISceneObjectManager {
             lightObject = runtime.output.object;
           }
 
-          if (lightObject && typeof lightObject.clone === "function") {
-            try {
-              const clonedLight = lightObject.clone();
-              renderableObjects.push(clonedLight);
-            } catch (error) {
-              console.error("Error cloning light object:", error);
-            }
+          if (lightObject) {
+            renderableObjects.push(lightObject);
           }
         }
         continue;

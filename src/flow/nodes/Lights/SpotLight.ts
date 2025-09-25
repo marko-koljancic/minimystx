@@ -42,6 +42,7 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
     data.transform.target.y,
     data.transform.target.z
   );
+  light.target.updateMatrixWorld();
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
     const mapSize = parseInt(data.shadow.mapSize);
@@ -53,6 +54,7 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
     light.shadow.camera.far = data.shadow.cameraFar;
   }
   light.visible = data.rendering.visible;
+  light.updateMatrixWorld();
   const lightGroup = new Group();
   lightGroup.add(light);
   lightGroup.add(light.target);
@@ -186,7 +188,16 @@ export const spotLightNodeCompute = (params: Record<string, unknown>) => {
       position: (params.transform as { position: { x: number; y: number; z: number } }).position,
       target: (params.transform as { target: { x: number; y: number; z: number } }).target,
     },
-    light: lightParams,
+    light: lightParams || {
+      color: "#ffffff",
+      intensity: 1.5,
+      visible: true,
+      castShadow: true,
+      distance: 0,
+      angle: 45,
+      penumbra: 0,
+      decay: 2,
+    },
     shadow: shadowParams,
     rendering: {
       visible: (params.rendering as any)?.visible !== false,

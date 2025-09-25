@@ -35,6 +35,7 @@ export const processor: NodeProcessor<HemisphereLightNodeData, { object: Object3
     data.transform.position.z
   );
   light.visible = data.rendering.visible;
+  light.updateMatrixWorld();
   const lightGroup = new Group();
   lightGroup.add(light);
   if (data.rendering.showHelper) {
@@ -91,7 +92,12 @@ export const hemisphereLightNodeCompute = (params: Record<string, unknown>) => {
     transform: {
       position: (params.transform as { position: { x: number; y: number; z: number } }).position,
     },
-    light: lightParams,
+    light: lightParams || {
+      skyColor: "#ffffff",
+      groundColor: "#444444",
+      intensity: 1.0,
+      visible: true,
+    },
     rendering: renderingParams,
   };
   return processor(data);

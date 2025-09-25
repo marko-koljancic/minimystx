@@ -54,9 +54,10 @@ export const processor: NodeProcessor<RectAreaLightNodeData, { object: Object3D 
     data.transform.scale.z * scaleFactor
   );
   light.visible = data.rendering.visible;
+  light.updateMatrixWorld();
   const lightGroup = new Group();
   lightGroup.add(light);
-  if (data.rendering.showHelper) {
+  if (data.rendering.showHelper && light.width && light.height) {
     const helper = new RectAreaLightHelper(light);
     helper.scale.setScalar(data.rendering.helperSize);
     lightGroup.add(helper);
@@ -109,17 +110,21 @@ export const rectAreaLightNodeParams: NodeParams = {
   },
 };
 export const rectAreaLightNodeCompute = (params: Record<string, unknown>) => {
-  const lightParams = params.light as RectAreaLightProps;
-  if (lightParams) {
-    if (lightParams.intensity < 0) {
-      lightParams.intensity = 0;
-    }
-    if (lightParams.width <= 0) {
-      lightParams.width = 0.1;
-    }
-    if (lightParams.height <= 0) {
-      lightParams.height = 0.1;
-    }
+  const lightParams = (params.light as RectAreaLightProps) || {
+    color: "#ffffff",
+    intensity: 1.5,
+    visible: true,
+    width: 10,
+    height: 10,
+  };
+  if (lightParams.intensity < 0) {
+    lightParams.intensity = 0;
+  }
+  if (lightParams.width <= 0) {
+    lightParams.width = 0.1;
+  }
+  if (lightParams.height <= 0) {
+    lightParams.height = 0.1;
   }
   const renderingParams = params.rendering as any;
   if (renderingParams && renderingParams.helperSize <= 0) {
