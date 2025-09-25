@@ -3,7 +3,7 @@ import type { NodeProcessor } from "../props";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
-import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
+import { createGeneralParams } from "../../../engine/nodeParameterFactories";
 import { BaseContainer } from "../../../engine/containers/BaseContainer";
 export interface ConeNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
@@ -33,7 +33,7 @@ export const coneNodeParams: NodeParams = {
   geometry: {
     radius: createParameterMetadata("number", 0.5, {
       displayName: "Radius",
-      min: 0.01,
+      min: 0.001,
       max: 50,
       step: 0.1,
     }),
@@ -56,7 +56,9 @@ export const coneNodeParams: NodeParams = {
       step: 1,
     }),
   },
-  rendering: createRenderingParams(),
+  rendering: {
+    visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
+  },
 };
 export const coneNodeDefaults = {
   general: {

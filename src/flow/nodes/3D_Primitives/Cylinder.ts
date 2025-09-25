@@ -3,7 +3,7 @@ import type { NodeProcessor } from "../props";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
-import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
+import { createGeneralParams } from "../../../engine/nodeParameterFactories";
 import { BaseContainer } from "../../../engine/containers/BaseContainer";
 export interface CylinderNodeData extends BaseGeometryData, Record<string, unknown> {
   geometry: {
@@ -70,7 +70,9 @@ export const cylinderNodeParams: NodeParams = {
       step: 1,
     }),
   },
-  rendering: createRenderingParams(),
+  rendering: {
+    visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
+  },
 };
 export const cylinderNodeCompute = (params: Record<string, any>) => {
   const data: CylinderNodeData = {

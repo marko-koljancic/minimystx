@@ -3,7 +3,7 @@ import type { NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
 import { BaseGeometryData, createGeometryMesh } from "../geometryFactories";
-import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
+import { createGeneralParams } from "../../../engine/nodeParameterFactories";
 import { NodePatterns } from "../../../engine/nodes/NodeBuilder";
 import { ContainerFactory, BaseContainer } from "../../../engine/containers/BaseContainer";
 export interface BoxNodeData extends BaseGeometryData, Record<string, unknown> {
@@ -78,7 +78,9 @@ export const boxNodeParams: NodeParams = {
       step: 1,
     }),
   },
-  rendering: createRenderingParams(),
+  rendering: {
+    visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
+  },
 };
 export const boxNodeCompute = (params: Record<string, any>) => {
   const data: BoxNodeData = {
@@ -155,7 +157,9 @@ export const createBoxNodeDefinition = () => {
         step: 1,
       }),
     })
-    .parameterCategory("rendering", createRenderingParams())
+    .parameterCategory("rendering", {
+      visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
+    })
     .compute(async (params, _inputs, _context) => {
       const { width, height, depth, widthSegments, heightSegments, depthSegments } =
         params.geometry;
