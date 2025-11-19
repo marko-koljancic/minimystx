@@ -35,12 +35,7 @@ export {
 export type { PreferencesState } from "./preferencesStore";
 
 export { usePreferencesStore } from "./preferencesStore";
-export {
-  useCameraStore,
-  useIsOrthographicCamera,
-  useCurrentCameraView,
-  useShowAxisGizmo,
-} from "./cameraStore";
+export { useCameraStore, useIsOrthographicCamera, useCurrentCameraView, useShowAxisGizmo } from "./cameraStore";
 export {
   useLayoutStore,
   useDrawerCollapsed,

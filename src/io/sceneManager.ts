@@ -143,8 +143,7 @@ export async function initializeNewScene(options: SceneInitializationOptions = {
       isLoaded: false,
       isInitializing: false,
       hasError: true,
-      errorMessage:
-        error instanceof Error ? error.message : "Unknown error during scene initialization",
+      errorMessage: error instanceof Error ? error.message : "Unknown error during scene initialization",
     };
     throw error;
   }
@@ -269,9 +268,7 @@ export async function validateSceneState(): Promise<{
       warnings,
     };
   } catch (error) {
-    errors.push(
-      `Scene validation failed: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
+    errors.push(`Scene validation failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     return {
       isValid: false,
       errors,

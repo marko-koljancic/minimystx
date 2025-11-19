@@ -1,10 +1,4 @@
-import type {
-  ImportResult,
-  ProgressUpdate,
-  WorkerMessage,
-  ImportRequest,
-  AssetReference,
-} from "./types";
+import type { ImportResult, ProgressUpdate, WorkerMessage, ImportRequest, AssetReference } from "./types";
 import { getAssetCache } from "./opfs-cache";
 import { createZipReader, parseAssetFilename } from "./zip";
 import { hashBytesSHA256 } from "./crypto";
@@ -14,10 +8,7 @@ export interface ImportOptions {
   onError?: (error: Error) => void;
   signal?: AbortSignal;
 }
-export async function importFromMxScene(
-  file: File,
-  options: ImportOptions = {}
-): Promise<ImportResult> {
+export async function importFromMxScene(file: File, options: ImportOptions = {}): Promise<ImportResult> {
   const { onProgress, onError, signal } = options;
   if (signal?.aborted) {
     throw new Error("Import was cancelled");
@@ -207,14 +198,10 @@ export async function applyImportedScene(result: ImportResult): Promise<void> {
         detail: { error: error instanceof Error ? error.message : "Unknown error" },
       })
     );
-    throw new Error(
-      `Failed to restore scene: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
+    throw new Error(`Failed to restore scene: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
-export function selectAndImportMxSceneFile(
-  options: ImportOptions = {}
-): Promise<ImportResult | null> {
+export function selectAndImportMxSceneFile(options: ImportOptions = {}): Promise<ImportResult | null> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
     input.type = "file";
@@ -228,11 +215,7 @@ export function selectAndImportMxSceneFile(
       }
       const maxSize = 500 * 1024 * 1024;
       if (file.size > maxSize) {
-        reject(
-          new Error(
-            `File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Maximum size is 500MB.`
-          )
-        );
+        reject(new Error(`File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Maximum size is 500MB.`));
         return;
       }
       try {
@@ -250,9 +233,7 @@ export function selectAndImportMxSceneFile(
     document.body.removeChild(input);
   });
 }
-export async function createAssetReferencesFromImport(
-  result: ImportResult
-): Promise<AssetReference[]> {
+export async function createAssetReferencesFromImport(result: ImportResult): Promise<AssetReference[]> {
   const assetReferences: AssetReference[] = [];
   const assetCache = getAssetCache();
   for (const manifestAsset of result.manifest.assets) {
@@ -292,19 +273,12 @@ async function restoreAssetsFromReferences(
   const assetCache = getAssetCache();
   const restoredNodes = await Promise.all(
     graphData.nodes.map(async (node) => {
-      if (
-        (node.type === "importObjNode" || node.type === "importGltfNode") &&
-        node.params?.object
-      ) {
+      if ((node.type === "importObjNode" || node.type === "importGltfNode") && node.params?.object) {
         const updatedParams = { ...node.params };
         const objectParams = updatedParams.object as any;
         if (objectParams?.assetHash && !objectParams?.file) {
           try {
-            const restoredFile = await restoreAssetFromHash(
-              objectParams.assetHash,
-              importResult,
-              assetCache
-            );
+            const restoredFile = await restoreAssetFromHash(objectParams.assetHash, importResult, assetCache);
             if (restoredFile) {
               updatedParams.object = {
                 ...objectParams,
@@ -338,19 +312,12 @@ async function restoreAssetsFromReferences(
   for (const [geoNodeId, subFlow] of Object.entries(graphData.subFlows)) {
     const restoredSubFlowNodes = await Promise.all(
       subFlow.nodes.map(async (node: any) => {
-        if (
-          (node.type === "importObjNode" || node.type === "importGltfNode") &&
-          node.params?.object
-        ) {
+        if ((node.type === "importObjNode" || node.type === "importGltfNode") && node.params?.object) {
           const updatedParams = { ...node.params };
           const objectParams = updatedParams.object as any;
           if (objectParams?.assetHash && !objectParams?.file) {
             try {
-              const restoredFile = await restoreAssetFromHash(
-                objectParams.assetHash,
-                importResult,
-                assetCache
-              );
+              const restoredFile = await restoreAssetFromHash(objectParams.assetHash, importResult, assetCache);
               if (restoredFile) {
                 updatedParams.object = {
                   ...objectParams,

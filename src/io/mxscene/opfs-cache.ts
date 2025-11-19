@@ -69,9 +69,7 @@ export class OpfsAssetCache implements AssetCache {
         this.memoryCache.set(hash, data.slice(0));
       } catch (error) {
         throw new OpfsError(
-          `Failed to store asset ${hash}: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
+          `Failed to store asset ${hash}: ${error instanceof Error ? error.message : "Unknown error"}`
         );
       }
     } else {
@@ -89,9 +87,7 @@ export class OpfsAssetCache implements AssetCache {
           } catch (error) {}
         }
       } catch (error) {
-        throw new OpfsError(
-          `Failed to clear asset cache: ${error instanceof Error ? error.message : "Unknown error"}`
-        );
+        throw new OpfsError(`Failed to clear asset cache: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     }
   }

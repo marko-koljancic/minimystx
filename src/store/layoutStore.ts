@@ -133,5 +133,4 @@ export const useClosePalette = () => useLayoutStore((state) => state.closePalett
 export const useTogglePalettePinned = () => useLayoutStore((state) => state.togglePalettePinned);
 export const useSetPalettePosition = () => useLayoutStore((state) => state.setPalettePosition);
 export const useIsRendererMaximized = () => useLayoutStore((state) => state.isRendererMaximized);
-export const useToggleRendererMaximized = () =>
-  useLayoutStore((state) => state.toggleRendererMaximized);
+export const useToggleRendererMaximized = () => useLayoutStore((state) => state.toggleRendererMaximized);

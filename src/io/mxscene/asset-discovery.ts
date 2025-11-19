@@ -13,11 +13,7 @@ interface SerializableGltfFile {
   content: string;
 }
 export interface AssetProvider {
-  getAssetReferences(
-    nodeId: string,
-    nodeType: string,
-    params: Record<string, unknown>
-  ): Promise<AssetReference[]>;
+  getAssetReferences(nodeId: string, nodeType: string, params: Record<string, unknown>): Promise<AssetReference[]>;
 }
 class AssetProviderRegistry {
   private providers = new Map<string, AssetProvider>();
@@ -171,10 +167,7 @@ class ImportGltfAssetProvider implements AssetProvider {
       return [];
     }
   }
-  private async extractTexturesFromGltf(
-    data: ArrayBuffer,
-    filename: string
-  ): Promise<AssetReference[]> {
+  private async extractTexturesFromGltf(data: ArrayBuffer, filename: string): Promise<AssetReference[]> {
     const textureAssets: AssetReference[] = [];
     try {
       const isGlb = filename.toLowerCase().endsWith(".glb");
@@ -268,10 +261,7 @@ class ImportGltfAssetProvider implements AssetProvider {
     }
     return textures;
   }
-  private async extractTexturesFromBinaryBuffer(
-    gltf: any,
-    binaryData: Uint8Array
-  ): Promise<AssetReference[]> {
+  private async extractTexturesFromBinaryBuffer(gltf: any, binaryData: Uint8Array): Promise<AssetReference[]> {
     const textures: AssetReference[] = [];
     if (!gltf.images || !Array.isArray(gltf.images) || !gltf.bufferViews) {
       return textures;
@@ -280,11 +270,7 @@ class ImportGltfAssetProvider implements AssetProvider {
       const image = gltf.images[i];
       if (typeof image.bufferView === "number") {
         const bufferView = gltf.bufferViews[image.bufferView];
-        if (
-          bufferView &&
-          typeof bufferView.byteOffset === "number" &&
-          typeof bufferView.byteLength === "number"
-        ) {
+        if (bufferView && typeof bufferView.byteOffset === "number" && typeof bufferView.byteLength === "number") {
           const start = bufferView.byteOffset || 0;
           const length = bufferView.byteLength;
           if (start + length <= binaryData.length) {

@@ -47,5 +47,4 @@ export const eventBus = new EventBus();
 export const emitSetCameraMode = (isOrthographic: boolean) =>
   eventBus.emit("minimystx:setCameraMode", { isOrthographic });
 export const emitToggleAxisGizmo = () => eventBus.emit("minimystx:toggleAxisGizmo");
-export const emitSetCameraView = (view: string) =>
-  eventBus.emit("minimystx:setCameraView", { view });
+export const emitSetCameraView = (view: string) => eventBus.emit("minimystx:setCameraView", { view });

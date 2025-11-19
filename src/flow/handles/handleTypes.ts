@@ -48,10 +48,7 @@ export const handleTypes: Record<string, HandleTypeDefinition> = {
     },
   },
 };
-export const getHandleTypeInfo = (
-  handleId: string,
-  handleType: "source" | "target"
-): HandleTypeInfo => {
+export const getHandleTypeInfo = (handleId: string, handleType: "source" | "target"): HandleTypeInfo => {
   const baseType = handleId.split("_")[0];
   const typeDefinition = handleTypes[baseType];
   if (!typeDefinition) {

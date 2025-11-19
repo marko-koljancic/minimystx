@@ -114,9 +114,7 @@ export function generateAssetFilename(hash: string, originalName: string): strin
   const safeName = originalName.replace(/[^a-zA-Z0-9.-]/g, "_");
   return `assets/${hash}-${safeName}`;
 }
-export function parseAssetFilename(
-  filename: string
-): { hash: string; originalName: string } | null {
+export function parseAssetFilename(filename: string): { hash: string; originalName: string } | null {
   if (!filename.startsWith("assets/")) {
     return null;
   }

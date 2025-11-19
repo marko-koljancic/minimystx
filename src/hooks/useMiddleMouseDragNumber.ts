@@ -14,11 +14,7 @@ export interface NumericDragState {
   selectorPosition: { x: number; y: number };
   showPrecisionSelector: boolean;
 }
-export function useMiddleMouseDragNumber(
-  value: number,
-  setValue: (v: number) => void,
-  config?: NumericDragConfig
-) {
+export function useMiddleMouseDragNumber(value: number, setValue: (v: number) => void, config?: NumericDragConfig) {
   const { min, max, onCommit, onCancel } = config || {};
   const [state, setState] = useState<NumericDragState>({
     isDragging: false,

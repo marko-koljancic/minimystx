@@ -41,11 +41,7 @@ export default function MenuItem({ title, dropdownItems }: MenuItemProps) {
     setHoveredSubmenu(null);
   };
   return (
-    <div
-      className={styles.menuItem}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div className={styles.menuItem} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       {title}
       {hasDropdown && isDropdownOpen && (
         <div className={styles.dropdown}>

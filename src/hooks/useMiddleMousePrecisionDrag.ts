@@ -25,14 +25,7 @@ export function useMiddleMousePrecisionDrag(
   setValue: (v: number) => void,
   config?: PrecisionDragConfig
 ) {
-  const {
-    min,
-    max,
-    sensitivity = 0.5,
-    precisionList = DEFAULT_PRECISION_LIST,
-    onCommit,
-    onCancel,
-  } = config || {};
+  const { min, max, sensitivity = 0.5, precisionList = DEFAULT_PRECISION_LIST, onCommit, onCancel } = config || {};
   const [state, setState] = useState<PrecisionDragState>({
     isDragging: false,
     originalValue: value,
@@ -72,10 +65,7 @@ export function useMiddleMousePrecisionDrag(
             const candidateIndex = Math.max(0, Math.min(precisionList.length - 1, rawRowIndex + 2));
             const lastChangeY = lastPrecisionChangeRef.current;
             const distanceFromLastChange = Math.abs(mouseY - lastChangeY);
-            if (
-              candidateIndex !== prevState.selectedPrecisionIndex &&
-              distanceFromLastChange >= HYSTERESIS
-            ) {
+            if (candidateIndex !== prevState.selectedPrecisionIndex && distanceFromLastChange >= HYSTERESIS) {
               lastPrecisionChangeRef.current = mouseY;
               newPrecisionIndex = candidateIndex;
             }
@@ -160,8 +150,7 @@ export function useMiddleMousePrecisionDrag(
       const closestIndex = precisionList.findIndex(
         (p, i) =>
           i === precisionList.length - 1 ||
-          Math.abs(p - currentDisplayPrecision) <=
-            Math.abs(precisionList[i + 1] - currentDisplayPrecision)
+          Math.abs(p - currentDisplayPrecision) <= Math.abs(precisionList[i + 1] - currentDisplayPrecision)
       );
       setState({
         isDragging: true,
@@ -205,12 +194,7 @@ export function useMiddleMousePrecisionDrag(
   }, [setValue, onCancel]);
   const handleMouseLeave = useCallback(
     (e: MouseEvent) => {
-      if (
-        e.clientY < 0 ||
-        e.clientX < 0 ||
-        e.clientX > window.innerWidth ||
-        e.clientY > window.innerHeight
-      ) {
+      if (e.clientY < 0 || e.clientX < 0 || e.clientX > window.innerWidth || e.clientY > window.innerHeight) {
         setState((prevState) => {
           if (!prevState.isDragging) return prevState;
           onCommit?.(prevState.currentValue);

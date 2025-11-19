@@ -24,9 +24,7 @@ const isCameraView = (view: string): view is "top" | "front" | "left" | "right" 
 };
 
 const isValidCameraView = (view: unknown): view is CameraView => {
-  return (
-    typeof view === "string" && ["3d", "top", "front", "left", "right", "bottom"].includes(view)
-  );
+  return typeof view === "string" && ["3d", "top", "front", "left", "right", "bottom"].includes(view);
 };
 
 export const useCameraStore = create<CameraStore>()(
@@ -75,8 +73,7 @@ export const useCameraStore = create<CameraStore>()(
 export const useIsOrthographicCamera = () => useCameraStore((state) => state.isOrthographicCamera);
 export const useCurrentCameraView = () => useCameraStore((state) => state.currentCameraView);
 export const useShowAxisGizmo = () => useCameraStore((state) => state.showAxisGizmo);
-export const useSetOrthographicCamera = () =>
-  useCameraStore((state) => state.setOrthographicCamera);
+export const useSetOrthographicCamera = () => useCameraStore((state) => state.setOrthographicCamera);
 export const useToggleCameraMode = () => useCameraStore((state) => state.toggleCameraMode);
 export const useSetCameraView = () => useCameraStore((state) => state.setCameraView);
 export const useSetCurrentCameraView = () => useCameraStore((state) => state.setCurrentCameraView);

@@ -1,10 +1,4 @@
-import type {
-  SceneJson,
-  ExportResult,
-  ProgressUpdate,
-  WorkerMessage,
-  ExportRequest,
-} from "./types";
+import type { SceneJson, ExportResult, ProgressUpdate, WorkerMessage, ExportRequest } from "./types";
 import { discoverAssets, validateAssets } from "./asset-discovery";
 import { getAssetCache } from "./opfs-cache";
 import { hashBytesSHA256 } from "./crypto";
@@ -15,10 +9,7 @@ export interface ExportOptions {
   onError?: (error: Error) => void;
   signal?: AbortSignal;
 }
-export async function exportToMxScene(
-  sceneData: SceneJson,
-  options: ExportOptions
-): Promise<ExportResult> {
+export async function exportToMxScene(sceneData: SceneJson, options: ExportOptions): Promise<ExportResult> {
   const { projectName, onProgress, onError, signal } = options;
   if (signal?.aborted) {
     throw new Error("Export was cancelled");
@@ -251,10 +242,7 @@ async function replaceAssetsWithReferences(graphData: {
 }> {
   const processedNodes = await Promise.all(
     graphData.nodes.map(async (node) => {
-      if (
-        (node.type === "importObjNode" || node.type === "importGltfNode") &&
-        node.params?.object
-      ) {
+      if ((node.type === "importObjNode" || node.type === "importGltfNode") && node.params?.object) {
         const updatedParams = { ...node.params };
         const objectParams = updatedParams.object as any;
         if (objectParams?.file) {
@@ -276,10 +264,7 @@ async function replaceAssetsWithReferences(graphData: {
   for (const [geoNodeId, subFlow] of Object.entries(graphData.subFlows)) {
     const processedSubFlowNodes = await Promise.all(
       subFlow.nodes.map(async (node: any) => {
-        if (
-          (node.type === "importObjNode" || node.type === "importGltfNode") &&
-          node.params?.object
-        ) {
+        if ((node.type === "importObjNode" || node.type === "importGltfNode") && node.params?.object) {
           const updatedParams = { ...node.params };
           const objectParams = updatedParams.object as any;
           if (objectParams?.file) {

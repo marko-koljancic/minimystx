@@ -61,12 +61,7 @@ export default function IOHandle({ ...props }: IOHandleProps) {
   };
   return (
     <>
-      <Handle
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={styles.handle}
-        {...props}
-      />
+      <Handle onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className={styles.handle} {...props} />
       {showTooltip && (
         <div className={styles.tooltipContainer} style={getTooltipStyle()}>
           <div className={styles.tooltipText}>

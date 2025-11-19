@@ -57,10 +57,7 @@ export async function syncCameraState(
     attemptSync();
   });
 }
-export async function syncUIState(
-  uiData: UIData,
-  options: StateSyncOptions = {}
-): Promise<UISyncResult> {
+export async function syncUIState(uiData: UIData, options: StateSyncOptions = {}): Promise<UISyncResult> {
   const opts = { ...DEFAULT_SYNC_OPTIONS, ...options };
   return new Promise(async (resolve) => {
     try {
@@ -86,16 +83,12 @@ export async function syncUIState(
     } catch (error) {
       resolve({
         success: false,
-        error: `Failed to sync UI state: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        error: `Failed to sync UI state: ${error instanceof Error ? error.message : "Unknown error"}`,
       });
     }
   });
 }
-export async function syncRendererState(
-  rendererData: any
-): Promise<{ success: boolean; error?: string }> {
+export async function syncRendererState(rendererData: any): Promise<{ success: boolean; error?: string }> {
   try {
     if (rendererData.background) {
       window.dispatchEvent(
@@ -115,9 +108,7 @@ export async function syncRendererState(
   } catch (error) {
     return {
       success: false,
-      error: `Failed to sync renderer state: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
+      error: `Failed to sync renderer state: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
 }
@@ -132,10 +123,7 @@ export async function waitForSceneReady(timeoutMs: number = 5000): Promise<boole
     }, timeoutMs);
     const checkReady = () => {
       try {
-        if (
-          (window as any).minimystx ||
-          document.querySelector('[data-testid="rendering-canvas"]')
-        ) {
+        if ((window as any).minimystx || document.querySelector('[data-testid="rendering-canvas"]')) {
           if (!isResolved) {
             isResolved = true;
             clearTimeout(timeout);

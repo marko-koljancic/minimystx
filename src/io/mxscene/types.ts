@@ -97,14 +97,7 @@ export interface AssetReference {
   importSettings?: Record<string, unknown>;
 }
 export interface ProgressUpdate {
-  phase:
-    | "collecting"
-    | "hashing"
-    | "packaging"
-    | "writing"
-    | "reading"
-    | "extracting"
-    | "validating";
+  phase: "collecting" | "hashing" | "packaging" | "writing" | "reading" | "extracting" | "validating";
   currentAsset?: string;
   assetIndex?: number;
   totalAssets?: number;

@@ -60,19 +60,11 @@ export default function BaseTooltip({
   return (
     <>
       {triggerElement && (
-        <div
-          ref={triggerRef}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className={className}
-        >
+        <div ref={triggerRef} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className={className}>
           {triggerElement}
         </div>
       )}
-      <div
-        className={`${styles.tooltip} ${tooltipVisibilityClass} ${className || ""}`}
-        style={getTooltipStyle()}
-      >
+      <div className={`${styles.tooltip} ${tooltipVisibilityClass} ${className || ""}`} style={getTooltipStyle()}>
         <div className={styles.arrow} style={getArrowStyle()} />
         <div className={styles.tooltipContent}>
           {name && <div className={styles.tooltipName}>{name}</div>}
