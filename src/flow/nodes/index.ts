@@ -19,6 +19,7 @@ export { hemisphereLightNodeParams, hemisphereLightNodeCompute } from "./Lights/
 export { rectAreaLightNodeParams, rectAreaLightNodeCompute } from "./Lights/RectAreaLight";
 
 export { transformNodeParams, transformNodeComputeTyped } from "./Modifiers/Transform";
+export { combineNodeParams, combineNodeComputeTyped } from "./Modifiers/Combine";
 
 export { noteNodeParams, noteNodeCompute } from "./Utility/Note";
 
@@ -39,6 +40,7 @@ export type { SpotLightNodeData } from "./Lights/SpotLight";
 export type { HemisphereLightNodeData } from "./Lights/HemisphereLight";
 export type { RectAreaLightNodeData } from "./Lights/RectAreaLight";
 export type { TransformNodeData } from "./Modifiers/Transform";
+export type { CombineNodeData } from "./Modifiers/Combine";
 export type { NoteNodeData } from "./Utility/Note";
 
 import * as _geoNode from "./Geometry/GeoNode";
@@ -58,6 +60,7 @@ import * as _spotLight from "./Lights/SpotLight";
 import * as _hemisphereLight from "./Lights/HemisphereLight";
 import * as _rectAreaLight from "./Lights/RectAreaLight";
 import * as _transform from "./Modifiers/Transform";
+import * as _combine from "./Modifiers/Combine";
 import * as _note from "./Utility/Note";
 
 export const geometryNodes = {
@@ -107,6 +110,8 @@ export const lightNodes = {
 export const modifierNodes = {
   transformNodeParams: _transform.transformNodeParams,
   transformNodeComputeTyped: _transform.transformNodeComputeTyped,
+  combineNodeParams: _combine.combineNodeParams,
+  combineNodeComputeTyped: _combine.combineNodeComputeTyped,
 };
 
 export const utilityNodes = {

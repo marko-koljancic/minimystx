@@ -51,9 +51,9 @@ export const isValidConnection = (
   const { source, target, targetHandle } = connection;
   const sourceNode = nodes.find((node) => node.id === source);
   const targetNode = nodes.find((node) => node.id === target);
-  const normalizedTargetHandle = targetHandle ?? "default";
+  const normalizedTargetHandle = targetHandle || "default";
   const existingConnectionsToHandle = edges.filter((edge) => {
-    const edgeTargetHandle = edge.targetHandle ?? "default";
+    const edgeTargetHandle = edge.targetHandle || "default";
     return edge.target === target && edgeTargetHandle === normalizedTargetHandle;
   });
   const existingTargetConnection =

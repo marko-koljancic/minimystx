@@ -342,16 +342,17 @@ export const useGraphStore = create<GraphState>()(
                   const subflowManager = state.subflowManager.getSubflow(context.geoNodeId);
                   if (subflowManager) {
                     try {
-                      const predecessors = subflowManager.internalGraph.getAllPredecessors(node.id);
-                      if (predecessors.length > 0) {
-                        const inputNodeId = predecessors[0].id;
-                        const inputNodeRuntime = subflow.nodeRuntime[inputNodeId];
-                        if (inputNodeRuntime?.output) {
-                          inputs.default =
-                            inputNodeRuntime.output.default ||
-                            new Object3DContainer(new Object3D());
+                      const inputConnections = subflowManager.internalGraph.getNodeInputConnections(node.id);
+                      inputConnections.forEach((source, inputName) => {
+                        const sourceNodeRuntime = subflow.nodeRuntime[source.sourceNodeId];
+                        if (sourceNodeRuntime?.output) {
+                          const outputContainer = sourceNodeRuntime.output[source.sourceOutput] ||
+                                                 sourceNodeRuntime.output.default;
+                          if (outputContainer) {
+                            inputs[inputName] = outputContainer;
+                          }
                         }
-                      }
+                      });
                     } catch {
                       void 0;
                     }
@@ -492,21 +493,17 @@ export const useGraphStore = create<GraphState>()(
                     const inputs: Record<string, BaseContainer> = {};
                     const subflowManager = state.subflowManager.getSubflow(context.geoNodeId);
                     if (subflowManager) {
-                      try {
-                        const predecessors =
-                          subflowManager.internalGraph.getAllPredecessors(nodeId);
-                        if (predecessors.length > 0) {
-                          const inputNodeId = predecessors[0].id;
-                          const inputNodeRuntime = subflow.nodeRuntime[inputNodeId];
-                          if (inputNodeRuntime?.output) {
-                            inputs.default =
-                              inputNodeRuntime.output.default ||
-                              new Object3DContainer(new Object3D());
+                      const inputConnections = subflowManager.internalGraph.getNodeInputConnections(nodeId);
+                      inputConnections.forEach((source, inputName) => {
+                        const sourceNodeRuntime = subflow.nodeRuntime[source.sourceNodeId];
+                        if (sourceNodeRuntime?.output) {
+                          const outputContainer = sourceNodeRuntime.output[source.sourceOutput] ||
+                                                 sourceNodeRuntime.output.default;
+                          if (outputContainer) {
+                            inputs[inputName] = outputContainer;
                           }
                         }
-                      } catch {
-                        void 0;
-                      }
+                      });
                     }
                     const result = nodeDefinition.computeTyped(nodeState.params, inputs, {
                       nodeId,
@@ -591,21 +588,17 @@ export const useGraphStore = create<GraphState>()(
                       const inputs: Record<string, BaseContainer> = {};
                       const subflowManager = state.subflowManager.getSubflow(context.geoNodeId);
                       if (subflowManager) {
-                        try {
-                          const predecessors =
-                            subflowManager.internalGraph.getAllPredecessors(target);
-                          if (predecessors.length > 0) {
-                            const inputNodeId = predecessors[0].id;
-                            const inputNodeRuntime = subflow.nodeRuntime[inputNodeId];
-                            if (inputNodeRuntime?.output) {
-                              inputs.default =
-                                inputNodeRuntime.output.default ||
-                                new Object3DContainer(new Object3D());
+                        const inputConnections = subflowManager.internalGraph.getNodeInputConnections(target);
+                        inputConnections.forEach((source, inputName) => {
+                          const sourceNodeRuntime = subflow.nodeRuntime[source.sourceNodeId];
+                          if (sourceNodeRuntime?.output) {
+                            const outputContainer = sourceNodeRuntime.output[source.sourceOutput] ||
+                                                   sourceNodeRuntime.output.default;
+                            if (outputContainer) {
+                              inputs[inputName] = outputContainer;
                             }
                           }
-                        } catch {
-                          void 0;
-                        }
+                        });
                       }
                       const result = nodeDefinition.computeTyped(nodeState.params, inputs, {
                         nodeId: target,
@@ -637,8 +630,8 @@ export const useGraphStore = create<GraphState>()(
         source: string,
         target: string,
         context: GraphContext,
-        _sourceHandle?: string,
-        _targetHandle?: string
+        sourceHandle?: string,
+        targetHandle?: string
       ) => {
         get().graph.disconnect(source, target);
         if (context.type === "root") {
@@ -651,7 +644,13 @@ export const useGraphStore = create<GraphState>()(
             });
           }
         } else if (context.type === "subflow" && context.geoNodeId) {
-          get().subflowManager.removeSubflowConnection(context.geoNodeId, source, target);
+          get().subflowManager.removeSubflowConnection(
+            context.geoNodeId,
+            source,
+            target,
+            sourceHandle,
+            targetHandle
+          );
           set((state) => {
             const subflow = state.subFlows[context.geoNodeId];
             if (subflow?.nodeRuntime[target]) {

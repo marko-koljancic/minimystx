@@ -1,9 +1,4 @@
-import {
-  DirectionalLight as ThreeDirectionalLight,
-  DirectionalLightHelper,
-  Object3D,
-  Group,
-} from "three";
+import { DirectionalLight as ThreeDirectionalLight, DirectionalLightHelper, Object3D, Group } from "three";
 import type {
   GeneralProps,
   DirectionalLightProps,
@@ -28,16 +23,8 @@ export const processor: NodeProcessor<DirectionalLightNodeData, { object: Object
   data: DirectionalLightNodeData
 ) => {
   const light = new ThreeDirectionalLight(data.light.color, data.light.intensity);
-  light.position.set(
-    data.transform.position.x,
-    data.transform.position.y,
-    data.transform.position.z
-  );
-  light.target.position.set(
-    data.transform.target.x,
-    data.transform.target.y,
-    data.transform.target.z
-  );
+  light.position.set(data.transform.position.x, data.transform.position.y, data.transform.position.z);
+  light.target.position.set(data.transform.target.x, data.transform.target.y, data.transform.target.z);
   light.target.updateMatrixWorld();
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
@@ -70,33 +57,28 @@ export const directionalLightNodeParams: NodeParams = {
       displayName: "Name",
       displayMode: "name",
     }),
-    description: createParameterMetadata(
-      "string",
-      "Parallel light rays from a distant source; good for sun/sky.",
-      { displayName: "Description", displayMode: "description" }
-    ),
+    description: createParameterMetadata("string", "Parallel light rays from a distant source; good for sun/sky.", {
+      displayName: "Description",
+      displayMode: "description",
+    }),
   },
   transform: {
-    position: createParameterMetadata(
-      "vector3",
-      { x: 10, y: 10, z: 5 },
-      { displayName: "Position", step: 0.1 }
-    ),
-    target: createParameterMetadata(
-      "vector3",
-      { x: 0, y: 0, z: 0 },
-      { displayName: "Target", step: 0.1 }
-    ),
+    position: createParameterMetadata("vector3", { x: 10, y: 10, z: 5 }, { displayName: "Position", step: 0.1 }),
+    target: createParameterMetadata("vector3", { x: 0, y: 0, z: 0 }, { displayName: "Target", step: 0.1 }),
   },
   light: {
-    color: createParameterMetadata("color", "#ffffff", { displayName: "Color" }),
+    color: createParameterMetadata("color", "#ffffff", {
+      displayName: "Color",
+    }),
     intensity: createParameterMetadata("number", 1.5, {
       displayName: "Intensity",
       min: 0,
       max: 10,
       step: 0.1,
     }),
-    castShadow: createParameterMetadata("boolean", true, { displayName: "Cast Shadow" }),
+    castShadow: createParameterMetadata("boolean", true, {
+      displayName: "Cast Shadow",
+    }),
   },
   shadow: {
     mapSize: createParameterMetadata("enum", "2048", {
@@ -153,8 +135,12 @@ export const directionalLightNodeParams: NodeParams = {
     }),
   },
   rendering: {
-    visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
-    showHelper: createParameterMetadata("boolean", false, { displayName: "Show Helper" }),
+    visible: createParameterMetadata("boolean", true, {
+      displayName: "Visible",
+    }),
+    showHelper: createParameterMetadata("boolean", false, {
+      displayName: "Show Helper",
+    }),
     helperSize: createParameterMetadata("number", 1, {
       displayName: "Helper Size",
       min: 0.1,

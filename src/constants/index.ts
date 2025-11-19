@@ -7,6 +7,7 @@ import ConeNode from "../flow/nodes/3D_Primitives/ConeNode.tsx";
 import TorusNode from "../flow/nodes/3D_Primitives/TorusNode.tsx";
 import TorusKnotNode from "../flow/nodes/3D_Primitives/TorusKnotNode.tsx";
 import TransformNode from "../flow/nodes/Modifiers/TransformNode.tsx";
+import CombineNode from "../flow/nodes/Modifiers/CombineNode.tsx";
 import ImportObjNode from "../flow/nodes/3D_Primitives/ImportObjNode.tsx";
 import ImportGltfNode from "../flow/nodes/3D_Primitives/ImportGltfNode.tsx";
 import PointLightNode from "../flow/nodes/Lights/PointLightNode.tsx";
@@ -27,6 +28,7 @@ import type {
   TorusNodeData,
   TorusKnotNodeData,
   TransformNodeData,
+  CombineNodeData,
   ImportObjNodeData,
   ImportGltfNodeData,
   PointLightNodeData,
@@ -49,6 +51,7 @@ export const nodeTypes = {
   torusNode: TorusNode,
   torusKnotNode: TorusKnotNode,
   transformNode: TransformNode,
+  combineNode: CombineNode,
   importObjNode: ImportObjNode,
   importGltfNode: ImportGltfNode,
   pointLightNode: PointLightNode,
@@ -72,6 +75,7 @@ type FlowNodeTypes =
   | TorusNodeData
   | TorusKnotNodeData
   | TransformNodeData
+  | CombineNodeData
   | ImportObjNodeData
   | ImportGltfNodeData
   | PointLightNodeData

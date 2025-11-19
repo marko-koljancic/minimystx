@@ -95,13 +95,30 @@ export class SubflowManager {
     if (!subflow) return;
     subflow.scheduler.onInputChange(nodeId, inputKey, value);
   }
-  addSubflowConnection(geoNodeId: string, sourceId: string, targetId: string): boolean {
+  addSubflowConnection(
+    geoNodeId: string,
+    sourceId: string,
+    targetId: string,
+    sourceHandle?: string,
+    targetHandle?: string
+  ): boolean {
     const subflow = this.subflows.get(geoNodeId);
     if (!subflow) return false;
-    const connected = subflow.internalGraph.connect(sourceId, targetId);
+
+    const sourceOutput = sourceHandle || "default";
+    const targetInput = targetHandle || "default";
+
+    const connected = subflow.internalGraph.connectTyped(
+      sourceId,
+      sourceOutput,
+      targetId,
+      targetInput
+    );
+
     if (!connected) {
       return false;
     }
+
     subflow.scheduler.onConnectionChange(sourceId, targetId, true);
     try {
       const predecessors = subflow.internalGraph.getAllPredecessors(targetId);
@@ -110,10 +127,19 @@ export class SubflowManager {
     }
     return true;
   }
-  removeSubflowConnection(geoNodeId: string, sourceId: string, targetId: string): void {
+  removeSubflowConnection(
+    geoNodeId: string,
+    sourceId: string,
+    targetId: string,
+    sourceHandle?: string,
+    targetHandle?: string
+  ): void {
     const subflow = this.subflows.get(geoNodeId);
     if (!subflow) return;
-    subflow.internalGraph.disconnect(sourceId, targetId);
+
+    const targetInput = targetHandle || "default";
+
+    subflow.internalGraph.disconnectTyped(targetId, targetInput);
     subflow.scheduler.onConnectionChange(sourceId, targetId, false);
   }
   getSubflow(geoNodeId: string): SubflowGraph | undefined {

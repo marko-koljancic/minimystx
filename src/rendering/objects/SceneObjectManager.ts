@@ -65,7 +65,7 @@ export class SceneObjectManager implements ISceneObjectManager {
           continue;
         }
 
-        const outputNodeVisible = outputNodeRuntime.params?.rendering?.visible === true;
+        const outputNodeVisible = outputNodeRuntime.params?.rendering?.visible !== false;
         if (!outputNodeVisible) continue;
 
         const subFlowOutput = outputNodeRuntime.output;

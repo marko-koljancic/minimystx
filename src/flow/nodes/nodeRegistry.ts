@@ -34,6 +34,8 @@ import {
   rectAreaLightNodeCompute,
   transformNodeParams,
   transformNodeComputeTyped,
+  combineNodeParams,
+  combineNodeComputeTyped,
   noteNodeParams,
   noteNodeCompute,
 } from ".";
@@ -116,6 +118,15 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: transformNodeParams,
     computeTyped: transformNodeComputeTyped,
+    inputCloneMode: InputCloneMode.NEVER,
+  },
+  combineNode: {
+    type: "combineNode",
+    category: "Modifiers",
+    displayName: "Combine",
+    allowedContexts: ["subflow"],
+    params: combineNodeParams,
+    computeTyped: combineNodeComputeTyped,
     inputCloneMode: InputCloneMode.NEVER,
   },
   noteNode: {
