@@ -29,9 +29,7 @@ export function UnitsTab({ preferences, onChange }: UnitsTabProps) {
                   default: "m",
                   displayName: "Display Unit",
                 }}
-                onChange={(value) =>
-                  onChange({ displayUnit: value as PreferencesState["units"]["displayUnit"] })
-                }
+                onChange={(value) => onChange({ displayUnit: value as PreferencesState["units"]["displayUnit"] })}
               />
             </div>
           </div>

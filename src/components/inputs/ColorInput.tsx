@@ -8,12 +8,7 @@ interface ColorInputProps {
   onChange: (value: string) => void;
   disabled?: boolean;
 }
-export const ColorInput: React.FC<ColorInputProps> = ({
-  value,
-  metadata,
-  onChange,
-  disabled = false,
-}) => {
+export const ColorInput: React.FC<ColorInputProps> = ({ value, metadata, onChange, disabled = false }) => {
   const [textValue, setTextValue] = useState(value);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");

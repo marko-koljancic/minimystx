@@ -129,8 +129,7 @@ export function CameraTab({ preferences, onChange }: CameraTabProps) {
             >
               WARNING
             </span>{" "}
-            Extreme clipping plane values can cause depth buffer precision issues or object
-            disappearing.
+            Extreme clipping plane values can cause depth buffer precision issues or object disappearing.
           </p>
         </div>
       </div>

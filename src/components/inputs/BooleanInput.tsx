@@ -7,11 +7,7 @@ interface BooleanInputProps {
   onChange: (value: boolean) => void;
   disabled?: boolean;
 }
-export const BooleanInput: React.FC<BooleanInputProps> = ({
-  value,
-  onChange,
-  disabled = false,
-}) => {
+export const BooleanInput: React.FC<BooleanInputProps> = ({ value, onChange, disabled = false }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.checked);
   };

@@ -10,12 +10,7 @@ interface VectorInputProps {
   onChange: (value: { x: number; y: number; z?: number; w?: number }) => void;
   disabled?: boolean;
 }
-export const VectorInput: React.FC<VectorInputProps> = ({
-  value,
-  metadata,
-  onChange,
-  disabled = false,
-}) => {
+export const VectorInput: React.FC<VectorInputProps> = ({ value, metadata, onChange, disabled = false }) => {
   const components = React.useMemo(() => {
     switch (metadata.type) {
       case "vector2":
@@ -156,8 +151,7 @@ export const VectorInput: React.FC<VectorInputProps> = ({
       inputRefs.current[component]?.blur();
     } else if (e.key === "Escape") {
       e.preventDefault();
-      const validValue =
-        lastValidValues.current[component as keyof typeof lastValidValues.current] || 0;
+      const validValue = lastValidValues.current[component as keyof typeof lastValidValues.current] || 0;
       setInputValues((prev) => ({
         ...prev,
         [component]: validValue.toString(),

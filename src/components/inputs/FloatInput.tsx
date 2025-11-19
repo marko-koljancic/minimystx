@@ -10,12 +10,7 @@ interface FloatInputProps {
   onChange: (value: number) => void;
   disabled?: boolean;
 }
-export const FloatInput: React.FC<FloatInputProps> = ({
-  value,
-  metadata,
-  onChange,
-  disabled = false,
-}) => {
+export const FloatInput: React.FC<FloatInputProps> = ({ value, metadata, onChange, disabled = false }) => {
   const [inputValue, setInputValue] = useState((value ?? metadata.default ?? 0).toString());
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -108,9 +103,7 @@ export const FloatInput: React.FC<FloatInputProps> = ({
       .join(" ");
     return classes;
   };
-  const displayValue = precisionDrag.state.isDragging
-    ? precisionDrag.getDisplayValue()
-    : inputValue;
+  const displayValue = precisionDrag.state.isDragging ? precisionDrag.getDisplayValue() : inputValue;
   return (
     <div className={styles.inputContainer}>
       {hasSlider ? (

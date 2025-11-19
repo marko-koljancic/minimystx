@@ -7,12 +7,7 @@ interface FileInputProps {
   onChange: (value: File | null) => void;
   disabled?: boolean;
 }
-export const FileInput: React.FC<FileInputProps> = ({
-  value,
-  metadata,
-  onChange,
-  disabled = false,
-}) => {
+export const FileInput: React.FC<FileInputProps> = ({ value, metadata, onChange, disabled = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;

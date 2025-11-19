@@ -41,9 +41,7 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
             </div>
           </div>
 
-          <div
-            className={`${styles.toggleGroup} ${preferences.grid.enabled ? styles.enabled : ""}`}
-          >
+          <div className={`${styles.toggleGroup} ${preferences.grid.enabled ? styles.enabled : ""}`}>
             <div className={styles.parameterRow}>
               <div className={styles.labelColumn}>
                 <label className={styles.parameterLabel}>Major Lines</label>
@@ -123,9 +121,9 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            Grid spacing is displayed in the current display unit. Major Lines sets the number of
-            prominent grid lines (default 10x10), Major Spacing defines the distance between them,
-            and Minor Subdivisions create smaller intermediate lines.
+            Grid spacing is displayed in the current display unit. Major Lines sets the number of prominent grid lines
+            (default 10x10), Major Spacing defines the distance between them, and Minor Subdivisions create smaller
+            intermediate lines.
           </p>
         </div>
       </div>
@@ -154,11 +152,7 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
             </div>
           </div>
 
-          <div
-            className={`${styles.toggleGroup} ${
-              preferences.axisGizmo.enabled ? styles.enabled : ""
-            }`}
-          >
+          <div className={`${styles.toggleGroup} ${preferences.axisGizmo.enabled ? styles.enabled : ""}`}>
             <div className={styles.parameterRow}>
               <div className={styles.labelColumn}>
                 <label className={styles.parameterLabel}>Size</label>
@@ -186,8 +180,8 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            The axis gizmo shows coordinate system orientation with colored arrows: Red (X), Green
-            (Y), Blue (Z). Toggle with <strong>A</strong> key.
+            The axis gizmo shows coordinate system orientation with colored arrows: Red (X), Green (Y), Blue (Z). Toggle
+            with <strong>A</strong> key.
           </p>
         </div>
       </div>
@@ -216,11 +210,7 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
             </div>
           </div>
 
-          <div
-            className={`${styles.toggleGroup} ${
-              preferences.groundPlane.enabled ? styles.enabled : ""
-            }`}
-          >
+          <div className={`${styles.toggleGroup} ${preferences.groundPlane.enabled ? styles.enabled : ""}`}>
             <div className={styles.parameterRow}>
               <div className={styles.labelColumn}>
                 <label className={styles.parameterLabel}>Elevation</label>
@@ -272,8 +262,8 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            The ground plane provides a reference surface at Y=0. Enable shadows to see object
-            shadows cast on the ground plane.
+            The ground plane provides a reference surface at Y=0. Enable shadows to see object shadows cast on the
+            ground plane.
           </p>
           {preferences.groundPlane.enabled && preferences.groundPlane.shadowsEnabled && (
             <p className={styles.infoText}>

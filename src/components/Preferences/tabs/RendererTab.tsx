@@ -14,7 +14,6 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
         Configure rendering quality, performance, and visual settings for the 3D viewport.
       </div>
 
-
       <div className={styles.controlGroup}>
         <h4 className={styles.controlGroupTitle}>Post-Processing</h4>
         <div className={styles.parameterGrid}>

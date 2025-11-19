@@ -380,8 +380,8 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
 
         <div className={styles.infoBox}>
           <p className={styles.infoText}>
-            sRGB encoding ensures proper color space handling for web display. Disable only for
-            specialized workflows requiring linear color space.
+            sRGB encoding ensures proper color space handling for web display. Disable only for specialized workflows
+            requiring linear color space.
           </p>
         </div>
       </div>

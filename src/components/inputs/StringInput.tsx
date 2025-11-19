@@ -8,12 +8,7 @@ interface StringInputProps {
   onChange: (value: string) => void;
   disabled?: boolean;
 }
-export const StringInput: React.FC<StringInputProps> = ({
-  value,
-  metadata,
-  onChange,
-  disabled = false,
-}) => {
+export const StringInput: React.FC<StringInputProps> = ({ value, metadata, onChange, disabled = false }) => {
   const [inputValue, setInputValue] = useState(value);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");

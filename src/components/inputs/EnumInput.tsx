@@ -8,12 +8,7 @@ interface EnumInputProps {
   onChange: (value: string) => void;
   disabled?: boolean;
 }
-export const EnumInput: React.FC<EnumInputProps> = ({
-  value,
-  metadata,
-  onChange,
-  disabled = false,
-}) => {
+export const EnumInput: React.FC<EnumInputProps> = ({ value, metadata, onChange, disabled = false }) => {
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
