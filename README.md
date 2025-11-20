@@ -2,9 +2,16 @@
 
 A browser-based parametric design studio built with React, TypeScript, and WebAssembly for instant, high-performance 3D modeling and lighting design.
 
+| [![Minimystx PoC Overview](./images/thumbnails/MinimystxEarlyPoCBuild.gif)](https://youtu.be/bxHWWFmj-JE) | [![Minimystx Early PoC Build](./images/thumbnails/MinimystxPoCOverview.gif)](https://youtu.be/c9Ud1GaUZ9Y) |
+|:---:|:---:|
+| **Minimystx PoC Overview** | **Minimystx Early PoC Build** |
+
 ## Overview
 
 Minimystx is a sophisticated browser-only parametric design studio that combines React and TypeScript with WebAssembly for high-performance 3D operations. It features a professional node-based editing system similar to Houdini/Grasshopper with a split interface showing both the node editor and real-time 3D viewport simultaneously. The application includes advanced features like hierarchical subflow systems, comprehensive lighting tools, scene serialization, and performance-optimized computation with intelligent caching.
+
+| ![Minimystx app main UI](./images/img1.png) | ![Minimystx app main UI](./images/img4.png) |
+|:---:|:---:|
 
 ## Features
 
