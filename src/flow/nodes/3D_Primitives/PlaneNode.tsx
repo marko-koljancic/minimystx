@@ -11,10 +11,7 @@ export default function PlaneNode(props: NodeProps) {
   const nodeData = data as PlaneNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Plane"}
-        isSelected={Boolean(selected)}
-      />
+      <BaseGeometryNodeDesign label={nodeData.general?.name || "Plane"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

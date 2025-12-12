@@ -11,12 +11,7 @@ export interface ComputeContext {
   outputs: Record<string, BaseContainer>;
 }
 export interface SchedulerEvent {
-  type:
-    | "node-computed"
-    | "cone-updated"
-    | "render-target-changed"
-    | "input-connected"
-    | "input-disconnected";
+  type: "node-computed" | "cone-updated" | "render-target-changed" | "input-connected" | "input-disconnected";
   nodeId: string;
   output?: any;
   outputs?: Record<string, BaseContainer>;
@@ -69,12 +64,7 @@ export class RenderConeScheduler {
       this.scheduleComputation();
     }
   }
-  connectInput(
-    sourceNodeId: string,
-    sourceOutput: string,
-    targetNodeId: string,
-    targetInput: string
-  ): boolean {
+  connectInput(sourceNodeId: string, sourceOutput: string, targetNodeId: string, targetInput: string): boolean {
     if (!this.inputConnections.has(targetNodeId)) {
       this.inputConnections.set(targetNodeId, new Map());
     }
@@ -208,9 +198,7 @@ export class RenderConeScheduler {
         return inputs;
     }
   }
-  private cloneInputContainers(
-    inputs: Record<string, BaseContainer>
-  ): Record<string, BaseContainer> {
+  private cloneInputContainers(inputs: Record<string, BaseContainer>): Record<string, BaseContainer> {
     const cloned: Record<string, BaseContainer> = {};
     for (const [key, container] of Object.entries(inputs)) {
       cloned[key] = container.clone();
@@ -239,9 +227,7 @@ export class RenderConeScheduler {
   private async computeNode(nodeId: string): Promise<void> {
     if (!this.isInRenderCone(nodeId)) return;
     const node = this.graph.getNode(nodeId);
-    const nodeDefinition = node?.type
-      ? nodeRegistry[node.type as keyof typeof nodeRegistry]
-      : undefined;
+    const nodeDefinition = node?.type ? nodeRegistry[node.type as keyof typeof nodeRegistry] : undefined;
     if (!nodeDefinition) {
       return;
     }

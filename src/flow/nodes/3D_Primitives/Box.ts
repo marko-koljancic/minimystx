@@ -21,19 +21,12 @@ function createBoxGeometry(data: BoxNodeData): BufferGeometry {
   const clampedWidthSegments = Math.max(1, Math.min(512, Math.round(widthSegments)));
   const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
   const clampedDepthSegments = Math.max(1, Math.min(512, Math.round(depthSegments)));
-  return new BoxGeometry(
-    width,
-    height,
-    depth,
-    clampedWidthSegments,
-    clampedHeightSegments,
-    clampedDepthSegments
-  );
+  return new BoxGeometry(width, height, depth, clampedWidthSegments, clampedHeightSegments, clampedDepthSegments);
 }
-export const processor: NodeProcessor<
-  BoxNodeData,
-  { object: Object3D; geometry: BufferGeometry }
-> = (data: BoxNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
+export const processor: NodeProcessor<BoxNodeData, { object: Object3D; geometry: BufferGeometry }> = (
+  data: BoxNodeData,
+  input?: { object: Object3D; geometry?: BufferGeometry }
+) => {
   const geometry = createBoxGeometry(data);
   const result = createGeometryMesh(data, geometry, input?.object);
   return result;
@@ -161,8 +154,7 @@ export const createBoxNodeDefinition = () => {
       visible: createParameterMetadata("boolean", true, { displayName: "Visible" }),
     })
     .compute(async (params, _inputs, _context) => {
-      const { width, height, depth, widthSegments, heightSegments, depthSegments } =
-        params.geometry;
+      const { width, height, depth, widthSegments, heightSegments, depthSegments } = params.geometry;
       const clampedWidthSegments = Math.max(1, Math.min(512, Math.round(widthSegments)));
       const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
       const clampedDepthSegments = Math.max(1, Math.min(512, Math.round(depthSegments)));

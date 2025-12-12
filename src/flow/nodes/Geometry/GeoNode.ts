@@ -27,11 +27,7 @@ export const geoNodeParams: NodeParams = {
   transform: createTransformParams(),
   rendering: createRenderingParams(),
 };
-export const geoNodeCompute = (
-  params: Record<string, any>,
-  _inputs?: any,
-  context?: { nodeId?: string }
-) => {
+export const geoNodeCompute = (params: Record<string, any>, _inputs?: any, context?: { nodeId?: string }) => {
   const data: GeoNodeData = {
     general: params.general,
     transform: {

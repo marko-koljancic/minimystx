@@ -21,18 +21,12 @@ function createCylinderGeometry(data: CylinderNodeData): BufferGeometry {
   if (height <= 0) height = 0.1;
   const clampedRadialSegments = Math.max(3, Math.min(512, Math.round(radialSegments)));
   const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
-  return new CylinderGeometry(
-    radiusTop,
-    radiusBottom,
-    height,
-    clampedRadialSegments,
-    clampedHeightSegments
-  );
+  return new CylinderGeometry(radiusTop, radiusBottom, height, clampedRadialSegments, clampedHeightSegments);
 }
-export const processor: NodeProcessor<
-  CylinderNodeData,
-  { object: Object3D; geometry: BufferGeometry }
-> = (data: CylinderNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
+export const processor: NodeProcessor<CylinderNodeData, { object: Object3D; geometry: BufferGeometry }> = (
+  data: CylinderNodeData,
+  input?: { object: Object3D; geometry?: BufferGeometry }
+) => {
   const geometry = createCylinderGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };

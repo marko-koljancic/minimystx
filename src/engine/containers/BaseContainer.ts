@@ -45,9 +45,7 @@ export class GeometryContainer extends BaseContainer<BufferGeometry> {
     const indices = this.value.index;
     const vertexCount = positions ? positions.count : 0;
     const bbox = this.value.boundingBox;
-    const bboxStr = bbox
-      ? `${bbox.min.x},${bbox.min.y},${bbox.min.z},${bbox.max.x},${bbox.max.y},${bbox.max.z}`
-      : "";
+    const bboxStr = bbox ? `${bbox.min.x},${bbox.min.y},${bbox.min.z},${bbox.max.x},${bbox.max.y},${bbox.max.z}` : "";
     return `geometry-${vertexCount}-${indices?.count || 0}-${bboxStr}`;
   }
   getVertexCount(): number {
@@ -120,12 +118,7 @@ export class Vector3Container extends BaseContainer<Vector3> {
     super(value.clone());
   }
   isValid(): boolean {
-    return (
-      this.value instanceof Vector3 &&
-      !isNaN(this.value.x) &&
-      !isNaN(this.value.y) &&
-      !isNaN(this.value.z)
-    );
+    return this.value instanceof Vector3 && !isNaN(this.value.x) && !isNaN(this.value.y) && !isNaN(this.value.z);
   }
   clone(): Vector3Container {
     return new Vector3Container(this.value);

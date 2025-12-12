@@ -7,14 +7,18 @@ export interface MaterialManagerDependencies {
   renderer: THREE.WebGLRenderer;
 }
 
-type DisplayMode = "shaded" | "wireframe" | "xray" | "shadedWireframe" | "xrayWireframe" | "normals" | "depth" | "normalsWireframe" | "depthWireframe";
+type DisplayMode =
+  | "shaded"
+  | "wireframe"
+  | "xray"
+  | "shadedWireframe"
+  | "xrayWireframe"
+  | "normals"
+  | "depth"
+  | "normalsWireframe"
+  | "depthWireframe";
 
-export interface IMaterialManager
-  extends RenderingSubsystem,
-    PreferenceUpdateHandler<PreferencesState["materials"]> {
+export interface IMaterialManager extends RenderingSubsystem, PreferenceUpdateHandler<PreferencesState["materials"]> {
   updateDisplayMode(mode: DisplayMode): void;
-  applyToneMapping(
-    renderer: THREE.WebGLRenderer,
-    toneMapping: PreferencesState["materials"]["toneMapping"]
-  ): void;
+  applyToneMapping(renderer: THREE.WebGLRenderer, toneMapping: PreferencesState["materials"]["toneMapping"]): void;
 }

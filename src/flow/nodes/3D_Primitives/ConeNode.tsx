@@ -11,10 +11,7 @@ export default function ConeNode(props: NodeProps) {
   const nodeData = data as ConeNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Cone"}
-        isSelected={Boolean(selected)}
-      />
+      <BaseGeometryNodeDesign label={nodeData.general?.name || "Cone"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

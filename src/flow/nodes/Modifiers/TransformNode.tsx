@@ -11,10 +11,7 @@ export default function TransformNode(props: NodeProps) {
   const nodeData = data as TransformNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Transform"}
-        isSelected={Boolean(selected)}
-      />
+      <BaseGeometryNodeDesign label={nodeData.general?.name || "Transform"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

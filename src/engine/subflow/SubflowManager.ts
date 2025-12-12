@@ -32,12 +32,7 @@ export class SubflowManager {
     subflow.nodeIds.clear();
     this.subflows.delete(geoNodeId);
   }
-  addNodeToSubflow(
-    geoNodeId: string,
-    nodeId: string,
-    nodeType: string,
-    params?: Record<string, any>
-  ): void {
+  addNodeToSubflow(geoNodeId: string, nodeId: string, nodeType: string, params?: Record<string, any>): void {
     const subflow = this.subflows.get(geoNodeId);
     if (!subflow) {
       return;
@@ -108,12 +103,7 @@ export class SubflowManager {
     const sourceOutput = sourceHandle || "default";
     const targetInput = targetHandle || "default";
 
-    const connected = subflow.internalGraph.connectTyped(
-      sourceId,
-      sourceOutput,
-      targetId,
-      targetInput
-    );
+    const connected = subflow.internalGraph.connectTyped(sourceId, sourceOutput, targetId, targetInput);
 
     if (!connected) {
       return false;
@@ -179,17 +169,11 @@ export class SubflowManager {
     const errors: string[] = [];
     this.subflows.forEach((subflow, geoNodeId) => {
       if (subflow.activeOutputNodeId && !subflow.nodeIds.has(subflow.activeOutputNodeId)) {
-        errors.push(
-          `Subflow ${geoNodeId}: active output ${subflow.activeOutputNodeId} not found in subflow nodes`
-        );
+        errors.push(`Subflow ${geoNodeId}: active output ${subflow.activeOutputNodeId} not found in subflow nodes`);
       }
       const graphValidation = subflow.internalGraph.validateGraph();
       if (!graphValidation.valid) {
-        errors.push(
-          `Subflow ${geoNodeId}: internal graph validation failed: ${graphValidation.errors.join(
-            ", "
-          )}`
-        );
+        errors.push(`Subflow ${geoNodeId}: internal graph validation failed: ${graphValidation.errors.join(", ")}`);
       }
       const schedulerStats = subflow.scheduler.getStats();
       if (schedulerStats.renderTarget !== subflow.activeOutputNodeId) {

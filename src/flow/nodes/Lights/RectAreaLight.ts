@@ -1,12 +1,7 @@
 import { RectAreaLight as ThreeRectAreaLight, Object3D, Group } from "three";
 import { RectAreaLightHelper } from "three/addons/helpers/RectAreaLightHelper.js";
 import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
-import type {
-  GeneralProps,
-  RectAreaLightProps,
-  RectAreaLightRenderingProps,
-  NodeProcessor,
-} from "../props";
+import type { GeneralProps, RectAreaLightProps, RectAreaLightRenderingProps, NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
@@ -28,20 +23,9 @@ export interface RectAreaLightNodeData extends Record<string, unknown> {
     helperSize: number;
   };
 }
-export const processor: NodeProcessor<RectAreaLightNodeData, { object: Object3D }> = (
-  data: RectAreaLightNodeData
-) => {
-  const light = new ThreeRectAreaLight(
-    data.light.color,
-    data.light.intensity,
-    data.light.width,
-    data.light.height
-  );
-  light.position.set(
-    data.transform.position.x,
-    data.transform.position.y,
-    data.transform.position.z
-  );
+export const processor: NodeProcessor<RectAreaLightNodeData, { object: Object3D }> = (data: RectAreaLightNodeData) => {
+  const light = new ThreeRectAreaLight(data.light.color, data.light.intensity, data.light.width, data.light.height);
+  light.position.set(data.transform.position.x, data.transform.position.y, data.transform.position.z);
   light.rotation.set(
     data.transform.rotation.x * (Math.PI / 180),
     data.transform.rotation.y * (Math.PI / 180),
@@ -70,11 +54,10 @@ export const rectAreaLightNodeParams: NodeParams = {
       displayName: "Name",
       displayMode: "name",
     }),
-    description: createParameterMetadata(
-      "string",
-      "Rectangular area light for realistic lighting effects",
-      { displayName: "Description", displayMode: "description" }
-    ),
+    description: createParameterMetadata("string", "Rectangular area light for realistic lighting effects", {
+      displayName: "Description",
+      displayMode: "description",
+    }),
   },
   transform: createTransformParams(),
   light: {

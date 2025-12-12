@@ -1,11 +1,5 @@
 import { ParameterMetadata, NodeParams } from "./graphStore";
-type ParameterValue =
-  | string
-  | number
-  | boolean
-  | { x: number; y: number; z?: number; w?: number }
-  | File
-  | null;
+type ParameterValue = string | number | boolean | { x: number; y: number; z?: number; w?: number } | File | null;
 export const createParameterMetadata = (
   type: ParameterMetadata["type"],
   defaultValue: ParameterValue,
@@ -15,10 +9,7 @@ export const createParameterMetadata = (
   type,
   ...options,
 });
-export const validateParameterValue = (
-  value: any,
-  metadata: ParameterMetadata
-): { valid: boolean; error?: string } => {
+export const validateParameterValue = (value: any, metadata: ParameterMetadata): { valid: boolean; error?: string } => {
   if (value === null || value === undefined) {
     return { valid: false, error: "Value is required" };
   }
@@ -65,11 +56,7 @@ export const validateParameterValue = (
         return { valid: false, error: "Must be an object with x, y components" };
       }
       const expectedKeys =
-        metadata.type === "vector2"
-          ? ["x", "y"]
-          : metadata.type === "vector3"
-          ? ["x", "y", "z"]
-          : ["x", "y", "z", "w"];
+        metadata.type === "vector2" ? ["x", "y"] : metadata.type === "vector3" ? ["x", "y", "z"] : ["x", "y", "z", "w"];
       for (const key of expectedKeys) {
         if (!(key in value) || isNaN(Number(value[key]))) {
           return { valid: false, error: `${key.toUpperCase()} component must be a valid number` };
@@ -145,10 +132,7 @@ export const extractDefaultValues = (params: NodeParams): Record<string, any> =>
   }
   return defaults;
 };
-export const validateAndNormalizeParams = (
-  params: Record<string, any>,
-  paramsDef: NodeParams
-): Record<string, any> => {
+export const validateAndNormalizeParams = (params: Record<string, any>, paramsDef: NodeParams): Record<string, any> => {
   const validated: Record<string, any> = {};
   for (const [category, categoryDef] of Object.entries(paramsDef)) {
     validated[category] = {};

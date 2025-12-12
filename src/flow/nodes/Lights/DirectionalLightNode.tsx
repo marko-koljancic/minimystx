@@ -10,10 +10,7 @@ export default function DirectionalLightNode(props: NodeProps) {
   const nodeData = data as DirectionalLightNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <LightNodeBaseDesign
-        label={nodeData.general?.name || "Directional Light"}
-        isSelected={Boolean(selected)}
-      />
+      <LightNodeBaseDesign label={nodeData.general?.name || "Directional Light"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

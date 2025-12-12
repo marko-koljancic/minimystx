@@ -21,10 +21,10 @@ function createTorusGeometry(data: TorusNodeData): BufferGeometry {
   const clampedTubularSegments = Math.max(3, Math.min(1024, Math.round(tubularSegments)));
   return new TorusGeometry(radius, tube, clampedRadialSegments, clampedTubularSegments);
 }
-export const processor: NodeProcessor<
-  TorusNodeData,
-  { object: Object3D; geometry: BufferGeometry }
-> = (data: TorusNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
+export const processor: NodeProcessor<TorusNodeData, { object: Object3D; geometry: BufferGeometry }> = (
+  data: TorusNodeData,
+  input?: { object: Object3D; geometry?: BufferGeometry }
+) => {
   const geometry = createTorusGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };

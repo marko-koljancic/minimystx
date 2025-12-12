@@ -19,11 +19,7 @@ export default function EdgeLine({
       targetPosition={targetPosition}
     >
       {(pathData) => (
-        <BaseEdge
-          path={pathData}
-          style={{ stroke: "var(--edge-color)", strokeWidth: 2 }}
-          markerEnd={markerEnd}
-        />
+        <BaseEdge path={pathData} style={{ stroke: "var(--edge-color)", strokeWidth: 2 }} markerEnd={markerEnd} />
       )}
     </BaseConnection>
   );

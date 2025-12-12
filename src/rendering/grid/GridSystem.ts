@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore"
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore";
 import { useUIStore } from "../../store/uiStore";
 import { GridSystemDependencies, IGridSystem } from "./GridTypes";
 import { GridPlane } from "../types/SceneTypes";
@@ -107,12 +107,7 @@ export class GridSystem implements IGridSystem {
     this.createGridPair(gridSize, majorDivisions, minorDivisions, "yz");
   }
 
-  private createGridPair(
-    size: number,
-    majorDivisions: number,
-    minorDivisions: number,
-    plane: GridPlane
-  ): void {
+  private createGridPair(size: number, majorDivisions: number, minorDivisions: number, plane: GridPlane): void {
     const minorGrid = new THREE.GridHelper(size, minorDivisions);
     this.setupGridMaterial(minorGrid, false);
 

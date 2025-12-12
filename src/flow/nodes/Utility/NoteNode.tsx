@@ -96,9 +96,9 @@ export default function NoteNode(props: NodeProps) {
   const colorClassName = `color${colorIndex >= 0 ? colorIndex : 0}`;
   return (
     <div
-      className={`${styles.noteContainer} ${styles[colorClassName]} ${
-        selected ? styles.selected : ""
-      } ${isEditing ? styles.editing : ""}`}
+      className={`${styles.noteContainer} ${styles[colorClassName]} ${selected ? styles.selected : ""} ${
+        isEditing ? styles.editing : ""
+      }`}
       style={{
         width: `${currentWidth}px`,
         height: `${currentHeight}px`,
@@ -132,12 +132,7 @@ export default function NoteNode(props: NodeProps) {
       ) : (
         <div className={styles.textDisplay}>{nodeData.note?.text || "Double-click to edit"}</div>
       )}
-      <div
-        className={styles.colorSwitcher}
-        onClick={handleColorClick}
-        title="Change note color"
-        data-nodrag
-      />
+      <div className={styles.colorSwitcher} onClick={handleColorClick} title="Change note color" data-nodrag />
     </div>
   );
 }

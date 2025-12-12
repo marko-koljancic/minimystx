@@ -1,8 +1,4 @@
-export function wouldCreateCycle(
-  source: string,
-  target: string,
-  dependencyMap: Record<string, string[]>
-): boolean {
+export function wouldCreateCycle(source: string, target: string, dependencyMap: Record<string, string[]>): boolean {
   const visited = new Set<string>();
   function hasPath(from: string, to: string): boolean {
     if (from === to) return true;
@@ -16,10 +12,7 @@ export function wouldCreateCycle(
   }
   return hasPath(target, source);
 }
-export function getDependentsRecursive(
-  nodeId: string,
-  dependencyMap: Record<string, string[]>
-): string[] {
+export function getDependentsRecursive(nodeId: string, dependencyMap: Record<string, string[]>): string[] {
   const dependents = new Set<string>();
   const visited = new Set<string>();
   function findDependents(id: string) {
@@ -35,10 +28,7 @@ export function getDependentsRecursive(
   findDependents(nodeId);
   return Array.from(dependents);
 }
-export function getEvaluationOrder(
-  nodeId: string,
-  dependencyMap: Record<string, string[]>
-): string[] {
+export function getEvaluationOrder(nodeId: string, dependencyMap: Record<string, string[]>): string[] {
   const visited = new Set<string>();
   const result: string[] = [];
   function visit(id: string) {

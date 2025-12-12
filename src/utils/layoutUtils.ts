@@ -52,10 +52,7 @@ export const applyDagreLayout = (nodes: LayoutNode[], edges: LayoutEdge[]): Layo
     };
   });
 };
-export const applyELKLayout = async (
-  nodes: LayoutNode[],
-  edges: LayoutEdge[]
-): Promise<LayoutNode[]> => {
+export const applyELKLayout = async (nodes: LayoutNode[], edges: LayoutEdge[]): Promise<LayoutNode[]> => {
   const elk = new ELK();
   const elkNodes = nodes.map((node) => ({
     id: node.id,

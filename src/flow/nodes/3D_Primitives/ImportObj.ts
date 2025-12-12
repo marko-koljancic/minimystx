@@ -27,8 +27,7 @@ function validateFile(file: File | SerializableObjFile | null): { valid: boolean
   if (!file) return { valid: false, error: "No file selected" };
   if (!file.name) return { valid: false, error: "File name is missing" };
   const extension = file.name.toLowerCase().split(".").pop();
-  if (extension !== "obj")
-    return { valid: false, error: "Unsupported file type. Only .obj files are supported." };
+  if (extension !== "obj") return { valid: false, error: "Unsupported file type. Only .obj files are supported." };
   return { valid: true };
 }
 async function fileToSerializableObjFile(file: File): Promise<SerializableObjFile> {
@@ -60,9 +59,7 @@ async function getFileContent(file: File | SerializableObjFile): Promise<string>
     return (file as any).content;
   }
   throw new Error(
-    `Unsupported file format: ${typeof file}, constructor: ${
-      file?.constructor?.name
-    }, keys: ${Object.keys(file || {})}`
+    `Unsupported file format: ${typeof file}, constructor: ${file?.constructor?.name}, keys: ${Object.keys(file || {})}`
   );
 }
 function centerObject(object: Object3D): void {
@@ -252,12 +249,9 @@ export const importObjNodeComputeTyped = async (
   context: ComputeContext
 ): Promise<Record<string, BaseContainer>> => {
   const defaultParams = extractDefaultValues(importObjNodeParams);
-  const originalObjectParams =
-    (params.object as ImportObjNodeData["object"]) || defaultParams.object;
+  const originalObjectParams = (params.object as ImportObjNodeData["object"]) || defaultParams.object;
   const data: ImportObjNodeData = {
-    general: JSON.parse(
-      JSON.stringify((params.general as ImportObjNodeData["general"]) || defaultParams.general)
-    ),
+    general: JSON.parse(JSON.stringify((params.general as ImportObjNodeData["general"]) || defaultParams.general)),
     object: {
       file: originalObjectParams.file,
       ...JSON.parse(
@@ -273,9 +267,7 @@ export const importObjNodeComputeTyped = async (
       scale: { x: 1, y: 1, z: 1, factor: 1 },
     },
     rendering: JSON.parse(
-      JSON.stringify(
-        (params.rendering as ImportObjNodeData["rendering"]) || defaultParams.rendering
-      )
+      JSON.stringify((params.rendering as ImportObjNodeData["rendering"]) || defaultParams.rendering)
     ),
   };
   if (data.object.file) {

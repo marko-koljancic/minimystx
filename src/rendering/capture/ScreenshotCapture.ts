@@ -1,11 +1,7 @@
 import * as THREE from "three";
 import { useUIStore } from "../../store/uiStore";
 import { usePreferencesStore } from "../../store/preferencesStore";
-import {
-  ScreenshotCaptureDependencies,
-  IScreenshotCapture,
-  CaptureDimensions,
-} from "./CaptureTypes";
+import { ScreenshotCaptureDependencies, IScreenshotCapture, CaptureDimensions } from "./CaptureTypes";
 
 export class ScreenshotCapture implements IScreenshotCapture {
   constructor(private dependencies: ScreenshotCaptureDependencies) {}
@@ -100,9 +96,7 @@ export class ScreenshotCapture implements IScreenshotCapture {
     }
 
     renderer.toneMappingExposure = materials.exposure;
-    renderer.outputColorSpace = materials.sRGBEncoding
-      ? THREE.SRGBColorSpace
-      : THREE.LinearSRGBColorSpace;
+    renderer.outputColorSpace = materials.sRGBEncoding ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
   }
 
   private getCameraAspect(camera: THREE.Camera): number {

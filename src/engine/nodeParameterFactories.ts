@@ -1,9 +1,6 @@
 import { createParameterMetadata } from "./parameterUtils";
 import type { CategoryParams } from "./graphStore";
-export function createGeneralParams(
-  defaultName: string,
-  defaultDescription: string
-): CategoryParams {
+export function createGeneralParams(defaultName: string, defaultDescription: string): CategoryParams {
   return {
     name: createParameterMetadata("string", defaultName, {
       displayName: "Name",

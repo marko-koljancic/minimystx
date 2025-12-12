@@ -15,10 +15,7 @@ import {
   applyImportedScene,
 } from "../io/mxscene";
 import { initializeNewScene, setupSceneEventListeners } from "../io/sceneManager";
-import {
-  getNodesByCategoryForContext,
-  getAvailableCategoriesForContext,
-} from "../flow/nodes/nodeRegistry";
+import { getNodesByCategoryForContext, getAvailableCategoriesForContext } from "../flow/nodes/nodeRegistry";
 export default function Header() {
   const {
     displayMode,
@@ -196,9 +193,7 @@ export default function Header() {
       onClick: () => void;
       submenu?: Array<{ label: string; onClick: () => void }>;
     }> = [];
-    const sortedCategories = [...categories].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    );
+    const sortedCategories = [...categories].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
     sortedCategories.forEach((category) => {
       const nodes = nodesByCategory[category] || [];
       const sortedNodes = [...nodes].sort((a, b) =>
@@ -367,21 +362,12 @@ export default function Header() {
   const helpDropdownItems = [
     {
       label: "Minimystx GitHub Repo",
-      onClick: () =>
-        window.open(
-          "https://github.com/marko-koljancic/minimystx",
-          "_blank",
-          "noopener,noreferrer"
-        ),
+      onClick: () => window.open("https://github.com/marko-koljancic/minimystx", "_blank", "noopener,noreferrer"),
     },
     {
       label: "Minimystx Project Roadmap",
       onClick: () =>
-        window.open(
-          "https://github.com/users/marko-koljancic/projects/18",
-          "_blank",
-          "noopener,noreferrer"
-        ),
+        window.open("https://github.com/users/marko-koljancic/projects/18", "_blank", "noopener,noreferrer"),
     },
   ];
   return (
@@ -395,14 +381,10 @@ export default function Header() {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         {exportProgress && (
-          <div style={{ fontSize: "12px", color: "#888" }}>
-            Exporting... {exportProgress.percentage}%
-          </div>
+          <div style={{ fontSize: "12px", color: "#888" }}>Exporting... {exportProgress.percentage}%</div>
         )}
         {importProgress && (
-          <div style={{ fontSize: "12px", color: "#888" }}>
-            Importing... {importProgress.percentage}%
-          </div>
+          <div style={{ fontSize: "12px", color: "#888" }}>Importing... {importProgress.percentage}%</div>
         )}
         <ThemeToggle />
       </div>

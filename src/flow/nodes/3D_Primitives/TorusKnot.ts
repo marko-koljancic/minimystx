@@ -25,10 +25,10 @@ function createTorusKnotGeometry(data: TorusKnotNodeData): BufferGeometry {
   const clampedRadialSegments = Math.max(3, Math.min(2048, Math.round(radialSegments)));
   return new TorusKnotGeometry(radius, tube, clampedTubularSegments, clampedRadialSegments, p, q);
 }
-export const processor: NodeProcessor<
-  TorusKnotNodeData,
-  { object: Object3D; geometry: BufferGeometry }
-> = (data: TorusKnotNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
+export const processor: NodeProcessor<TorusKnotNodeData, { object: Object3D; geometry: BufferGeometry }> = (
+  data: TorusKnotNodeData,
+  input?: { object: Object3D; geometry?: BufferGeometry }
+) => {
   const geometry = createTorusKnotGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };

@@ -16,9 +16,7 @@ export const Breadcrumb: React.FC = () => {
   }
   const geoNodeId = currentContext.geoNodeId;
   const geoNodeName =
-    geoNodeId && rootNodeRuntime[geoNodeId]
-      ? rootNodeRuntime[geoNodeId].params.general?.name || "GeoNode"
-      : "GeoNode";
+    geoNodeId && rootNodeRuntime[geoNodeId] ? rootNodeRuntime[geoNodeId].params.general?.name || "GeoNode" : "GeoNode";
   return (
     <div className={styles.breadcrumb}>
       <button className={styles.breadcrumbButton} onClick={handleNavigateToRoot}>

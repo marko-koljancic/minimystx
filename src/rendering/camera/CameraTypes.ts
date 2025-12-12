@@ -11,9 +11,7 @@ export interface CameraControllerDependencies {
   canvas: HTMLCanvasElement;
 }
 
-export interface ICameraController
-  extends RenderingSubsystem,
-    PreferenceUpdateHandler<PreferencesState["camera"]> {
+export interface ICameraController extends RenderingSubsystem, PreferenceUpdateHandler<PreferencesState["camera"]> {
   readonly controls: OrbitControls;
   readonly isOrthographic: boolean;
 

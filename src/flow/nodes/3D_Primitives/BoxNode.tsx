@@ -11,10 +11,7 @@ export default function BoxNode(props: NodeProps) {
   const nodeData = data as BoxNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Box"}
-        isSelected={Boolean(selected)}
-      />
+      <BaseGeometryNodeDesign label={nodeData.general?.name || "Box"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

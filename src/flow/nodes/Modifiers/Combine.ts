@@ -10,10 +10,7 @@ export interface CombineNodeData extends Record<string, unknown> {
   rendering: RenderingProps;
 }
 
-export const processor: NodeProcessor<
-  CombineNodeData,
-  { object: Object3D }
-> = (
+export const processor: NodeProcessor<CombineNodeData, { object: Object3D }> = (
   data: CombineNodeData,
   input1?: { object: Object3D },
   input2?: { object: Object3D },
@@ -49,14 +46,9 @@ export const combineNodeCompute = (params: Record<string, any>, inputs: Record<s
   const inputKeys = ["input1", "input2", "input3", "input4"];
   const inputObjects: Array<{ object: Object3D } | undefined> = [];
 
-  inputKeys.forEach(key => {
+  inputKeys.forEach((key) => {
     const input = inputs[key];
-    if (
-      input &&
-      typeof input === "object" &&
-      (input as any).object &&
-      (input as any).object.isObject3D
-    ) {
+    if (input && typeof input === "object" && (input as any).object && (input as any).object.isObject3D) {
       inputObjects.push(input as { object: Object3D });
     } else {
       inputObjects.push(undefined);
@@ -94,9 +86,7 @@ export const combineNodeComputeTyped = (
     },
   };
 
-  const inputObjects = inputContainers.map(container =>
-    container ? { object: container.value } : undefined
-  );
+  const inputObjects = inputContainers.map((container) => (container ? { object: container.value } : undefined));
 
   const result = processor(data, inputObjects[0], inputObjects[1], inputObjects[2], inputObjects[3]);
 

@@ -42,17 +42,11 @@ export default function NodePalette() {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [isHoveringNodes, setIsHoveringNodes] = useState(false);
   const paletteRef = useRef<HTMLDivElement>(null);
-  const allCategories = useMemo(
-    () => getAvailableCategoriesForContext(currentContext.type),
-    [currentContext.type]
-  );
+  const allCategories = useMemo(() => getAvailableCategoriesForContext(currentContext.type), [currentContext.type]);
   const { categories, nodesByCategory, searchResults } = useMemo(() => {
     if (searchQuery.trim()) {
       const results = searchNodesForContext(searchQuery, currentContext.type, 100);
-      const filteredByCategory = getFilteredNodesByCategoryForContext(
-        searchQuery,
-        currentContext.type
-      );
+      const filteredByCategory = getFilteredNodesByCategoryForContext(searchQuery, currentContext.type);
       return {
         categories: Object.keys(filteredByCategory).sort(),
         nodesByCategory: filteredByCategory,
@@ -67,11 +61,7 @@ export default function NodePalette() {
   }, [searchQuery, allCategories, currentContext.type]);
   const activeCategory = keyboardMode ? categories[selectedCategoryIndex] || null : hoveredCategory;
   const currentNodes = useMemo(() => {
-    return searchQuery.trim()
-      ? searchResults
-      : activeCategory
-      ? nodesByCategory[activeCategory] || []
-      : [];
+    return searchQuery.trim() ? searchResults : activeCategory ? nodesByCategory[activeCategory] || [] : [];
   }, [searchQuery, searchResults, activeCategory, nodesByCategory]);
   const handleNodeDrop = useCallback(() => {
     if (!isPinned) {
@@ -211,15 +201,13 @@ export default function NodePalette() {
               <div
                 key={category}
                 className={`${styles.categoryItem} ${
-                  (keyboardMode && selectedCategoryIndex === index) ||
-                  (!keyboardMode && hoveredCategory === category)
+                  (keyboardMode && selectedCategoryIndex === index) || (!keyboardMode && hoveredCategory === category)
                     ? styles.active
                     : ""
                 }`}
                 role="option"
                 aria-selected={
-                  (keyboardMode && selectedCategoryIndex === index) ||
-                  (!keyboardMode && hoveredCategory === category)
+                  (keyboardMode && selectedCategoryIndex === index) || (!keyboardMode && hoveredCategory === category)
                 }
                 tabIndex={-1}
                 onMouseEnter={() => {

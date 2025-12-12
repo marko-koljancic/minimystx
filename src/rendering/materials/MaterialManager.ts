@@ -2,7 +2,16 @@ import * as THREE from "three";
 import { PreferencesState } from "../../store/preferencesStore";
 import { MaterialManagerDependencies, IMaterialManager } from "./MaterialTypes";
 
-type DisplayMode = "shaded" | "wireframe" | "xray" | "shadedWireframe" | "xrayWireframe" | "normals" | "depth" | "normalsWireframe" | "depthWireframe";
+type DisplayMode =
+  | "shaded"
+  | "wireframe"
+  | "xray"
+  | "shadedWireframe"
+  | "xrayWireframe"
+  | "normals"
+  | "depth"
+  | "normalsWireframe"
+  | "depthWireframe";
 
 export class MaterialManager implements IMaterialManager {
   private originalMaterials: WeakMap<THREE.Mesh, THREE.Material> = new WeakMap();
@@ -16,7 +25,6 @@ export class MaterialManager implements IMaterialManager {
     this.initializeNormalsMaterial();
     this.initializeDepthMaterials();
   }
-
 
   public updateDisplayMode(mode: DisplayMode): void {
     this.dependencies.scene.traverse((object) => {
@@ -87,7 +95,7 @@ export class MaterialManager implements IMaterialManager {
           case "depth":
             const depthMat = this.getDepthMaterial();
             if (depthMat) {
-              if ('wireframe' in depthMat) {
+              if ("wireframe" in depthMat) {
                 (depthMat as any).wireframe = false;
               }
               object.material = depthMat;
@@ -98,7 +106,7 @@ export class MaterialManager implements IMaterialManager {
           case "depthWireframe":
             const depthWireMat = this.getDepthMaterial();
             if (depthWireMat) {
-              if ('wireframe' in depthWireMat) {
+              if ("wireframe" in depthWireMat) {
                 (depthWireMat as any).wireframe = false;
               }
               object.material = depthWireMat;
@@ -194,7 +202,7 @@ export class MaterialManager implements IMaterialManager {
 
   private initializeDepthMaterials(): void {
     this.depthMaterial = new THREE.MeshDepthMaterial();
-    
+
     this.depthMaterialOrtho = new THREE.ShaderMaterial({
       vertexShader: `
         uniform float cameraNear;
@@ -217,13 +225,13 @@ export class MaterialManager implements IMaterialManager {
       `,
       uniforms: {
         cameraNear: { value: 0.1 },
-        cameraFar: { value: 1000.0 }
-      }
+        cameraFar: { value: 1000.0 },
+      },
     });
   }
 
   private addPolygonOffset(material: THREE.Material): void {
-    if ('polygonOffset' in material) {
+    if ("polygonOffset" in material) {
       (material as any).polygonOffset = true;
       (material as any).polygonOffsetFactor = 1;
       (material as any).polygonOffsetUnits = 1;
@@ -231,7 +239,7 @@ export class MaterialManager implements IMaterialManager {
   }
 
   private removePolygonOffset(material: THREE.Material): void {
-    if ('polygonOffset' in material) {
+    if ("polygonOffset" in material) {
       (material as any).polygonOffset = false;
       (material as any).polygonOffsetFactor = 0;
       (material as any).polygonOffsetUnits = 0;

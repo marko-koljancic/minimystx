@@ -10,9 +10,11 @@ export interface PostProcessManagerDependencies {
   isOrthographic: boolean;
 }
 
-export interface IPostProcessManager extends RenderingSubsystem, PreferenceUpdateHandler<PreferencesState["renderer"]["postProcessing"]> {
+export interface IPostProcessManager
+  extends RenderingSubsystem,
+    PreferenceUpdateHandler<PreferencesState["renderer"]["postProcessing"]> {
   readonly composer: EffectComposer | null;
-  
+
   initializePostProcessing(): void;
   updatePostProcessing(): void;
   setSize(width: number, height: number): void;

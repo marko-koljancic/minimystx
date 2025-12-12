@@ -1,10 +1,5 @@
 import { AmbientLight as ThreeAmbientLight, Object3D, Group, SphereGeometry, MeshBasicMaterial, Mesh } from "three";
-import type {
-  GeneralProps,
-  AmbientLightProps,
-  AmbientLightRenderingProps,
-  NodeProcessor,
-} from "../props";
+import type { GeneralProps, AmbientLightProps, AmbientLightRenderingProps, NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createLightTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
@@ -19,15 +14,9 @@ export interface AmbientLightNodeData extends Record<string, unknown> {
     helperSize: number;
   };
 }
-export const processor: NodeProcessor<AmbientLightNodeData, { object: Object3D }> = (
-  data: AmbientLightNodeData
-) => {
+export const processor: NodeProcessor<AmbientLightNodeData, { object: Object3D }> = (data: AmbientLightNodeData) => {
   const light = new ThreeAmbientLight(data.light.color, data.light.intensity);
-  light.position.set(
-    data.transform.position.x,
-    data.transform.position.y,
-    data.transform.position.z
-  );
+  light.position.set(data.transform.position.x, data.transform.position.y, data.transform.position.z);
   light.visible = data.rendering.visible;
   light.updateMatrixWorld();
   const lightGroup = new Group();
@@ -46,11 +35,10 @@ export const ambientLightNodeParams: NodeParams = {
       displayName: "Name",
       displayMode: "name",
     }),
-    description: createParameterMetadata(
-      "string",
-      "Uniform ambient illumination that affects all objects equally.",
-      { displayName: "Description", displayMode: "description" }
-    ),
+    description: createParameterMetadata("string", "Uniform ambient illumination that affects all objects equally.", {
+      displayName: "Description",
+      displayMode: "description",
+    }),
   },
   transform: createLightTransformParams({ x: 0, y: 0, z: 0 }),
   light: {

@@ -14,10 +14,7 @@ export default function CombineNode(props: NodeProps) {
 
   return (
     <div className={styles.nodeContainer}>
-      <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Combine"}
-        isSelected={Boolean(selected)}
-      />
+      <BaseGeometryNodeDesign label={nodeData.general?.name || "Combine"} isSelected={Boolean(selected)} />
 
       <RenderFlagBadge
         nodeId={id}

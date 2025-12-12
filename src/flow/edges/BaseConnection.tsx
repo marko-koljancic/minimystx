@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  getSmoothStepPath,
-  getStraightPath,
-  getBezierPath,
-  getSimpleBezierPath,
-  Position,
-} from "@xyflow/react";
+import { getSmoothStepPath, getStraightPath, getBezierPath, getSimpleBezierPath, Position } from "@xyflow/react";
 import { useUIStore } from "../../store";
 interface BaseConnectionProps {
   sourceX: number;

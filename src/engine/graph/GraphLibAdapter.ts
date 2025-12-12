@@ -8,14 +8,8 @@ export interface GraphNode {
 export class GraphLibAdapter {
   private graph = new Graph({ directed: true });
   private nodeObjects: Map<string, GraphNode> = new Map();
-  private inputConnections: Map<
-    string,
-    Map<string, { sourceNodeId: string; sourceOutput: string }>
-  > = new Map();
-  private outputConnections: Map<
-    string,
-    Map<string, Array<{ targetNodeId: string; targetInput: string }>>
-  > = new Map();
+  private inputConnections: Map<string, Map<string, { sourceNodeId: string; sourceOutput: string }>> = new Map();
+  private outputConnections: Map<string, Map<string, Array<{ targetNodeId: string; targetInput: string }>>> = new Map();
   addNode(node: GraphNode): void {
     this.nodeObjects.set(node.id, node);
     this.graph.setNode(node.id);
@@ -45,12 +39,7 @@ export class GraphLibAdapter {
     this.graph.setEdge(sourceId, targetId);
     return true;
   }
-  connectTyped(
-    sourceNodeId: string,
-    sourceOutput: string,
-    targetNodeId: string,
-    targetInput: string
-  ): boolean {
+  connectTyped(sourceNodeId: string, sourceOutput: string, targetNodeId: string, targetInput: string): boolean {
     if (!this.connect(sourceNodeId, targetNodeId)) {
       return false;
     }
@@ -119,26 +108,16 @@ export class GraphLibAdapter {
     }
     return false;
   }
-  getInputSource(
-    nodeId: string,
-    inputName: string
-  ): { sourceNodeId: string; sourceOutput: string } | null {
+  getInputSource(nodeId: string, inputName: string): { sourceNodeId: string; sourceOutput: string } | null {
     return this.inputConnections.get(nodeId)?.get(inputName) || null;
   }
-  getOutputTargets(
-    nodeId: string,
-    outputName: string
-  ): Array<{ targetNodeId: string; targetInput: string }> {
+  getOutputTargets(nodeId: string, outputName: string): Array<{ targetNodeId: string; targetInput: string }> {
     return this.outputConnections.get(nodeId)?.get(outputName) || [];
   }
-  getNodeInputConnections(
-    nodeId: string
-  ): Map<string, { sourceNodeId: string; sourceOutput: string }> {
+  getNodeInputConnections(nodeId: string): Map<string, { sourceNodeId: string; sourceOutput: string }> {
     return this.inputConnections.get(nodeId) || new Map();
   }
-  getNodeOutputConnections(
-    nodeId: string
-  ): Map<string, Array<{ targetNodeId: string; targetInput: string }>> {
+  getNodeOutputConnections(nodeId: string): Map<string, Array<{ targetNodeId: string; targetInput: string }>> {
     return this.outputConnections.get(nodeId) || new Map();
   }
   wouldCreateCycle(sourceId: string, targetId: string): boolean {
@@ -181,9 +160,7 @@ export class GraphLibAdapter {
     try {
       const successorIds = alg.postorder(this.graph, [nodeId]);
       const filteredIds = successorIds.filter((id: string) => id !== nodeId);
-      return filteredIds
-        .map((id: string) => this.nodeObjects.get(id))
-        .filter(Boolean) as GraphNode[];
+      return filteredIds.map((id: string) => this.nodeObjects.get(id)).filter(Boolean) as GraphNode[];
     } catch (error) {
       return this.getDirectSuccessors(nodeId);
     }

@@ -36,10 +36,7 @@ export default function ImportGltfNode(props: NodeProps) {
   }, [nodeData.object?.file, id, recomputeFrom, markDirty]);
   return (
     <div className={styles.nodeContainer}>
-      <BaseGeometryNodeDesign
-        label={nodeData.general?.name || "Import glTF"}
-        isSelected={Boolean(selected)}
-      />
+      <BaseGeometryNodeDesign label={nodeData.general?.name || "Import glTF"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

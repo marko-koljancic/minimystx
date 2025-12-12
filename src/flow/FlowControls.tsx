@@ -5,9 +5,7 @@ export function FlowControls() {
   const { showMinimap, showFlowControls } = useUIStore();
   return (
     <>
-      {showMinimap && (
-        <MiniMap zoomable pannable bgColor="transparent" className={styles.miniMap} />
-      )}
+      {showMinimap && <MiniMap zoomable pannable bgColor="transparent" className={styles.miniMap} />}
       {showFlowControls && <Controls />}
     </>
   );

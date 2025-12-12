@@ -3,13 +3,7 @@ import { usePreferencesStore, PreferencesState } from "../../store";
 import { UnitsTab, RendererTab, MaterialsTab, CameraTab, GuidesTab, ScreenshotTab } from "./tabs";
 import styles from "./PreferencesModal.module.css";
 
-export type PreferencesTabType =
-  | "units"
-  | "renderer"
-  | "materials"
-  | "camera"
-  | "guides"
-  | "screenshot";
+export type PreferencesTabType = "units" | "renderer" | "materials" | "camera" | "guides" | "screenshot";
 
 interface PreferencesModalProps {
   onClose: () => void;
@@ -193,14 +187,7 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
     }
   };
 
-  const availableTabs: PreferencesTabType[] = [
-    "units",
-    "renderer",
-    "materials",
-    "camera",
-    "guides",
-    "screenshot",
-  ];
+  const availableTabs: PreferencesTabType[] = ["units", "renderer", "materials", "camera", "guides", "screenshot"];
 
   const updateTabPreferences = useCallback((tabKey: keyof PreferencesState, updates: any) => {
     setLocalPreferences((prev) => ({
@@ -298,18 +285,10 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
             <button className={styles.cancelButton} onClick={handleCancel}>
               Cancel
             </button>
-            <button
-              className={styles.applyButton}
-              onClick={handleApply}
-              disabled={!hasUnsavedChanges}
-            >
+            <button className={styles.applyButton} onClick={handleApply} disabled={!hasUnsavedChanges}>
               Apply
             </button>
-            <button
-              className={styles.saveButton}
-              onClick={handleSave}
-              disabled={!hasUnsavedChanges}
-            >
+            <button className={styles.saveButton} onClick={handleSave} disabled={!hasUnsavedChanges}>
               Save
             </button>
           </div>
@@ -321,8 +300,7 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
           <div className={styles.confirmationDialog}>
             <h3 className={styles.confirmationTitle}>Reset to Defaults</h3>
             <p className={styles.confirmationMessage}>
-              This will reset all preferences to their default values. Any unsaved changes will be
-              lost.
+              This will reset all preferences to their default values. Any unsaved changes will be lost.
             </p>
             <p className={styles.confirmationMessage}>Are you sure you want to continue?</p>
             <div className={styles.confirmationButtons}>

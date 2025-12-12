@@ -10,10 +10,7 @@ export default function HemisphereLightNode(props: NodeProps) {
   const nodeData = data as HemisphereLightNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <LightNodeBaseDesign
-        label={nodeData.general?.name || "Hemisphere Light"}
-        isSelected={Boolean(selected)}
-      />
+      <LightNodeBaseDesign label={nodeData.general?.name || "Hemisphere Light"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore"
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore";
 import { useUIStore } from "../../store/uiStore";
 import { AxisGizmoDependencies, IAxisGizmo } from "./GuideTypes";
 import { GizmoSize } from "../types/SceneTypes";
@@ -94,10 +94,7 @@ export class AxisGizmo implements IAxisGizmo {
     newGizmoPrefs: PreferencesState["guides"]["axisGizmo"],
     prevGizmoPrefs: PreferencesState["guides"]["axisGizmo"]
   ): void {
-    if (
-      newGizmoPrefs.enabled !== prevGizmoPrefs.enabled ||
-      newGizmoPrefs.size !== prevGizmoPrefs.size
-    ) {
+    if (newGizmoPrefs.enabled !== prevGizmoPrefs.enabled || newGizmoPrefs.size !== prevGizmoPrefs.size) {
       this.createAxisGizmo();
     }
   }

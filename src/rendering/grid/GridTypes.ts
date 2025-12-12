@@ -13,9 +13,7 @@ export interface GridConfiguration {
   enabled: boolean;
 }
 
-export interface IGridSystem
-  extends RenderingSubsystem,
-    PreferenceUpdateHandler<PreferencesState["guides"]["grid"]> {
+export interface IGridSystem extends RenderingSubsystem, PreferenceUpdateHandler<PreferencesState["guides"]["grid"]> {
   showGridPlane(plane: GridPlane): void;
   updateGridVisibility(visible: boolean): void;
   recreateGridsFromPreferences(): void;

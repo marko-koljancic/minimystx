@@ -21,9 +21,7 @@ export interface SpotLightNodeData extends Record<string, unknown> {
     helperSize: number;
   };
 }
-export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> = (
-  data: SpotLightNodeData
-) => {
+export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> = (data: SpotLightNodeData) => {
   const light = new ThreeSpotLight(
     data.light.color,
     data.light.intensity,
@@ -32,16 +30,8 @@ export const processor: NodeProcessor<SpotLightNodeData, { object: Object3D }> =
     data.light.penumbra,
     data.light.decay
   );
-  light.position.set(
-    data.transform.position.x,
-    data.transform.position.y,
-    data.transform.position.z
-  );
-  light.target.position.set(
-    data.transform.target.x,
-    data.transform.target.y,
-    data.transform.target.z
-  );
+  light.position.set(data.transform.position.x, data.transform.position.y, data.transform.position.z);
+  light.target.position.set(data.transform.target.x, data.transform.target.y, data.transform.target.z);
   light.target.updateMatrixWorld();
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
@@ -71,23 +61,14 @@ export const spotLightNodeParams: NodeParams = {
       displayName: "Name",
       displayMode: "name",
     }),
-    description: createParameterMetadata(
-      "string",
-      "Cone-shaped light with distance, angle, and penumbra.",
-      { displayName: "Description", displayMode: "description" }
-    ),
+    description: createParameterMetadata("string", "Cone-shaped light with distance, angle, and penumbra.", {
+      displayName: "Description",
+      displayMode: "description",
+    }),
   },
   transform: {
-    position: createParameterMetadata(
-      "vector3",
-      { x: 5, y: 10, z: 5 },
-      { displayName: "Position", step: 0.1 }
-    ),
-    target: createParameterMetadata(
-      "vector3",
-      { x: 0, y: 0, z: 0 },
-      { displayName: "Target", step: 0.1 }
-    ),
+    position: createParameterMetadata("vector3", { x: 5, y: 10, z: 5 }, { displayName: "Position", step: 0.1 }),
+    target: createParameterMetadata("vector3", { x: 0, y: 0, z: 0 }, { displayName: "Target", step: 0.1 }),
   },
   light: {
     color: createParameterMetadata("color", "#ffffff", { displayName: "Color" }),

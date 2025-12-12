@@ -18,10 +18,10 @@ function createSphereGeometry(data: SphereNodeData): BufferGeometry {
   const clampedHeightSegments = Math.max(2, Math.min(512, Math.round(heightSegments)));
   return new SphereGeometry(radius, clampedWidthSegments, clampedHeightSegments);
 }
-export const processor: NodeProcessor<
-  SphereNodeData,
-  { object: Object3D; geometry: BufferGeometry }
-> = (data: SphereNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
+export const processor: NodeProcessor<SphereNodeData, { object: Object3D; geometry: BufferGeometry }> = (
+  data: SphereNodeData,
+  input?: { object: Object3D; geometry?: BufferGeometry }
+) => {
   const geometry = createSphereGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };

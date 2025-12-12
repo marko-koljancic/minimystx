@@ -32,9 +32,7 @@ export class CameraController implements ICameraController {
     if (this._isOrthographic === isOrthographic) return;
 
     const currentCamera = this.getCurrentCamera();
-    const newCamera = isOrthographic
-      ? this.dependencies.orthographicCamera
-      : this.dependencies.camera;
+    const newCamera = isOrthographic ? this.dependencies.orthographicCamera : this.dependencies.camera;
     const target = this.controls.target.clone();
 
     if (isOrthographic) {
@@ -44,11 +42,7 @@ export class CameraController implements ICameraController {
     } else {
       newCamera.up.set(0, 1, 0);
       const distance = Math.max(currentCamera.position.distanceTo(target), 10);
-      newCamera.position.set(
-        target.x + distance * 0.7,
-        target.y + distance * 0.5,
-        target.z + distance * 0.7
-      );
+      newCamera.position.set(target.x + distance * 0.7, target.y + distance * 0.5, target.z + distance * 0.7);
       newCamera.lookAt(target);
     }
 
@@ -124,8 +118,7 @@ export class CameraController implements ICameraController {
     newCameraPrefs: PreferencesState["camera"],
     prevCameraPrefs: PreferencesState["camera"]
   ): void {
-    if (!this.dependencies.camera || !this.dependencies.orthographicCamera || !this.controls)
-      return;
+    if (!this.dependencies.camera || !this.dependencies.orthographicCamera || !this.controls) return;
 
     let needsProjectionUpdate = false;
 
@@ -169,9 +162,7 @@ export class CameraController implements ICameraController {
       }
     }
 
-    if (
-      JSON.stringify(newCameraPrefs.orbitControls) !== JSON.stringify(prevCameraPrefs.orbitControls)
-    ) {
+    if (JSON.stringify(newCameraPrefs.orbitControls) !== JSON.stringify(prevCameraPrefs.orbitControls)) {
       this.updateOrbitControlsFromPreferences();
     }
   }

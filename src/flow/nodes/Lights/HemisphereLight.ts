@@ -1,15 +1,5 @@
-import {
-  HemisphereLight as ThreeHemisphereLight,
-  HemisphereLightHelper,
-  Object3D,
-  Group,
-} from "three";
-import type {
-  GeneralProps,
-  HemisphereLightProps,
-  HemisphereLightRenderingProps,
-  NodeProcessor,
-} from "../props";
+import { HemisphereLight as ThreeHemisphereLight, HemisphereLightHelper, Object3D, Group } from "three";
+import type { GeneralProps, HemisphereLightProps, HemisphereLightRenderingProps, NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createLightTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
@@ -24,16 +14,8 @@ export interface HemisphereLightNodeData extends Record<string, unknown> {
 export const processor: NodeProcessor<HemisphereLightNodeData, { object: Object3D }> = (
   data: HemisphereLightNodeData
 ) => {
-  const light = new ThreeHemisphereLight(
-    data.light.skyColor,
-    data.light.groundColor,
-    data.light.intensity
-  );
-  light.position.set(
-    data.transform.position.x,
-    data.transform.position.y,
-    data.transform.position.z
-  );
+  const light = new ThreeHemisphereLight(data.light.skyColor, data.light.groundColor, data.light.intensity);
+  light.position.set(data.transform.position.x, data.transform.position.y, data.transform.position.z);
   light.visible = data.rendering.visible;
   light.updateMatrixWorld();
   const lightGroup = new Group();
@@ -50,11 +32,10 @@ export const hemisphereLightNodeParams: NodeParams = {
       displayName: "Name",
       displayMode: "name",
     }),
-    description: createParameterMetadata(
-      "string",
-      "Provides ambient illumination from sky and ground colors",
-      { displayName: "Description", displayMode: "description" }
-    ),
+    description: createParameterMetadata("string", "Provides ambient illumination from sky and ground colors", {
+      displayName: "Description",
+      displayMode: "description",
+    }),
   },
   transform: createLightTransformParams({ x: 0, y: 0, z: 0 }),
   light: {

@@ -56,11 +56,7 @@ async function handleExport(message: WorkerMessage): Promise<void> {
       });
       const computedHash = await hashBytesSHA256(asset.data);
       if (computedHash !== asset.hash) {
-        throw new IntegrityError(
-          `Asset hash mismatch for ${asset.originalName}`,
-          asset.hash,
-          computedHash
-        );
+        throw new IntegrityError(`Asset hash mismatch for ${asset.originalName}`, asset.hash, computedHash);
       }
       const assetFilename = generateAssetFilename(asset.hash, asset.originalName);
       await zipWriter.addFile(assetFilename, new Uint8Array(asset.data));
@@ -145,11 +141,7 @@ async function handleImport(message: WorkerMessage): Promise<void> {
     const manifestText = await zipReader.readText("manifest.json");
     const manifest: ManifestJson = JSON.parse(manifestText);
     if (manifest.schemaVersion !== SUPPORTED_SCHEMA_VERSION) {
-      throw new SchemaError(
-        "Unsupported schema version",
-        manifest.schemaVersion,
-        SUPPORTED_SCHEMA_VERSION
-      );
+      throw new SchemaError("Unsupported schema version", manifest.schemaVersion, SUPPORTED_SCHEMA_VERSION);
     }
     sendProgress(message.id, {
       phase: "reading",
@@ -192,11 +184,7 @@ async function handleImport(message: WorkerMessage): Promise<void> {
         }
         const computedHash = await hashBytesSHA256(assetData.buffer);
         if (computedHash !== assetEntry.id) {
-          throw new IntegrityError(
-            `Asset hash mismatch for ${assetEntry.name}`,
-            assetEntry.id,
-            computedHash
-          );
+          throw new IntegrityError(`Asset hash mismatch for ${assetEntry.name}`, assetEntry.id, computedHash);
         }
         loadedAssets.push(assetEntry.id);
       } catch (error) {

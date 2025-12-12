@@ -28,7 +28,7 @@ export class WireframeOverlayManager {
     }
 
     const lineSegments = new THREE.LineSegments(wireframeGeometry, this.wireframeMaterial);
-    
+
     mesh.add(lineSegments);
     this.meshOverlayMap.set(mesh, lineSegments);
     this.activeMeshes.add(mesh);
@@ -45,7 +45,7 @@ export class WireframeOverlayManager {
 
   public updateWireframeOverlays(meshes: THREE.Mesh[]): void {
     const currentMeshes = new Set(meshes);
-    
+
     for (const mesh of this.activeMeshes) {
       if (!currentMeshes.has(mesh)) {
         const overlay = this.meshOverlayMap.get(mesh);
@@ -55,7 +55,7 @@ export class WireframeOverlayManager {
         }
       }
     }
-    
+
     this.activeMeshes.clear();
 
     for (const mesh of meshes) {

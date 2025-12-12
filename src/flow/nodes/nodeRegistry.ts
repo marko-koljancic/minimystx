@@ -275,9 +275,7 @@ export const searchNodes = (query: string, maxResults: number = 100): NodeDefini
     .slice(0, maxResults)
     .map(({ node }) => node);
 };
-export const getFilteredNodesByCategory = (
-  searchQuery: string
-): Record<string, NodeDefinition[]> => {
+export const getFilteredNodesByCategory = (searchQuery: string): Record<string, NodeDefinition[]> => {
   if (!searchQuery.trim()) {
     return getNodesByCategory();
   }
@@ -291,9 +289,7 @@ export const getFilteredNodesByCategory = (
   });
   return filteredCategories;
 };
-export const getNodesByCategoryForContext = (
-  contextType: "root" | "subflow"
-): Record<string, NodeDefinition[]> => {
+export const getNodesByCategoryForContext = (contextType: "root" | "subflow"): Record<string, NodeDefinition[]> => {
   const categories: Record<string, NodeDefinition[]> = {};
   Object.values(nodeRegistry)
     .filter((node) => node.allowedContexts.includes(contextType))

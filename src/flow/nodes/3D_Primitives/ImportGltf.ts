@@ -1,13 +1,4 @@
-import {
-  Group,
-  Object3D,
-  BufferGeometry,
-  Mesh,
-  Box3,
-  Vector3,
-  Material,
-  MeshStandardMaterial,
-} from "three";
+import { Group, Object3D, BufferGeometry, Mesh, Box3, Vector3, Material, MeshStandardMaterial } from "three";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import type { GeneralProps, TransformProps, RenderingProps } from "../props";
@@ -182,8 +173,7 @@ export const processor = async (
       file: data.object?.file || null,
       scale: data.object?.scale || 1,
       centerToOrigin: data.object?.centerToOrigin || false,
-      preserveMaterials:
-        data.object?.preserveMaterials !== undefined ? data.object.preserveMaterials : true,
+      preserveMaterials: data.object?.preserveMaterials !== undefined ? data.object.preserveMaterials : true,
     },
     transform: {
       position: {
@@ -206,8 +196,7 @@ export const processor = async (
     rendering: {
       visible: data.rendering?.visible !== undefined ? data.rendering.visible : true,
       castShadow: data.rendering?.castShadow !== undefined ? data.rendering.castShadow : false,
-      receiveShadow:
-        data.rendering?.receiveShadow !== undefined ? data.rendering.receiveShadow : false,
+      receiveShadow: data.rendering?.receiveShadow !== undefined ? data.rendering.receiveShadow : false,
     },
   };
   if (!clonedData.object.file) {
@@ -233,10 +222,7 @@ export const processor = async (
   let loadedObject: Object3D;
   try {
     loadedObject = gltfCache.get(cacheKey)!.clone();
-    loadedObject = processGltfScene(
-      { scene: loadedObject } as GLTF,
-      clonedData.object.preserveMaterials
-    );
+    loadedObject = processGltfScene({ scene: loadedObject } as GLTF, clonedData.object.preserveMaterials);
   } catch (error) {
     return { object: new Group(), geometry: undefined };
   }
@@ -244,11 +230,7 @@ export const processor = async (
   if (validScale !== 1) loadedObject.scale.multiplyScalar(validScale);
   if (clonedData.object.centerToOrigin) centerObject(loadedObject);
   loadedObject.position.add(
-    new Vector3(
-      clonedData.transform.position.x,
-      clonedData.transform.position.y,
-      clonedData.transform.position.z
-    )
+    new Vector3(clonedData.transform.position.x, clonedData.transform.position.y, clonedData.transform.position.z)
   );
   loadedObject.rotation.set(
     loadedObject.rotation.x + clonedData.transform.rotation.x,

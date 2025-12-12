@@ -56,8 +56,7 @@ export const isValidConnection = (
     const edgeTargetHandle = edge.targetHandle || "default";
     return edge.target === target && edgeTargetHandle === normalizedTargetHandle;
   });
-  const existingTargetConnection =
-    existingConnectionsToHandle.length > 0 ? existingConnectionsToHandle[0] : undefined;
+  const existingTargetConnection = existingConnectionsToHandle.length > 0 ? existingConnectionsToHandle[0] : undefined;
   if (!source || !target) {
     return false;
   }

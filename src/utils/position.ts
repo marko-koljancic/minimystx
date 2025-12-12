@@ -4,10 +4,7 @@ export interface RelativePositionOptions {
   offset?: number;
   position: PositionType;
 }
-export function getRelativePositionStyles(
-  position: PositionType,
-  offset: number = 8
-): React.CSSProperties {
+export function getRelativePositionStyles(position: PositionType, offset: number = 8): React.CSSProperties {
   const normalizedPosition = normalizePosition(position);
   switch (normalizedPosition) {
     case "top":

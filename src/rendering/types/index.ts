@@ -1,8 +1,8 @@
-export type { 
-  SceneManagerDependencies, 
-  RenderingSubsystem, 
+export type {
+  SceneManagerDependencies,
+  RenderingSubsystem,
   PreferenceUpdateHandler,
-  ViewType, 
-  GridPlane, 
-  GizmoSize 
+  ViewType,
+  GridPlane,
+  GizmoSize,
 } from "./SceneTypes";

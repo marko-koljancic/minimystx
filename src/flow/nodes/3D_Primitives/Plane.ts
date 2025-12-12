@@ -21,10 +21,10 @@ function createPlaneGeometry(data: PlaneNodeData): BufferGeometry {
   const clampedHeightSegments = Math.max(1, Math.min(1024, Math.round(heightSegments)));
   return new PlaneGeometry(width, height, clampedWidthSegments, clampedHeightSegments);
 }
-export const processor: NodeProcessor<
-  PlaneNodeData,
-  { object: Object3D; geometry: BufferGeometry }
-> = (data: PlaneNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
+export const processor: NodeProcessor<PlaneNodeData, { object: Object3D; geometry: BufferGeometry }> = (
+  data: PlaneNodeData,
+  input?: { object: Object3D; geometry?: BufferGeometry }
+) => {
   const geometry = createPlaneGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };

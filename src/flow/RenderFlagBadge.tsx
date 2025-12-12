@@ -8,12 +8,7 @@ interface RenderFlagBadgeProps {
   nodeWidth: number;
   nodeHeight: number;
 }
-export default function RenderFlagBadge({
-  nodeId,
-  render,
-  nodeWidth,
-  nodeHeight,
-}: RenderFlagBadgeProps) {
+export default function RenderFlagBadge({ nodeId, render, nodeWidth, nodeHeight }: RenderFlagBadgeProps) {
   const { setParams } = useGraphStore();
   const currentContext = useCurrentContext();
   const handleToggleRender = useCallback(
@@ -35,11 +30,7 @@ export default function RenderFlagBadge({
   const isLightNode = nodeWidth === 90 && nodeHeight === 30;
   const isGeometryNode = nodeWidth === 90 && nodeHeight === 30 && !isLightNode;
   const isGeoNode = nodeWidth === 48 && nodeHeight === 48;
-  const badgeLeft = isLightNode
-    ? `${-2.5}rem`
-    : isGeometryNode
-    ? `${-2.5}rem`
-    : `${(nodeWidth / 2 - 8) / 10 - 4}rem`;
+  const badgeLeft = isLightNode ? `${-2.5}rem` : isGeometryNode ? `${-2.5}rem` : `${(nodeWidth / 2 - 8) / 10 - 4}rem`;
   return (
     <>
       {render && (
@@ -55,11 +46,7 @@ export default function RenderFlagBadge({
       )}
       <div
         className={`${styles.renderBadge} ${
-          render
-            ? isSubFlowContext
-              ? styles.renderSubFlowActive
-              : styles.renderActive
-            : styles.renderInactive
+          render ? (isSubFlowContext ? styles.renderSubFlowActive : styles.renderActive) : styles.renderInactive
         }`}
         style={{
           left: badgeLeft,

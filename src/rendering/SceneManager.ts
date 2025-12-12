@@ -13,7 +13,16 @@ import { EventManager } from "./events/EventManager";
 import { CaptureDimensions } from "./capture/CaptureTypes";
 import { WireframeOverlayManager } from "./wireframe/WireframeOverlayManager";
 
-type DisplayMode = "shaded" | "wireframe" | "xray" | "shadedWireframe" | "xrayWireframe" | "normals" | "depth" | "normalsWireframe" | "depthWireframe";
+type DisplayMode =
+  | "shaded"
+  | "wireframe"
+  | "xray"
+  | "shadedWireframe"
+  | "xrayWireframe"
+  | "normals"
+  | "depth"
+  | "normalsWireframe"
+  | "depthWireframe";
 
 export class SceneManager {
   private scene!: THREE.Scene;
@@ -214,9 +223,7 @@ export class SceneManager {
     const { materials: materialsPrefs } = usePreferencesStore.getState();
     this.applyToneMappingDirectly(materialsPrefs.toneMapping);
     this._renderer.toneMappingExposure = materialsPrefs.exposure;
-    this._renderer.outputColorSpace = materialsPrefs.sRGBEncoding
-      ? THREE.SRGBColorSpace
-      : THREE.LinearSRGBColorSpace;
+    this._renderer.outputColorSpace = materialsPrefs.sRGBEncoding ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
   }
 
   private initializeSubsystems(): void {
@@ -316,12 +323,7 @@ export class SceneManager {
         this.gridSystem.updateFromPreferences(state.guides.grid, prevState.guides.grid);
       }
 
-      if (
-        state.guides &&
-        prevState.guides &&
-        state.guides.axisGizmo &&
-        prevState.guides.axisGizmo
-      ) {
+      if (state.guides && prevState.guides && state.guides.axisGizmo && prevState.guides.axisGizmo) {
         this.axisGizmo.updateFromPreferences(state.guides.axisGizmo, prevState.guides.axisGizmo);
       }
 
@@ -395,11 +397,7 @@ export class SceneManager {
       this.cameraController
         .getCurrentCamera()
         .position.set(cameraData.position[0], cameraData.position[1], cameraData.position[2]);
-      this.cameraController.controls.target.set(
-        cameraData.target[0],
-        cameraData.target[1],
-        cameraData.target[2]
-      );
+      this.cameraController.controls.target.set(cameraData.target[0], cameraData.target[1], cameraData.target[2]);
       this.cameraController.controls.update();
     }
   }
@@ -435,8 +433,13 @@ export class SceneManager {
 
     this.sceneUpdateTimeout = window.setTimeout(() => {
       const { displayMode } = useUIStore.getState();
-      
-      if (displayMode === "shadedWireframe" || displayMode === "xrayWireframe" || displayMode === "normalsWireframe" || displayMode === "depthWireframe") {
+
+      if (
+        displayMode === "shadedWireframe" ||
+        displayMode === "xrayWireframe" ||
+        displayMode === "normalsWireframe" ||
+        displayMode === "depthWireframe"
+      ) {
         const meshes: THREE.Mesh[] = [];
         this.scene.traverse((object) => {
           if (object instanceof THREE.Mesh) {
@@ -445,7 +448,7 @@ export class SceneManager {
         });
         this.wireframeOverlayManager.updateWireframeOverlays(meshes);
       }
-      
+
       this.sceneUpdateTimeout = null;
     }, 50);
   }
@@ -454,21 +457,15 @@ export class SceneManager {
     newRendererPrefs: PreferencesState["renderer"],
     prevRendererPrefs: PreferencesState["renderer"]
   ): void {
-    if (
-      JSON.stringify(newRendererPrefs.background) !== JSON.stringify(prevRendererPrefs.background)
-    ) {
+    if (JSON.stringify(newRendererPrefs.background) !== JSON.stringify(prevRendererPrefs.background)) {
       this.updateSceneBackground();
     }
 
     if (
       newRendererPrefs.postProcessing !== prevRendererPrefs.postProcessing ||
-      JSON.stringify(newRendererPrefs.postProcessing) !==
-        JSON.stringify(prevRendererPrefs.postProcessing)
+      JSON.stringify(newRendererPrefs.postProcessing) !== JSON.stringify(prevRendererPrefs.postProcessing)
     ) {
-      this.postProcessManager.updateFromPreferences(
-        newRendererPrefs.postProcessing,
-        prevRendererPrefs.postProcessing
-      );
+      this.postProcessManager.updateFromPreferences(newRendererPrefs.postProcessing, prevRendererPrefs.postProcessing);
     }
   }
 
@@ -481,8 +478,13 @@ export class SceneManager {
 
   private handleDisplayModeChange(mode: DisplayMode): void {
     this.materialManager.updateDisplayMode(mode);
-    
-    if (mode === "shadedWireframe" || mode === "xrayWireframe" || mode === "normalsWireframe" || mode === "depthWireframe") {
+
+    if (
+      mode === "shadedWireframe" ||
+      mode === "xrayWireframe" ||
+      mode === "normalsWireframe" ||
+      mode === "depthWireframe"
+    ) {
       const meshes: THREE.Mesh[] = [];
       this.scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
@@ -536,17 +538,13 @@ export class SceneManager {
     } else {
       const themeFallbackColor = isDarkTheme ? "#191919" : "#f5f5f5";
       const backgroundColorHex =
-        rendererPrefs.background.color === "#191919"
-          ? themeFallbackColor
-          : rendererPrefs.background.color;
+        rendererPrefs.background.color === "#191919" ? themeFallbackColor : rendererPrefs.background.color;
 
       this.scene.background = new THREE.Color(backgroundColorHex);
     }
   }
 
-  private applyToneMappingDirectly(
-    toneMapping: PreferencesState["materials"]["toneMapping"]
-  ): void {
+  private applyToneMappingDirectly(toneMapping: PreferencesState["materials"]["toneMapping"]): void {
     if (!this._renderer) return;
     switch (toneMapping) {
       case "None":

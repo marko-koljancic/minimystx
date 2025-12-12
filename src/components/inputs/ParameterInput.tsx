@@ -1,26 +1,13 @@
 import React from "react";
 import { ParameterMetadata } from "../../engine/graphStore";
-import {
-  FloatInput,
-  VectorInput,
-  BooleanInput,
-  EnumInput,
-  ColorInput,
-  StringInput,
-  FileInput,
-} from "./index";
+import { FloatInput, VectorInput, BooleanInput, EnumInput, ColorInput, StringInput, FileInput } from "./index";
 interface ParameterInputProps {
   value: any;
   metadata: ParameterMetadata;
   onChange: (value: any) => void;
   disabled?: boolean;
 }
-export const ParameterInput: React.FC<ParameterInputProps> = ({
-  value,
-  metadata,
-  onChange,
-  disabled = false,
-}) => {
+export const ParameterInput: React.FC<ParameterInputProps> = ({ value, metadata, onChange, disabled = false }) => {
   if (metadata.displayMode === "description") {
     return (
       <div
@@ -40,14 +27,7 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
   }
   switch (metadata.type) {
     case "number":
-      return (
-        <FloatInput
-          value={value as number}
-          metadata={metadata}
-          onChange={onChange}
-          disabled={disabled}
-        />
-      );
+      return <FloatInput value={value as number} metadata={metadata} onChange={onChange} disabled={disabled} />;
     case "vector2":
     case "vector3":
     case "vector4":
@@ -60,60 +40,18 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
         />
       );
     case "boolean":
-      return (
-        <BooleanInput
-          value={value as boolean}
-          metadata={metadata}
-          onChange={onChange}
-          disabled={disabled}
-        />
-      );
+      return <BooleanInput value={value as boolean} metadata={metadata} onChange={onChange} disabled={disabled} />;
     case "enum":
-      return (
-        <EnumInput
-          value={value as string}
-          metadata={metadata}
-          onChange={onChange}
-          disabled={disabled}
-        />
-      );
+      return <EnumInput value={value as string} metadata={metadata} onChange={onChange} disabled={disabled} />;
     case "color":
-      return (
-        <ColorInput
-          value={value as string}
-          metadata={metadata}
-          onChange={onChange}
-          disabled={disabled}
-        />
-      );
+      return <ColorInput value={value as string} metadata={metadata} onChange={onChange} disabled={disabled} />;
     case "string":
       if (metadata.displayMode === "name") {
-        return (
-          <StringInput
-            value={value as string}
-            metadata={metadata}
-            onChange={onChange}
-            disabled={disabled}
-          />
-        );
+        return <StringInput value={value as string} metadata={metadata} onChange={onChange} disabled={disabled} />;
       }
-      return (
-        <StringInput
-          value={value as string}
-          metadata={metadata}
-          onChange={onChange}
-          disabled={disabled}
-        />
-      );
+      return <StringInput value={value as string} metadata={metadata} onChange={onChange} disabled={disabled} />;
     case "file":
-      return (
-        <FileInput
-          value={value as File | null}
-          metadata={metadata}
-          onChange={onChange}
-          disabled={disabled}
-        />
-      );
+      return <FileInput value={value as File | null} metadata={metadata} onChange={onChange} disabled={disabled} />;
     default:
       return (
         <div style={{ color: "var(--text-quaternary)", fontStyle: "italic" }}>

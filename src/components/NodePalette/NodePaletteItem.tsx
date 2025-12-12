@@ -7,12 +7,7 @@ interface NodePaletteItemProps {
   isSelected?: boolean;
   onMouseEnter?: () => void;
 }
-export default function NodePaletteItem({
-  node,
-  onDrop,
-  isSelected = false,
-  onMouseEnter,
-}: NodePaletteItemProps) {
+export default function NodePaletteItem({ node, onDrop, isSelected = false, onMouseEnter }: NodePaletteItemProps) {
   const [isDragging, setIsDragging] = useState(false);
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
@@ -35,9 +30,7 @@ export default function NodePaletteItem({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onMouseEnter={onMouseEnter}
-      className={`${styles.item} ${isDragging ? styles.dragging : ""} ${
-        isSelected ? styles.selected : ""
-      }`}
+      className={`${styles.item} ${isDragging ? styles.dragging : ""} ${isSelected ? styles.selected : ""}`}
       role="option"
       aria-selected={isSelected}
       aria-label={`${node.displayName} node`}

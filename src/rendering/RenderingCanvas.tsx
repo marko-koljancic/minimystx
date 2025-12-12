@@ -116,11 +116,7 @@ export default function RenderingCanvas() {
     };
   }, []);
   return (
-    <div
-      ref={keyboardContainerRef}
-      style={{ width: "100%", height: "100%", position: "relative" }}
-      tabIndex={0}
-    >
+    <div ref={keyboardContainerRef} style={{ width: "100%", height: "100%", position: "relative" }} tabIndex={0}>
       <div ref={resizeContainerRef} style={{ width: "100%", height: "100%" }}>
         <canvas
           ref={canvasRef}

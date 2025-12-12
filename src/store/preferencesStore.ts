@@ -96,34 +96,22 @@ export interface PreferencesState {
 
 interface PreferencesActions {
   updateUnits: (units: Partial<PreferencesState["units"]>) => void;
-  updateRendererPostProcessing: (
-    postProcessing: Partial<PreferencesState["renderer"]["postProcessing"]>
-  ) => void;
-  updateRendererBackground: (
-    background: Partial<PreferencesState["renderer"]["background"]>
-  ) => void;
+  updateRendererPostProcessing: (postProcessing: Partial<PreferencesState["renderer"]["postProcessing"]>) => void;
+  updateRendererBackground: (background: Partial<PreferencesState["renderer"]["background"]>) => void;
   updateMaterials: (materials: Partial<PreferencesState["materials"]>) => void;
   updateCameraSettings: (camera: Partial<PreferencesState["camera"]>) => void;
-  updateCameraOrbitControls: (
-    orbitControls: Partial<PreferencesState["camera"]["orbitControls"]>
-  ) => void;
+  updateCameraOrbitControls: (orbitControls: Partial<PreferencesState["camera"]["orbitControls"]>) => void;
   updateGridSettings: (grid: Partial<PreferencesState["guides"]["grid"]>) => void;
   updateAxisGizmo: (axisGizmo: Partial<PreferencesState["guides"]["axisGizmo"]>) => void;
   updateGroundPlane: (groundPlane: Partial<PreferencesState["guides"]["groundPlane"]>) => void;
   updateScreenshotSettings: (screenshot: Partial<PreferencesState["screenshot"]>) => void;
-  updateScreenshotResolution: (
-    resolution: Partial<PreferencesState["screenshot"]["resolution"]>
-  ) => void;
+  updateScreenshotResolution: (resolution: Partial<PreferencesState["screenshot"]["resolution"]>) => void;
   updateScreenshotOverlays: (overlays: Partial<PreferencesState["screenshot"]["overlays"]>) => void;
   updateScreenshotColorManagement: (
     colorManagement: Partial<PreferencesState["screenshot"]["colorManagement"]>
   ) => void;
-  updateScreenshotFileNaming: (
-    fileNaming: Partial<PreferencesState["screenshot"]["fileNaming"]>
-  ) => void;
-  updateScreenshotCaptureFlow: (
-    captureFlow: Partial<PreferencesState["screenshot"]["captureFlow"]>
-  ) => void;
+  updateScreenshotFileNaming: (fileNaming: Partial<PreferencesState["screenshot"]["fileNaming"]>) => void;
+  updateScreenshotCaptureFlow: (captureFlow: Partial<PreferencesState["screenshot"]["captureFlow"]>) => void;
   resetToDefaults: () => void;
 }
 
@@ -346,19 +334,13 @@ export const usePreferencesStore = create<PreferencesStore>()(
       name: "minimystx-preferences-store",
       onRehydrateStorage: () => (state) => {
         if (state) {
-          if (
-            state.guides?.groundPlane &&
-            typeof state.guides.groundPlane.elevation === "undefined"
-          ) {
+          if (state.guides?.groundPlane && typeof state.guides.groundPlane.elevation === "undefined") {
             state.guides.groundPlane.elevation = -0.001;
           }
           if (state.guides?.grid && typeof state.guides.grid.majorGridLines === "undefined") {
             state.guides.grid.majorGridLines = 10;
           }
-          if (
-            state.renderer?.postProcessing &&
-            typeof state.renderer.postProcessing.bloomStrength === "undefined"
-          ) {
+          if (state.renderer?.postProcessing && typeof state.renderer.postProcessing.bloomStrength === "undefined") {
             state.renderer.postProcessing.bloomStrength = 0.5;
           }
           if (state.renderer?.postProcessing) {

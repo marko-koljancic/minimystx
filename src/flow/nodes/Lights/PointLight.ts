@@ -1,11 +1,5 @@
 import { PointLight, PointLightHelper, Object3D, Group } from "three";
-import type {
-  GeneralProps,
-  LightProps,
-  ShadowProps,
-  BaseLightRenderingProps,
-  NodeProcessor,
-} from "../props";
+import type { GeneralProps, LightProps, ShadowProps, BaseLightRenderingProps, NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
 import { validateAndFixShadowCamera } from "../../../utils/shadowValidation";
@@ -22,20 +16,9 @@ export interface PointLightNodeData extends Record<string, unknown> {
     helperSize: number;
   };
 }
-export const processor: NodeProcessor<PointLightNodeData, { object: Object3D }> = (
-  data: PointLightNodeData
-) => {
-  const light = new PointLight(
-    data.light.color,
-    data.light.intensity,
-    data.light.distance,
-    data.light.decay
-  );
-  light.position.set(
-    data.transform.position.x,
-    data.transform.position.y,
-    data.transform.position.z
-  );
+export const processor: NodeProcessor<PointLightNodeData, { object: Object3D }> = (data: PointLightNodeData) => {
+  const light = new PointLight(data.light.color, data.light.intensity, data.light.distance, data.light.decay);
+  light.position.set(data.transform.position.x, data.transform.position.y, data.transform.position.z);
   light.castShadow = data.light.castShadow;
   if (data.light.castShadow) {
     const mapSize = parseInt(data.shadow.mapSize);
@@ -62,11 +45,10 @@ export const pointLightNodeParams: NodeParams = {
       displayName: "Name",
       displayMode: "name",
     }),
-    description: createParameterMetadata(
-      "string",
-      "Creates a point light source that emits light in all directions.",
-      { displayName: "Description", displayMode: "description" }
-    ),
+    description: createParameterMetadata("string", "Creates a point light source that emits light in all directions.", {
+      displayName: "Description",
+      displayMode: "description",
+    }),
   },
   transform: {
     position: createParameterMetadata("vector3", { x: 10, y: 10, z: 5 }, { displayName: "Position" }),

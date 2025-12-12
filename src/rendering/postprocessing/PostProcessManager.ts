@@ -3,7 +3,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
-import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore"
+import { usePreferencesStore, PreferencesState } from "../../store/preferencesStore";
 import { PostProcessManagerDependencies, IPostProcessManager } from "./PostProcessTypes";
 
 export class PostProcessManager implements IPostProcessManager {
@@ -25,12 +25,12 @@ export class PostProcessManager implements IPostProcessManager {
 
   public initializePostProcessing(): void {
     if (!this.dependencies.renderer || !this.dependencies.scene) return;
-    
+
     this.disposePostProcessing();
-    
+
     const preferences = usePreferencesStore.getState();
     const { passes } = preferences.renderer.postProcessing;
-    
+
     this._composer = new EffectComposer(this.dependencies.renderer);
     this.renderPass = new RenderPass(this.dependencies.scene, this.dependencies.getCurrentCamera());
     this._composer.addPass(this.renderPass);
@@ -48,7 +48,7 @@ export class PostProcessManager implements IPostProcessManager {
           height,
           camera: this.dependencies.getCurrentCamera().type,
         });
-        
+
         this.ssaoPass = new SSAOPass(this.dependencies.scene, this.dependencies.getCurrentCamera(), width, height);
         this.ssaoPass.kernelRadius = Math.min(Math.max(ssaoKernelRadius, 1), 32);
         this.ssaoPass.minDistance = Math.min(Math.max(ssaoMinDistance, 0.001), 0.02);
@@ -58,10 +58,7 @@ export class PostProcessManager implements IPostProcessManager {
 
         if (this.ssaoPass.ssaoMaterial && this.ssaoPass.ssaoMaterial.uniforms) {
           if (this.ssaoPass.ssaoMaterial.uniforms.intensity) {
-            this.ssaoPass.ssaoMaterial.uniforms.intensity.value = Math.min(
-              Math.max(ssaoIntensity, 0.1),
-              2.0
-            );
+            this.ssaoPass.ssaoMaterial.uniforms.intensity.value = Math.min(Math.max(ssaoIntensity, 0.1), 2.0);
           }
         }
 
@@ -78,13 +75,8 @@ export class PostProcessManager implements IPostProcessManager {
       const canvas = this.dependencies.renderer.domElement;
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
-      
-      this.bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(width, height),
-        bloomStrength,
-        0.4,
-        0.4
-      );
+
+      this.bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), bloomStrength, 0.4, 0.4);
       this._composer.addPass(this.bloomPass);
     }
 
@@ -119,11 +111,11 @@ export class PostProcessManager implements IPostProcessManager {
   public setSize(width: number, height: number): void {
     if (this._composer) {
       this._composer.setSize(width, height);
-      
+
       if (this.ssaoPass) {
         this.ssaoPass.setSize(width, height);
       }
-      
+
       if (this.bloomPass) {
         this.bloomPass.setSize(width, height);
       }
@@ -157,7 +149,7 @@ export class PostProcessManager implements IPostProcessManager {
     if (this.renderPass) {
       this.renderPass.camera = this.dependencies.getCurrentCamera();
     }
-    
+
     if (this.ssaoPass) {
       this.ssaoPass.camera = this.dependencies.getCurrentCamera();
     }
@@ -172,15 +164,15 @@ export class PostProcessManager implements IPostProcessManager {
       this._composer.dispose();
       this._composer = null;
     }
-    
+
     if (this.renderPass) {
       this.renderPass = null;
     }
-    
+
     if (this.bloomPass) {
       this.bloomPass = null;
     }
-    
+
     if (this.ssaoPass) {
       if (typeof this.ssaoPass.dispose === "function") {
         this.ssaoPass.dispose();

@@ -3,19 +3,23 @@ import { persist } from "zustand/middleware";
 import type { GraphContext } from "../engine/graphStore";
 import { useCameraStore } from "./cameraStore";
 import { useLayoutStore } from "./layoutStore";
-import { 
-  emitSetCameraMode, 
-  emitToggleAxisGizmo, 
-  emitSetCameraView
-} from "./eventBus";
+import { emitSetCameraMode, emitToggleAxisGizmo, emitSetCameraView } from "./eventBus";
 
 type Theme = "dark" | "light" | "system";
 type ConnectionLineStyle = "bezier" | "straight" | "step" | "simpleBezier";
 type FocusedCanvas = "flow" | "render" | null;
 type FlowViewMode = "graph" | "list";
 type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
-type DisplayMode = "shaded" | "wireframe" | "xray" | "shadedWireframe" | "xrayWireframe" | "normals" | "depth" | "normalsWireframe" | "depthWireframe";
-
+type DisplayMode =
+  | "shaded"
+  | "wireframe"
+  | "xray"
+  | "shadedWireframe"
+  | "xrayWireframe"
+  | "normals"
+  | "depth"
+  | "normalsWireframe"
+  | "depthWireframe";
 
 interface UIState {
   theme: Theme;
@@ -91,10 +95,7 @@ interface UIActions {
   navigateToSubFlow: (geoNodeId: string) => void;
   saveViewportState: (contextKey: string, viewport: { x: number; y: number; zoom: number }) => void;
   getViewportState: (contextKey: string) => { x: number; y: number; zoom: number } | null;
-  saveNodePositions: (
-    contextKey: string,
-    positions: Record<string, { x: number; y: number }>
-  ) => void;
+  saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => void;
   getNodePositions: (contextKey: string) => Record<string, { x: number; y: number }> | null;
   toggleRendererMaximized: () => void;
   setFlowViewMode: (contextKey: string, mode: FlowViewMode) => void;
@@ -253,12 +254,9 @@ export const useUIStore = create<UIStore>()(
       togglePalette: () => set((state) => ({ isPaletteOpen: !state.isPaletteOpen })),
       setPalettePinned: (pinned: boolean) => set({ isPalettePinned: pinned }),
       togglePalettePinned: () => set((state) => ({ isPalettePinned: !state.isPalettePinned })),
-      setPalettePosition: (position: { x: number; y: number }) =>
-        set({ palettePosition: position }),
-      toggleGridInFlowCanvas: () =>
-        set((state) => ({ showGridInFlowCanvas: !state.showGridInFlowCanvas })),
-      toggleGridInRenderView: () =>
-        set((state) => ({ showGridInRenderView: !state.showGridInRenderView })),
+      setPalettePosition: (position: { x: number; y: number }) => set({ palettePosition: position }),
+      toggleGridInFlowCanvas: () => set((state) => ({ showGridInFlowCanvas: !state.showGridInFlowCanvas })),
+      toggleGridInRenderView: () => set((state) => ({ showGridInRenderView: !state.showGridInRenderView })),
       toggleMinimap: () => set((state) => ({ showMinimap: !state.showMinimap })),
       toggleFlowControls: () => set((state) => ({ showFlowControls: !state.showFlowControls })),
       setConnectionLineStyle: (style) => set({ connectionLineStyle: style }),
@@ -356,10 +354,7 @@ export const useUIStore = create<UIStore>()(
         const state = get();
         return state.viewportStates[contextKey] || null;
       },
-      saveNodePositions: (
-        contextKey: string,
-        positions: Record<string, { x: number; y: number }>
-      ) => {
+      saveNodePositions: (contextKey: string, positions: Record<string, { x: number; y: number }>) => {
         set((state) => ({
           ...state,
           nodePositions: {
@@ -446,12 +441,10 @@ export const useSelectedCategoryIndex = () => useUIStore((state) => state.select
 export const useSelectedNodeIndex = () => useUIStore((state) => state.selectedNodeIndex);
 export const usePaletteSearchQuery = () => useUIStore((state) => state.paletteSearchQuery);
 export const useKeyboardNavigationMode = () => useUIStore((state) => state.keyboardNavigationMode);
-export const useSetSelectedCategoryIndex = () =>
-  useUIStore((state) => state.setSelectedCategoryIndex);
+export const useSetSelectedCategoryIndex = () => useUIStore((state) => state.setSelectedCategoryIndex);
 export const useSetSelectedNodeIndex = () => useUIStore((state) => state.setSelectedNodeIndex);
 export const useSetPaletteSearchQuery = () => useUIStore((state) => state.setPaletteSearchQuery);
-export const useSetKeyboardNavigationMode = () =>
-  useUIStore((state) => state.setKeyboardNavigationMode);
+export const useSetKeyboardNavigationMode = () => useUIStore((state) => state.setKeyboardNavigationMode);
 export const useResetPaletteNavigation = () => useUIStore((state) => state.resetPaletteNavigation);
 export const useCurrentContext = () => useUIStore((state) => state.currentContext);
 export const useSetCurrentContext = () => useUIStore((state) => state.setCurrentContext);
@@ -461,8 +454,7 @@ export const useSaveViewportState = () => useUIStore((state) => state.saveViewpo
 export const useGetViewportState = () => useUIStore((state) => state.getViewportState);
 export const useSaveNodePositions = () => useUIStore((state) => state.saveNodePositions);
 export const useGetNodePositions = () => useUIStore((state) => state.getNodePositions);
-export const useToggleRendererMaximized = () =>
-  useUIStore((state) => state.toggleRendererMaximized);
+export const useToggleRendererMaximized = () => useUIStore((state) => state.toggleRendererMaximized);
 export const useSetFlowViewMode = () => useUIStore((state) => state.setFlowViewMode);
 export const useGetFlowViewMode = () => useUIStore((state) => state.getFlowViewMode);
 export const getContextKey = (context: GraphContext): string => {

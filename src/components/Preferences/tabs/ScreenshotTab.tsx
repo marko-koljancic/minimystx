@@ -166,8 +166,8 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
           <strong>Current Template:</strong> {preferences.fileNaming.template}
         </p>
         <p className={styles.infoText}>
-          Captures use the resolution multiplier settings. Higher resolutions provide better quality
-          but may impact performance and file size.
+          Captures use the resolution multiplier settings. Higher resolutions provide better quality but may impact
+          performance and file size.
         </p>
       </div>
     </div>

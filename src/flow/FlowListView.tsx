@@ -45,10 +45,7 @@ const FlowListView = () => {
         <table className={styles.table}>
           <tbody>
             {sortedNodes.map((node) => (
-              <tr
-                key={node.id}
-                className={`${styles.tr} ${selectedNodeId === node.id ? styles.selectedRow : ""}`}
-              >
+              <tr key={node.id} className={`${styles.tr} ${selectedNodeId === node.id ? styles.selectedRow : ""}`}>
                 <td className={`${styles.td} ${styles.nameColumn}`} title={node.name}>
                   {node.name}
                 </td>

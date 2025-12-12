@@ -10,10 +10,7 @@ export default function PointLightNode(props: NodeProps) {
   const nodeData = data as PointLightNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <LightNodeBaseDesign
-        label={nodeData.general?.name || "Point Light"}
-        isSelected={Boolean(selected)}
-      />
+      <LightNodeBaseDesign label={nodeData.general?.name || "Point Light"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

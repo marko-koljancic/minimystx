@@ -59,12 +59,7 @@ export class CookOnDemandSystem {
       requestAnimationFrame(() => this.processQueue());
     }
   }
-  requestCookForParameterChange(
-    nodeId: string,
-    parameterName: string,
-    oldValue: unknown,
-    newValue: unknown
-  ): void {
+  requestCookForParameterChange(nodeId: string, parameterName: string, oldValue: unknown, newValue: unknown): void {
     if (this.isParameterChangeSignificant(nodeId, parameterName, oldValue, newValue)) {
       this.requestCook({
         nodeId,
@@ -227,8 +222,7 @@ export class CookOnDemandSystem {
       this.stats.cacheHits++;
     }
     const totalComputes = this.stats.cacheHits + this.stats.cacheMisses;
-    this.stats.avgComputeTime =
-      (this.stats.avgComputeTime * (totalComputes - 1) + computeTime) / totalComputes;
+    this.stats.avgComputeTime = (this.stats.avgComputeTime * (totalComputes - 1) + computeTime) / totalComputes;
   }
   addListener(listener: (event: SchedulerEvent) => void): void {
     this.listeners.add(listener);
@@ -264,8 +258,7 @@ export class CookOnDemandSystem {
   } {
     return {
       cacheHitRate: this.getCacheHitRate(),
-      redundantCookRate:
-        this.stats.totalRequests > 0 ? this.stats.redundantCooks / this.stats.totalRequests : 0,
+      redundantCookRate: this.stats.totalRequests > 0 ? this.stats.redundantCooks / this.stats.totalRequests : 0,
       avgComputeTime: this.stats.avgComputeTime,
       totalNodesCooked: this.stats.nodesCooked,
     };

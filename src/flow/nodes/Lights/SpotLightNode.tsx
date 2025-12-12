@@ -10,10 +10,7 @@ export default function SpotLightNode(props: NodeProps) {
   const nodeData = data as SpotLightNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <LightNodeBaseDesign
-        label={nodeData.general?.name || "Spot Light"}
-        isSelected={Boolean(selected)}
-      />
+      <LightNodeBaseDesign label={nodeData.general?.name || "Spot Light"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

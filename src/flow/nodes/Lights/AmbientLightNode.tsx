@@ -10,10 +10,7 @@ export default function AmbientLightNode(props: NodeProps) {
   const nodeData = data as AmbientLightNodeData;
   return (
     <div className={styles.nodeContainer}>
-      <LightNodeBaseDesign
-        label={nodeData.general?.name || "Ambient Light"}
-        isSelected={Boolean(selected)}
-      />
+      <LightNodeBaseDesign label={nodeData.general?.name || "Ambient Light"} isSelected={Boolean(selected)} />
       <RenderFlagBadge
         nodeId={id}
         render={nodeData.rendering?.visible ?? true}

@@ -21,10 +21,10 @@ function createConeGeometry(data: ConeNodeData): BufferGeometry {
   const clampedHeightSegments = Math.max(1, Math.min(512, Math.round(heightSegments)));
   return new ConeGeometry(radius, height, clampedRadialSegments, clampedHeightSegments);
 }
-export const processor: NodeProcessor<
-  ConeNodeData,
-  { object: Object3D; geometry: BufferGeometry }
-> = (data: ConeNodeData, input?: { object: Object3D; geometry?: BufferGeometry }) => {
+export const processor: NodeProcessor<ConeNodeData, { object: Object3D; geometry: BufferGeometry }> = (
+  data: ConeNodeData,
+  input?: { object: Object3D; geometry?: BufferGeometry }
+) => {
   const geometry = createConeGeometry(data);
   return createGeometryMesh(data, geometry, input?.object);
 };

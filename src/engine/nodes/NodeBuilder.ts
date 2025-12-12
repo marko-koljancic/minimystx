@@ -1,10 +1,4 @@
-import {
-  ConnectionType,
-  NodeInput,
-  NodeOutput,
-  InputHelpers,
-  OutputHelpers,
-} from "../types/NodeIO";
+import { ConnectionType, NodeInput, NodeOutput, InputHelpers, OutputHelpers } from "../types/NodeIO";
 import { BaseContainer } from "../containers/BaseContainer";
 import { NodeDefinition, NodeParams } from "../graphStore";
 import { createParameterMetadata } from "../parameterUtils";
@@ -46,12 +40,7 @@ export class NodeBuilder {
   }
   input(input: NodeInput): NodeBuilder;
   input(name: string, type: ConnectionType, required?: boolean, defaultValue?: any): NodeBuilder;
-  input(
-    nameOrInput: string | NodeInput,
-    type?: ConnectionType,
-    required = true,
-    defaultValue?: any
-  ): NodeBuilder {
+  input(nameOrInput: string | NodeInput, type?: ConnectionType, required = true, defaultValue?: any): NodeBuilder {
     if (typeof nameOrInput === "string") {
       const input: NodeInput = {
         name: nameOrInput,
@@ -88,16 +77,7 @@ export class NodeBuilder {
   parameter(
     categoryName: string,
     paramName: string,
-    type:
-      | "number"
-      | "boolean"
-      | "string"
-      | "vector2"
-      | "vector3"
-      | "vector4"
-      | "color"
-      | "enum"
-      | "file",
+    type: "number" | "boolean" | "string" | "vector2" | "vector3" | "vector4" | "color" | "enum" | "file",
     defaultValue: any,
     options?: {
       displayName?: string;
@@ -209,9 +189,7 @@ export const NodePatterns = {
     return new NodeBuilder().type(type).category("Utility").display(displayName);
   },
 };
-export function registerNode(
-  nodeDefinition: NodeDefinition & { inputs: NodeInput[]; outputs: NodeOutput[] }
-) {
+export function registerNode(nodeDefinition: NodeDefinition & { inputs: NodeInput[]; outputs: NodeOutput[] }) {
   return nodeDefinition;
 }
 export const ExampleNodes = {

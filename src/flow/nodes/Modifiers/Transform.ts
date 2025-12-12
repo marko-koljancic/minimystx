@@ -11,10 +11,7 @@ export interface TransformNodeData extends Record<string, unknown> {
   };
   rendering: RenderingProps;
 }
-export const processor: NodeProcessor<
-  TransformNodeData,
-  { object: Object3D; geometry?: BufferGeometry }
-> = (
+export const processor: NodeProcessor<TransformNodeData, { object: Object3D; geometry?: BufferGeometry }> = (
   data: TransformNodeData,
   input?: { object: Object3D; geometry?: BufferGeometry }
 ): { object: Object3D; geometry?: BufferGeometry } => {
@@ -52,9 +49,7 @@ export const processor: NodeProcessor<
   );
   const scale = data.transform.scale || { x: 1, y: 1, z: 1, factor: 1 };
   const scaleFactor = scale.factor || 1;
-  obj.scale.multiply(
-    new Vector3(scale.x * scaleFactor, scale.y * scaleFactor, scale.z * scaleFactor)
-  );
+  obj.scale.multiply(new Vector3(scale.x * scaleFactor, scale.y * scaleFactor, scale.z * scaleFactor));
   obj.visible = data.rendering?.visible !== false;
   if (!geometry && (obj as any).geometry) {
     geometry = (obj as any).geometry;
@@ -79,12 +74,7 @@ export const transformNodeCompute = (params: Record<string, any>, inputs: Record
   let inputObject: { object: Object3D; geometry?: BufferGeometry } | undefined = undefined;
   if (inputKeys.length > 0) {
     const input = inputs[inputKeys[0]];
-    if (
-      input &&
-      typeof input === "object" &&
-      (input as any).object &&
-      (input as any).object.isObject3D
-    ) {
+    if (input && typeof input === "object" && (input as any).object && (input as any).object.isObject3D) {
       inputObject = input as { object: Object3D; geometry?: BufferGeometry };
     } else {
     }
