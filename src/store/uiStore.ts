@@ -305,8 +305,12 @@ export const useUIStore = create<UIStore>()(
         emitSetCameraMode(isOrthographic);
       },
       toggleAxisGizmo: () => {
-        const cameraStore = useCameraStore.getState();
-        cameraStore.toggleAxisGizmo();
+        // uiStore.showAxisGizmo is the single source of truth that the viewport
+        // control, the renderer, and screenshot capture all read. Flip it here (and
+        // keep cameraStore in sync) before emitting, so the renderer applies the new
+        // value rather than inverting a stale one.
+        set((state) => ({ showAxisGizmo: !state.showAxisGizmo }));
+        useCameraStore.getState().toggleAxisGizmo();
         emitToggleAxisGizmo();
       },
       setCameraView: (view: "top" | "front" | "left" | "right" | "bottom") => {

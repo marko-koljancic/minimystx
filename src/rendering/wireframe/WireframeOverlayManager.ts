@@ -1,16 +1,13 @@
 import * as THREE from "three";
 
-interface WireframeOverlayManagerDependencies {
-  scene: THREE.Scene;
-}
-
 export class WireframeOverlayManager {
-  private wireframeGeometryCache: WeakMap<THREE.BufferGeometry, THREE.WireframeGeometry> = new WeakMap();
   private meshOverlayMap: WeakMap<THREE.Mesh, THREE.LineSegments> = new WeakMap();
   private activeMeshes: Set<THREE.Mesh> = new Set();
   private wireframeMaterial: THREE.LineBasicMaterial = new THREE.LineBasicMaterial();
 
-  constructor(private dependencies: WireframeOverlayManagerDependencies) {
+  // Overlays attach to their source meshes as children, so the manager needs no
+  // direct scene reference.
+  constructor() {
     this.initializeWireframeMaterial();
   }
 
@@ -19,14 +16,9 @@ export class WireframeOverlayManager {
       return;
     }
 
-    const geometry = mesh.geometry;
-    let wireframeGeometry = this.wireframeGeometryCache.get(geometry);
-
-    if (!wireframeGeometry) {
-      wireframeGeometry = new THREE.WireframeGeometry(geometry);
-      this.wireframeGeometryCache.set(geometry, wireframeGeometry);
-    }
-
+    // One WireframeGeometry per overlay so it can be disposed when the overlay is
+    // detached; display meshes carry unique geometries so a shared cache never helps.
+    const wireframeGeometry = new THREE.WireframeGeometry(mesh.geometry);
     const lineSegments = new THREE.LineSegments(wireframeGeometry, this.wireframeMaterial);
 
     mesh.add(lineSegments);
@@ -37,7 +29,7 @@ export class WireframeOverlayManager {
   public removeWireframeOverlay(mesh: THREE.Mesh): void {
     const overlay = this.meshOverlayMap.get(mesh);
     if (overlay) {
-      mesh.remove(overlay);
+      this.detachOverlay(mesh, overlay);
       this.meshOverlayMap.delete(mesh);
       this.activeMeshes.delete(mesh);
     }
@@ -50,7 +42,7 @@ export class WireframeOverlayManager {
       if (!currentMeshes.has(mesh)) {
         const overlay = this.meshOverlayMap.get(mesh);
         if (overlay) {
-          mesh.remove(overlay);
+          this.detachOverlay(mesh, overlay);
           this.meshOverlayMap.delete(mesh);
         }
       }
@@ -71,7 +63,7 @@ export class WireframeOverlayManager {
     for (const mesh of this.activeMeshes) {
       const overlay = this.meshOverlayMap.get(mesh);
       if (overlay) {
-        mesh.remove(overlay);
+        this.detachOverlay(mesh, overlay);
         this.meshOverlayMap.delete(mesh);
       }
     }
@@ -83,8 +75,12 @@ export class WireframeOverlayManager {
     if (this.wireframeMaterial) {
       this.wireframeMaterial.dispose();
     }
-    this.wireframeGeometryCache = new WeakMap();
     this.meshOverlayMap = new WeakMap();
+  }
+
+  private detachOverlay(mesh: THREE.Mesh, overlay: THREE.LineSegments): void {
+    mesh.remove(overlay);
+    overlay.geometry.dispose();
   }
 
   private initializeWireframeMaterial(): void {

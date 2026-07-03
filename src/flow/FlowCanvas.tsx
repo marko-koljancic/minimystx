@@ -147,11 +147,24 @@ export default function FlowCanvas() {
         };
       });
       setNodes(newNodes as any);
+    }
+    // Intentionally reconcile only when the set of context nodes changes; adding
+    // `nodes`/`currentContext` here would re-run on every drag with no effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextNodes, setNodes]);
+  // Single reconciling edge effect. The derived edges are now handle-aware (stable
+  // ids, real sourceHandle/targetHandle), so we only re-apply them when the edge set
+  // actually changes. This stops the old force-overwrite that clobbered the in-flight
+  // optimistic edge and stripped handles (collapsing every wire onto the first input).
+  const edgeSignatureRef = useRef<string>("");
+  useEffect(() => {
+    const signature = contextEdges
+      .map((e) => `${e.id}|${e.source}|${e.target}|${e.sourceHandle ?? ""}|${e.targetHandle ?? ""}`)
+      .join(";");
+    if (signature !== edgeSignatureRef.current) {
+      edgeSignatureRef.current = signature;
       setEdges(contextEdges);
     }
-  }, [contextNodes, setNodes, contextEdges, setEdges]);
-  useEffect(() => {
-    setEdges(contextEdges);
   }, [contextEdges, setEdges]);
   const lastContextNodesRef = useRef(contextNodes);
   useEffect(() => {

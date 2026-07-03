@@ -188,6 +188,20 @@ export class GraphLibAdapter {
       target: edge.w,
     }));
   }
+  getAllTypedEdges(): { source: string; target: string; sourceHandle: string; targetHandle: string }[] {
+    const edges: { source: string; target: string; sourceHandle: string; targetHandle: string }[] = [];
+    for (const [targetNodeId, inputs] of this.inputConnections) {
+      for (const [targetInput, conn] of inputs) {
+        edges.push({
+          source: conn.sourceNodeId,
+          target: targetNodeId,
+          sourceHandle: conn.sourceOutput,
+          targetHandle: targetInput,
+        });
+      }
+    }
+    return edges;
+  }
   topologicalSort(nodeIds?: string[]): string[] {
     try {
       if (nodeIds) {
@@ -214,8 +228,11 @@ export class GraphLibAdapter {
       return [];
     }
     try {
-      const predecessorIds = alg.preorder(this.graph, [renderTargetId]);
-      return predecessorIds; // Includes renderTargetId itself
+      // The render cone is the render target plus every node upstream that feeds
+      // it (its transitive predecessors), since data flows source -> target.
+      // alg.preorder walks successors (downstream), which is the wrong direction.
+      const predecessorIds = this.getAllPredecessors(renderTargetId).map((node) => node.id);
+      return [renderTargetId, ...predecessorIds];
     } catch (error) {
       return [renderTargetId];
     }

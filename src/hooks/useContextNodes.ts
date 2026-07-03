@@ -25,27 +25,20 @@ export const useContextNodes = () => {
 };
 export const useContextEdges = () => {
   const currentContext = useCurrentContext();
-  const { graph, rootNodeState, subFlows } = useGraphStore();
+  // getEdges is handle-aware (subflow edges carry sourceHandle/targetHandle). Reading
+  // it here, keyed on edgeVersion, is what keeps multi-input wires on their real
+  // handles instead of collapsing onto the first input. rootNodeState/subFlows keep
+  // the memo fresh across context switches and node add/remove.
+  const { getEdges, rootNodeState, subFlows, edgeVersion } = useGraphStore();
   return useMemo(() => {
-    let contextNodeIds: string[];
-    if (currentContext.type === "root") {
-      contextNodeIds = Object.keys(rootNodeState);
-    } else if (currentContext.type === "subflow" && currentContext.geoNodeId) {
-      const subFlow = subFlows[currentContext.geoNodeId];
-      if (!subFlow) return [];
-      contextNodeIds = Object.keys(subFlow.nodeState);
-    } else {
-      return [];
-    }
-    const allEdges = graph.getAllEdges();
-    const contextEdges = allEdges.filter(
-      (edge) => contextNodeIds.includes(edge.source) && contextNodeIds.includes(edge.target)
-    );
-    return contextEdges.map((edge, index) => ({
-      id: `${edge.source}->${edge.target}-${index}`,
+    return getEdges(currentContext).map((edge) => ({
+      id: edge.id,
       source: edge.source,
       target: edge.target,
+      sourceHandle: edge.sourceHandle,
+      targetHandle: edge.targetHandle,
       type: "wire",
     }));
-  }, [currentContext.type, currentContext.geoNodeId, graph, rootNodeState, subFlows]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentContext.type, currentContext.geoNodeId, getEdges, rootNodeState, subFlows, edgeVersion]);
 };

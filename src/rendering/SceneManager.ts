@@ -284,9 +284,7 @@ export class SceneManager {
       onSceneUpdate: () => this.handleSceneUpdate(),
     });
 
-    this.wireframeOverlayManager = new WireframeOverlayManager({
-      scene: this.scene,
-    });
+    this.wireframeOverlayManager = new WireframeOverlayManager();
   }
 
   private setupEventListeners(): void {
@@ -420,8 +418,10 @@ export class SceneManager {
   }
 
   private handleToggleAxisGizmo(): void {
+    // showAxisGizmo is flipped in the store before this event fires, so apply the
+    // current value directly (inverting it here is what desynced the gizmo before).
     const { showAxisGizmo } = useUIStore.getState();
-    this.axisGizmo.updateVisibility(!showAxisGizmo);
+    this.axisGizmo.updateVisibility(showAxisGizmo);
   }
 
   private sceneUpdateTimeout: number | null = null;
@@ -434,19 +434,11 @@ export class SceneManager {
     this.sceneUpdateTimeout = window.setTimeout(() => {
       const { displayMode } = useUIStore.getState();
 
-      if (
-        displayMode === "shadedWireframe" ||
-        displayMode === "xrayWireframe" ||
-        displayMode === "normalsWireframe" ||
-        displayMode === "depthWireframe"
-      ) {
-        const meshes: THREE.Mesh[] = [];
-        this.scene.traverse((object) => {
-          if (object instanceof THREE.Mesh) {
-            meshes.push(object);
-          }
-        });
-        this.wireframeOverlayManager.updateWireframeOverlays(meshes);
+      // A scene rebuild replaces meshes with fresh instances carrying their default
+      // shaded materials. Reapply the active display mode (material swap plus any
+      // wireframe overlay) so non-shaded modes do not silently revert on every edit.
+      if (displayMode !== "shaded") {
+        this.handleDisplayModeChange(displayMode);
       }
 
       this.sceneUpdateTimeout = null;

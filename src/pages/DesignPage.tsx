@@ -1,6 +1,7 @@
 import FlowCanvas from "../flow/FlowCanvas";
 import RenderingCanvas from "../rendering/RenderingCanvas";
 import DesignLayout from "./DesignLayout";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { ReactFlowProvider } from "@xyflow/react";
 export default function DesignPage() {
   return (
@@ -12,5 +13,18 @@ export default function DesignPage() {
   );
 }
 function DesignPageContent() {
-  return <DesignLayout leftTop={<RenderingCanvas />} right={<FlowCanvas />} />;
+  return (
+    <DesignLayout
+      leftTop={
+        <ErrorBoundary label="Viewport">
+          <RenderingCanvas />
+        </ErrorBoundary>
+      }
+      right={
+        <ErrorBoundary label="Node editor">
+          <FlowCanvas />
+        </ErrorBoundary>
+      }
+    />
+  );
 }

@@ -16,7 +16,11 @@ export function createGeometryMesh<T extends BaseGeometryData>(
     material.color.setStyle("#ffffff");
   }
   const mesh = new Mesh(geometry, material);
-  mesh.visible = data.rendering.visible !== false;
+  // Do NOT bake rendering.visible into the mesh. `rendering.visible` gates whether the
+  // node renders AS the active subflow output (enforced in SceneObjectManager); baking
+  // it here would leave a non-active node's mesh invisible even when it is consumed as
+  // an input by a downstream node (e.g. Combine), hiding it in the combined result.
+  mesh.visible = true;
   mesh.position.set(0, 0, 0);
   mesh.rotation.set(0, 0, 0);
   mesh.scale.set(1, 1, 1);

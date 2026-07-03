@@ -166,10 +166,18 @@ export class PostProcessManager implements IPostProcessManager {
     }
 
     if (this.renderPass) {
+      if (typeof (this.renderPass as { dispose?: () => void }).dispose === "function") {
+        (this.renderPass as { dispose?: () => void }).dispose!();
+      }
       this.renderPass = null;
     }
 
     if (this.bloomPass) {
+      // UnrealBloomPass owns several render targets and materials that EffectComposer
+      // does not dispose for us; release them explicitly to avoid a GPU leak on every reinit.
+      if (typeof (this.bloomPass as { dispose?: () => void }).dispose === "function") {
+        (this.bloomPass as { dispose?: () => void }).dispose!();
+      }
       this.bloomPass = null;
     }
 

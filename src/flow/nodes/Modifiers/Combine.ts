@@ -11,7 +11,7 @@ export interface CombineNodeData extends Record<string, unknown> {
 }
 
 export const processor: NodeProcessor<CombineNodeData, { object: Object3D }> = (
-  data: CombineNodeData,
+  _data: CombineNodeData,
   input1?: { object: Object3D },
   input2?: { object: Object3D },
   input3?: { object: Object3D },
@@ -25,12 +25,22 @@ export const processor: NodeProcessor<CombineNodeData, { object: Object3D }> = (
     if (input?.object) {
       const childGroup = new Group();
       childGroup.name = `input${index + 1}`;
-      childGroup.add(input.object.clone(true));
+      // Force the consumed input visible: an input node is typically not the active
+      // output, so its own mesh may carry visible=false, which must not hide it once
+      // it is combined here.
+      const clone = input.object.clone(true);
+      clone.visible = true;
+      clone.traverse((child) => {
+        child.visible = true;
+      });
+      childGroup.add(clone);
       group.add(childGroup);
     }
   });
 
-  group.visible = data.rendering?.visible !== false;
+  // Visibility as the active output is gated by SceneObjectManager, not baked here,
+  // so a Combine consumed by another node (nested) is not hidden.
+  group.visible = true;
 
   return { object: group };
 };
