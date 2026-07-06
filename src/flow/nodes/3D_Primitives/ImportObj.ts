@@ -2,7 +2,7 @@ import { Group, Object3D, BufferGeometry, Mesh, Box3, Vector3 } from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import type { GeneralProps, TransformProps, RenderingProps, NodeProcessor } from "../props";
 import { createParameterMetadata, extractDefaultValues } from "../../../engine/parameterUtils";
-import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
+import type { NodeParams } from "../../../engine/graphStore";
 import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 import { getAssetCache } from "../../../io/mxscene/opfs-cache";
 import { hashBytesSHA256 } from "../../../io/mxscene/crypto";
@@ -46,7 +46,9 @@ async function getFileContent(file: File | SerializableObjFile): Promise<string>
   if ("text" in file && typeof (file as any).text === "function") {
     try {
       return await (file as any).text();
-    } catch (error) {}
+    } catch {
+      // Fall through to the base64 content strategies below.
+    }
   }
   if ("content" in file && file.content && typeof file.content === "string") {
     try {
@@ -188,10 +190,10 @@ export const processor: NodeProcessor<
         input.object.updateMatrixWorld(true);
         if (input.object.matrixWorld) {
           loadedObject.applyMatrix4(input.object.matrixWorld);
-        } else {
         }
-      } catch (error) {}
-    } else {
+      } catch {
+        // Applying the input transform is best-effort; the object renders untransformed.
+      }
     }
   }
   return { object: loadedObject, geometry };
@@ -211,42 +213,9 @@ export const importObjNodeParams: NodeParams = {
   },
   rendering: createRenderingParams(),
 };
-export const importObjNodeCompute = (
-  params: Record<string, unknown>,
-  inputs?: unknown,
-  context?: { nodeId?: string }
-) => {
-  const defaultParams = extractDefaultValues(importObjNodeParams);
-  const data: ImportObjNodeData = {
-    general: (params.general as ImportObjNodeData["general"]) || defaultParams.general,
-    object: (params.object as ImportObjNodeData["object"]) || defaultParams.object,
-    transform: {
-      position: { x: 0, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1, factor: 1 },
-    },
-    rendering: (params.rendering as ImportObjNodeData["rendering"]) || defaultParams.rendering,
-  };
-  const inputObject =
-    inputs && Object.keys(inputs).length > 0
-      ? (Object.values(inputs)[0] as { object: Object3D; geometry?: BufferGeometry })
-      : undefined;
-  const result = processor(data, inputObject);
-  if (result?.object && context?.nodeId) {
-    const finalResult = { ...result, shouldSetAsActiveOutput: true };
-    return finalResult;
-  } else {
-    if (!result?.object) {
-    }
-    if (!context?.nodeId) {
-    }
-  }
-  return result;
-};
 export const importObjNodeComputeTyped = async (
   params: Record<string, any>,
-  inputs: Record<string, BaseContainer>,
-  context: ComputeContext
+  inputs: Record<string, BaseContainer>
 ): Promise<Record<string, BaseContainer>> => {
   const defaultParams = extractDefaultValues(importObjNodeParams);
   const originalObjectParams = (params.object as ImportObjNodeData["object"]) || defaultParams.object;
@@ -276,12 +245,10 @@ export const importObjNodeComputeTyped = async (
     if (!inCache) {
       try {
         await loadObjFile(data.object.file);
-      } catch (error) {
+      } catch {
         return { default: new Object3DContainer(new Group()) };
       }
-    } else {
     }
-  } else {
   }
   const inputContainer = inputs.default as Object3DContainer | undefined;
   const inputObject = inputContainer ? { object: inputContainer.value } : undefined;

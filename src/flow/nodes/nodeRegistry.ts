@@ -1,7 +1,7 @@
-import { NodeDefinition, InputCloneMode } from "../../engine/graphStore";
+import { NodeDefinition } from "../../engine/graphStore";
+import { ConnectionType, NodeInput, NodeOutput } from "../../engine/types/NodeIO";
 import {
   geoNodeParams,
-  geoNodeCompute,
   boxNodeParams,
   boxNodeComputeTyped,
   sphereNodeParams,
@@ -21,24 +21,40 @@ import {
   importGltfNodeParams,
   importGltfNodeComputeTyped,
   pointLightNodeParams,
-  pointLightNodeCompute,
+  pointLightNodeComputeTyped,
   ambientLightNodeParams,
-  ambientLightNodeCompute,
+  ambientLightNodeComputeTyped,
   directionalLightNodeParams,
-  directionalLightNodeCompute,
+  directionalLightNodeComputeTyped,
   spotLightNodeParams,
-  spotLightNodeCompute,
+  spotLightNodeComputeTyped,
   hemisphereLightNodeParams,
-  hemisphereLightNodeCompute,
+  hemisphereLightNodeComputeTyped,
   rectAreaLightNodeParams,
-  rectAreaLightNodeCompute,
+  rectAreaLightNodeComputeTyped,
   transformNodeParams,
   transformNodeComputeTyped,
   combineNodeParams,
   combineNodeComputeTyped,
   noteNodeParams,
-  noteNodeCompute,
 } from ".";
+// Declared ports drive both the on-canvas handles (FlowNode) and connection
+// wiring. Port names are the handle ids AND the keys computeTyped reads from its
+// inputs record / writes to its outputs record; they must stay in sync. Output
+// resolution falls back to the "default" key (see gatherSubflowInputs), so a
+// single-output node may expose a friendlier handle id like "geometry_output".
+const GEOMETRY_OUTPUT: NodeOutput[] = [
+  { name: "geometry_output", type: ConnectionType.OBJECT3D, description: "Generated geometry" },
+];
+const OBJECT_INPUT: NodeInput[] = [
+  { name: "default", type: ConnectionType.OBJECT3D, required: false, description: "Geometry input" },
+];
+const COMBINE_INPUTS: NodeInput[] = [1, 2, 3, 4].map((n) => ({
+  name: `input${n}`,
+  type: ConnectionType.OBJECT3D,
+  required: false,
+  description: `Geometry input ${n}`,
+}));
 export const nodeRegistry: Record<string, NodeDefinition> = {
   geoNode: {
     type: "geoNode",
@@ -46,7 +62,6 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Geo",
     allowedContexts: ["root"],
     params: geoNodeParams,
-    compute: geoNodeCompute,
   },
   boxNode: {
     type: "boxNode",
@@ -55,7 +70,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: boxNodeParams,
     computeTyped: boxNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   sphereNode: {
     type: "sphereNode",
@@ -64,7 +79,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: sphereNodeParams,
     computeTyped: sphereNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   cylinderNode: {
     type: "cylinderNode",
@@ -73,7 +88,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: cylinderNodeParams,
     computeTyped: cylinderNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   planeNode: {
     type: "planeNode",
@@ -82,7 +97,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: planeNodeParams,
     computeTyped: planeNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   coneNode: {
     type: "coneNode",
@@ -91,7 +106,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: coneNodeParams,
     computeTyped: coneNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   torusNode: {
     type: "torusNode",
@@ -100,7 +115,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: torusNodeParams,
     computeTyped: torusNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   torusKnotNode: {
     type: "torusKnotNode",
@@ -109,7 +124,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: torusKnotNodeParams,
     computeTyped: torusKnotNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   transformNode: {
     type: "transformNode",
@@ -118,7 +133,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: transformNodeParams,
     computeTyped: transformNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    inputs: OBJECT_INPUT,
+    outputs: GEOMETRY_OUTPUT,
   },
   combineNode: {
     type: "combineNode",
@@ -127,7 +143,8 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: combineNodeParams,
     computeTyped: combineNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    inputs: COMBINE_INPUTS,
+    outputs: GEOMETRY_OUTPUT,
   },
   noteNode: {
     type: "noteNode",
@@ -135,7 +152,6 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Note",
     allowedContexts: ["root", "subflow"],
     params: noteNodeParams,
-    compute: noteNodeCompute,
   },
   importObjNode: {
     type: "importObjNode",
@@ -144,7 +160,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: importObjNodeParams,
     computeTyped: importObjNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   importGltfNode: {
     type: "importGltfNode",
@@ -153,7 +169,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     allowedContexts: ["subflow"],
     params: importGltfNodeParams,
     computeTyped: importGltfNodeComputeTyped,
-    inputCloneMode: InputCloneMode.NEVER,
+    outputs: GEOMETRY_OUTPUT,
   },
   pointLightNode: {
     type: "pointLightNode",
@@ -161,7 +177,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Point Light",
     allowedContexts: ["root"],
     params: pointLightNodeParams,
-    compute: pointLightNodeCompute,
+    computeTyped: pointLightNodeComputeTyped,
   },
   ambientLightNode: {
     type: "ambientLightNode",
@@ -169,7 +185,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Ambient Light",
     allowedContexts: ["root"],
     params: ambientLightNodeParams,
-    compute: ambientLightNodeCompute,
+    computeTyped: ambientLightNodeComputeTyped,
   },
   directionalLightNode: {
     type: "directionalLightNode",
@@ -177,7 +193,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Directional Light",
     allowedContexts: ["root"],
     params: directionalLightNodeParams,
-    compute: directionalLightNodeCompute,
+    computeTyped: directionalLightNodeComputeTyped,
   },
   spotLightNode: {
     type: "spotLightNode",
@@ -185,7 +201,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Spot Light",
     allowedContexts: ["root"],
     params: spotLightNodeParams,
-    compute: spotLightNodeCompute,
+    computeTyped: spotLightNodeComputeTyped,
   },
   hemisphereLightNode: {
     type: "hemisphereLightNode",
@@ -193,7 +209,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Hemisphere Light",
     allowedContexts: ["root"],
     params: hemisphereLightNodeParams,
-    compute: hemisphereLightNodeCompute,
+    computeTyped: hemisphereLightNodeComputeTyped,
   },
   rectAreaLightNode: {
     type: "rectAreaLightNode",
@@ -201,7 +217,7 @@ export const nodeRegistry: Record<string, NodeDefinition> = {
     displayName: "Rect Area Light",
     allowedContexts: ["root"],
     params: rectAreaLightNodeParams,
-    compute: rectAreaLightNodeCompute,
+    computeTyped: rectAreaLightNodeComputeTyped,
   },
 };
 export const getAvailableNodeTypes = (): string[] => {

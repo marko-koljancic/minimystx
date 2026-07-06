@@ -30,7 +30,7 @@ export function CameraTab({ preferences, onChange }: CameraTabProps) {
                   default: "perspective",
                   displayName: "Default Camera Type",
                 }}
-                onChange={(value) => onChange({ defaultType: value as any })}
+                onChange={(value) => onChange({ defaultType: value as typeof preferences.defaultType })}
               />
             </div>
           </div>

@@ -8,6 +8,7 @@ import type {
 } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
+import { BaseContainer, Object3DContainer } from "../../../engine/containers/BaseContainer";
 import { validateAndFixShadowCamera } from "../../../utils/shadowValidation";
 export interface DirectionalLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
@@ -149,7 +150,7 @@ export const directionalLightNodeParams: NodeParams = {
     }),
   },
 };
-export const directionalLightNodeCompute = (params: Record<string, unknown>) => {
+export const directionalLightNodeComputeTyped = (params: Record<string, any>): Record<string, BaseContainer> => {
   const shadowParams = params.shadow as DirectionalLightShadowProps;
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
@@ -173,5 +174,6 @@ export const directionalLightNodeCompute = (params: Record<string, unknown>) => 
     shadow: shadowParams,
     rendering: params.rendering as DirectionalLightRenderingProps,
   };
-  return processor(data);
+  const { object } = processor(data);
+  return { default: new Object3DContainer(object) };
 };

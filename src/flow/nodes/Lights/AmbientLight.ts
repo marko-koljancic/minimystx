@@ -3,6 +3,7 @@ import type { GeneralProps, AmbientLightProps, AmbientLightRenderingProps, NodeP
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createLightTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
+import { BaseContainer, Object3DContainer } from "../../../engine/containers/BaseContainer";
 export interface AmbientLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
   transform: {
@@ -61,7 +62,7 @@ export const ambientLightNodeParams: NodeParams = {
     }),
   },
 };
-export const ambientLightNodeCompute = (params: Record<string, unknown>) => {
+export const ambientLightNodeComputeTyped = (params: Record<string, any>): Record<string, BaseContainer> => {
   const renderingParams = params.rendering as any;
   if (renderingParams && renderingParams.helperSize <= 0) {
     renderingParams.helperSize = 1;
@@ -83,5 +84,6 @@ export const ambientLightNodeCompute = (params: Record<string, unknown>) => {
       ...(params.rendering || {}),
     } as AmbientLightRenderingProps & { showHelper: boolean; helperSize: number },
   };
-  return processor(data);
+  const { object } = processor(data);
+  return { default: new Object3DContainer(object) };
 };

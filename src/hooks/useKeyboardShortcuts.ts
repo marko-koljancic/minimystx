@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useUIStore } from "../store";
+import { useUIStore, useCameraStore } from "../store";
 type ShortcutContext = "flow" | "render";
 interface UseKeyboardShortcutsProps {
   context: ShortcutContext;
@@ -24,11 +24,8 @@ export function useKeyboardShortcuts({
     setFocusedCanvas,
     fitView,
     fitNodes,
-    toggleCameraMode,
-    toggleAxisGizmo,
-    setCameraView,
-    setOrthographicCamera,
   } = useUIStore();
+  const { toggleCameraMode, toggleAxisGizmo, setCameraView, setOrthographicCamera } = useCameraStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const isFocusedRef = useRef(false);
   useEffect(() => {
@@ -96,9 +93,7 @@ export function useKeyboardShortcuts({
             }
           } else if (context === "flow") {
             event.preventDefault();
-            if (isShiftPressed) {
-              fitNodes();
-            }
+            fitNodes();
           }
           break;
         case "t":
@@ -184,6 +179,8 @@ export function useKeyboardShortcuts({
     setOrthographicCamera,
     onDeleteSelectedEdges,
     onAutoLayoutCycle,
+    displayMode,
+    setDisplayMode,
   ]);
   return { containerRef };
 }

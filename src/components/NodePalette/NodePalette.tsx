@@ -14,6 +14,7 @@ import {
   useSetKeyboardNavigationMode,
   useResetPaletteNavigation,
   useCurrentContext,
+  emitAppEvent,
 } from "../../store";
 import {
   getNodesByCategoryForContext,
@@ -115,13 +116,10 @@ export default function NodePalette() {
           if (currentNodes.length > 0) {
             const selectedNode = currentNodes[selectedNodeIndex];
             if (selectedNode) {
-              const event = new CustomEvent("minimystx:createNode", {
-                detail: {
-                  nodeType: selectedNode.type,
-                  position: palettePosition,
-                },
+              emitAppEvent("minimystx:createNode", {
+                nodeType: selectedNode.type,
+                position: palettePosition,
               });
-              window.dispatchEvent(event);
               handleNodeDrop();
             }
           }
@@ -250,6 +248,10 @@ export default function NodePalette() {
                 key={node.type}
                 node={node}
                 onDrop={handleNodeDrop}
+                onActivate={() => {
+                  emitAppEvent("minimystx:createNode", { nodeType: node.type, position: palettePosition });
+                  handleNodeDrop();
+                }}
                 isSelected={keyboardMode && selectedNodeIndex === index}
                 onMouseEnter={() => {
                   if (!keyboardMode) {

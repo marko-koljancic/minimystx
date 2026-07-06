@@ -1,13 +1,11 @@
-const CHUNK_SIZE = 64 * 1024;
+const LARGE_PAYLOAD_BYTES = 64 * 1024 * 100;
 export async function hashBytesSHA256(bytes: ArrayBuffer): Promise<string> {
-  if (bytes.byteLength > CHUNK_SIZE * 100) {
-    return hashBytesStreamingSHA256(bytes);
+  if (bytes.byteLength > LARGE_PAYLOAD_BYTES) {
+    // Yield to the event loop once before hashing large payloads so a burst of
+    // hash calls does not block rendering. crypto.subtle has no streaming API;
+    // the digest itself is still a single call.
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
-  return bufferToHex(hashBuffer);
-}
-async function hashBytesStreamingSHA256(bytes: ArrayBuffer): Promise<string> {
-  await new Promise((resolve) => setTimeout(resolve, 0));
   const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
   return bufferToHex(hashBuffer);
 }
@@ -40,19 +38,4 @@ export async function hashString(text: string): Promise<string> {
 export async function verifyHash(data: ArrayBuffer, expectedHash: string): Promise<boolean> {
   const actualHash = await hashBytesSHA256(data);
   return actualHash === expectedHash;
-}
-export async function hashBytesWithProgress(
-  bytes: ArrayBuffer,
-  onProgress?: (processed: number, total: number) => void
-): Promise<string> {
-  const total = bytes.byteLength;
-  if (onProgress) {
-    onProgress(0, total);
-  }
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  const hash = await hashBytesSHA256(bytes);
-  if (onProgress) {
-    onProgress(total, total);
-  }
-  return hash;
 }

@@ -23,7 +23,4 @@ export interface NodeParams {
 
 export interface ISceneObjectManager extends RenderingSubsystem {
   updateSceneFromRenderableObjects(): void;
-  addNodeObject(nodeId: string, object: THREE.Object3D): void;
-  removeNodeObject(nodeId: string): void;
-  clearAllObjects(): void;
 }

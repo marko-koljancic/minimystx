@@ -4,10 +4,18 @@ import styles from "./NodePaletteItem.module.css";
 interface NodePaletteItemProps {
   node: NodeDefinition;
   onDrop: () => void;
+  // Mouse-click creation, mirroring the Enter key path.
+  onActivate?: () => void;
   isSelected?: boolean;
   onMouseEnter?: () => void;
 }
-export default function NodePaletteItem({ node, onDrop, isSelected = false, onMouseEnter }: NodePaletteItemProps) {
+export default function NodePaletteItem({
+  node,
+  onDrop,
+  onActivate,
+  isSelected = false,
+  onMouseEnter,
+}: NodePaletteItemProps) {
   const [isDragging, setIsDragging] = useState(false);
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
@@ -30,6 +38,7 @@ export default function NodePaletteItem({ node, onDrop, isSelected = false, onMo
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onMouseEnter={onMouseEnter}
+      onClick={onActivate}
       className={`${styles.item} ${isDragging ? styles.dragging : ""} ${isSelected ? styles.selected : ""}`}
       role="option"
       aria-selected={isSelected}

@@ -14,7 +14,7 @@ export const validateParameterValue = (value: any, metadata: ParameterMetadata):
     return { valid: false, error: "Value is required" };
   }
   switch (metadata.type) {
-    case "number":
+    case "number": {
       const num = Number(value);
       if (isNaN(num)) {
         return { valid: false, error: "Must be a valid number" };
@@ -26,6 +26,7 @@ export const validateParameterValue = (value: any, metadata: ParameterMetadata):
         return { valid: false, error: `Must be at most ${metadata.max}` };
       }
       return { valid: true };
+    }
     case "boolean":
       if (typeof value !== "boolean") {
         return { valid: false, error: "Must be true or false" };
@@ -51,7 +52,7 @@ export const validateParameterValue = (value: any, metadata: ParameterMetadata):
       return { valid: true };
     case "vector2":
     case "vector3":
-    case "vector4":
+    case "vector4": {
       if (typeof value !== "object" || value === null) {
         return { valid: false, error: "Must be an object with x, y components" };
       }
@@ -70,6 +71,7 @@ export const validateParameterValue = (value: any, metadata: ParameterMetadata):
         }
       }
       return { valid: true };
+    }
     case "file":
       if (value === null || value === undefined) {
         return { valid: true };

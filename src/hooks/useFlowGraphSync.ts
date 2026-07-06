@@ -2,24 +2,26 @@ import { useCallback } from "react";
 import { EdgeData, useGraphStore } from "../engine/graphStore";
 import { nodeRegistry } from "../flow/nodes/nodeRegistry";
 import { useCurrentContext } from "../store/uiStore";
-import { EdgeChange } from "@xyflow/react";
+import { EdgeChange, NodeChange } from "@xyflow/react";
 export const useFlowGraphSync = () => {
   const currentContext = useCurrentContext();
   const { addNode, removeNode, setParams, addEdge, removeEdge, resetEdges } = useGraphStore();
   const syncNodeChanges = useCallback(
-    (changes: any[]) => {
-      changes.forEach((change: any) => {
+    (changes: NodeChange[]) => {
+      changes.forEach((change) => {
         switch (change.type) {
-          case "add":
-            if (!nodeRegistry[change.item.type]) return;
+          case "add": {
+            const type = change.item.type;
+            if (!type || !nodeRegistry[type]) return;
             addNode(
               {
                 id: change.item.id,
-                type: change.item.type,
+                type,
               },
               currentContext
             );
             break;
+          }
           case "remove":
             removeNode(change.id, currentContext);
             break;

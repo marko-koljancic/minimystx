@@ -96,9 +96,64 @@ describe("GraphLibAdapter cycle detection", () => {
     expect(g.wouldCreateCycle("c", "a")).toBe(true);
   });
 
+  it("flags a self-connection", () => {
+    const g = buildChain();
+    expect(g.wouldCreateCycle("a", "a")).toBe(true);
+  });
+
   it("allows a non-cyclic connection", () => {
     const g = buildChain();
     g.addNode({ id: "d" });
     expect(g.wouldCreateCycle("c", "d")).toBe(false);
+  });
+
+  it("connect() refuses the cycle-closing edge and leaves the graph intact", () => {
+    const g = buildChain();
+    expect(g.connect("c", "a")).toBe(false);
+    expect(g.getAllEdges()).toHaveLength(2);
+  });
+});
+
+describe("GraphLibAdapter memoization across topology changes", () => {
+  it("invalidates cached predecessors when an edge is added", () => {
+    const g = buildChain();
+    expect(g.getAllPredecessors("c").map((n) => n.id).sort()).toEqual(["a", "b"]);
+    g.addNode({ id: "d" });
+    g.connect("d", "c");
+    expect(g.getAllPredecessors("c").map((n) => n.id).sort()).toEqual(["a", "b", "d"]);
+  });
+
+  it("invalidates cached predecessors when an edge is removed", () => {
+    const g = buildChain();
+    expect(g.getAllPredecessors("c")).toHaveLength(2);
+    g.disconnect("b", "c");
+    expect(g.getAllPredecessors("c")).toHaveLength(0);
+  });
+
+  it("invalidates the cached topological order when topology changes", () => {
+    const g = buildChain();
+    expect(g.topologicalSort(["a", "b", "c"])).toHaveLength(3);
+    g.addNode({ id: "d" });
+    g.connect("c", "d");
+    const order = g.topologicalSort(["a", "c", "d"]);
+    expect(order.indexOf("c")).toBeLessThan(order.indexOf("d"));
+    expect(order).toHaveLength(3);
+  });
+});
+
+describe("GraphLibAdapter typed connect/disconnect symmetry", () => {
+  it("removes the base edge when the last typed connection between two nodes is removed", () => {
+    const g = new GraphLibAdapter();
+    g.addNode({ id: "a" });
+    g.addNode({ id: "b" });
+    g.connectTyped("a", "default", "b", "in1");
+    g.connectTyped("a", "default", "b", "in2");
+    expect(g.getAllEdges()).toHaveLength(1);
+    g.disconnectTyped("b", "in1");
+    // A second typed connection still exists, so the base edge must survive.
+    expect(g.getAllEdges()).toHaveLength(1);
+    g.disconnectTyped("b", "in2");
+    expect(g.getAllEdges()).toHaveLength(0);
+    expect(g.getAllTypedEdges()).toHaveLength(0);
   });
 });

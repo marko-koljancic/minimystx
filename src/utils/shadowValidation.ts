@@ -8,9 +8,3 @@ export function validateAndFixShadowCamera<T extends ShadowCameraConstraints>(sh
   }
   return shadowParams;
 }
-export function validateShadowMapSize(width: number, height: number, _lightType: string): void {
-  const isPowerOfTwo = (n: number) => (n & (n - 1)) === 0;
-  if (!isPowerOfTwo(width) || !isPowerOfTwo(height)) {
-    // To Do fix this
-  }
-}

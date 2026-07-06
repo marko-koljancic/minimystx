@@ -11,19 +11,19 @@ export default function UnifiedPropertiesPanel() {
   const selectedNodeId = useUIStore((state) => state.selectedNodeId);
   const selectedNodeIds = useUIStore((state) => state.selectedNodeIds);
   const currentContext = useCurrentContext();
-  const { rootNodeRuntime, subFlows, setParams } = useGraphStore();
-  const getNodeRuntime = () => {
+  const { rootNodeState, subFlows, setParams } = useGraphStore();
+  const getNodeStates = () => {
     if (currentContext.type === "root") {
-      return rootNodeRuntime;
+      return rootNodeState;
     } else if (currentContext.type === "subflow" && currentContext.geoNodeId) {
-      return subFlows[currentContext.geoNodeId]?.nodeRuntime || {};
+      return subFlows[currentContext.geoNodeId]?.nodeState || {};
     }
     return {};
   };
-  const nodeRuntime = getNodeRuntime();
+  const nodeStates = getNodeStates();
   useEffect(() => {
     if (selectedNodeId) {
-      const nodeData = rootNodeRuntime[selectedNodeId];
+      const nodeData = rootNodeState[selectedNodeId];
       if (nodeData) {
         const availableTabs = getAvailableTabs(nodeData.params);
         if (availableTabs.length > 0 && !availableTabs.includes(activeTab)) {
@@ -31,7 +31,7 @@ export default function UnifiedPropertiesPanel() {
         }
       }
     }
-  }, [selectedNodeId, nodeRuntime, activeTab, rootNodeRuntime]);
+  }, [selectedNodeId, nodeStates, activeTab, rootNodeState]);
   if (selectedNodeIds.length > 1) {
     return (
       <div className={styles.emptyState}>
@@ -45,7 +45,7 @@ export default function UnifiedPropertiesPanel() {
   if (!selectedNodeId) {
     return <div className={styles.emptyState}>Select a node to edit its properties</div>;
   }
-  const nodeData = nodeRuntime[selectedNodeId];
+  const nodeData = nodeStates[selectedNodeId];
   if (!nodeData) {
     return <div className={styles.emptyState}>Node data not found</div>;
   }

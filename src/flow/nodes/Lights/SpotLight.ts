@@ -8,6 +8,7 @@ import type {
 } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
+import { BaseContainer, Object3DContainer } from "../../../engine/containers/BaseContainer";
 import { validateAndFixShadowCamera } from "../../../utils/shadowValidation";
 export interface SpotLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
@@ -145,7 +146,7 @@ export const spotLightNodeParams: NodeParams = {
     }),
   },
 };
-export const spotLightNodeCompute = (params: Record<string, unknown>) => {
+export const spotLightNodeComputeTyped = (params: Record<string, any>): Record<string, BaseContainer> => {
   const shadowParams = params.shadow as SpotLightShadowProps;
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
@@ -187,5 +188,6 @@ export const spotLightNodeCompute = (params: Record<string, unknown>) => {
       ...(params.rendering || {}),
     } as SpotLightRenderingProps & { helperSize: number },
   };
-  return processor(data);
+  const { object } = processor(data);
+  return { default: new Object3DContainer(object) };
 };

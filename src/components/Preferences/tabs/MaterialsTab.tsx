@@ -49,7 +49,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: "#ffffff",
                       displayName: "Base Color",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -69,7 +69,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: 0.0,
                       displayName: "Metalness",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -89,7 +89,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: 1.0,
                       displayName: "Roughness",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -106,7 +106,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: "#000000",
                       displayName: "Emissive Color",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -127,7 +127,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: "#ffffff",
                       displayName: "Base Color",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -147,7 +147,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: 0.0,
                       displayName: "Metalness",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -167,7 +167,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: 1.0,
                       displayName: "Roughness",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -187,7 +187,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: 0.0,
                       displayName: "Clearcoat",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -207,7 +207,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: 0.0,
                       displayName: "Transmission",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -228,7 +228,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: "#ffffff",
                       displayName: "Base Color",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -245,7 +245,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: false,
                       displayName: "Wireframe Mode",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -266,7 +266,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: "#ffffff",
                       displayName: "Base Color",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -283,7 +283,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                       default: "#000000",
                       displayName: "Emissive Color",
                     }}
-                    onChange={(value) => {}}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -308,7 +308,7 @@ export function MaterialsTab({ preferences, onChange }: MaterialsTabProps) {
                   default: "None",
                   displayName: "Tone Mapping",
                 }}
-                onChange={(value) => onChange({ toneMapping: value as any })}
+                onChange={(value) => onChange({ toneMapping: value as typeof preferences.toneMapping })}
               />
             </div>
           </div>

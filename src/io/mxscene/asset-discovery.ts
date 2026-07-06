@@ -178,7 +178,9 @@ class ImportGltfAssetProvider implements AssetProvider {
         const texturesFromGltf = await this.extractTexturesFromGltfJson(data);
         textureAssets.push(...texturesFromGltf);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.warn("Texture extraction from glTF asset failed:", error);
+    }
     return textureAssets;
   }
   private async extractTexturesFromGltfJson(data: ArrayBuffer): Promise<AssetReference[]> {
@@ -193,7 +195,7 @@ class ImportGltfAssetProvider implements AssetProvider {
     if (magic !== 0x46546c67) {
       return [];
     }
-    let offset = 12;
+    const offset = 12;
     const jsonChunkLength = view.getUint32(offset, true);
     const jsonChunkType = view.getUint32(offset + 4, true);
     if (jsonChunkType !== 0x4e4f534a) {

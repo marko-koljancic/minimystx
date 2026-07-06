@@ -5,6 +5,7 @@ import type { GeneralProps, RectAreaLightProps, RectAreaLightRenderingProps, Nod
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
+import { BaseContainer, Object3DContainer } from "../../../engine/containers/BaseContainer";
 let rectAreaLibInitialized = false;
 if (!rectAreaLibInitialized) {
   RectAreaLightUniformsLib.init();
@@ -92,7 +93,7 @@ export const rectAreaLightNodeParams: NodeParams = {
     }),
   },
 };
-export const rectAreaLightNodeCompute = (params: Record<string, unknown>) => {
+export const rectAreaLightNodeComputeTyped = (params: Record<string, any>): Record<string, BaseContainer> => {
   const lightParams = (params.light as RectAreaLightProps) || {
     color: "#ffffff",
     intensity: 1.5,
@@ -124,5 +125,6 @@ export const rectAreaLightNodeCompute = (params: Record<string, unknown>) => {
     light: lightParams,
     rendering: params.rendering as RectAreaLightRenderingProps & { helperSize: number },
   };
-  return processor(data);
+  const { object } = processor(data);
+  return { default: new Object3DContainer(object) };
 };

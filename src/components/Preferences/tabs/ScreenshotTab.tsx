@@ -32,7 +32,7 @@ export function ScreenshotTab({ preferences, onChange }: ScreenshotTabProps) {
                 }}
                 onChange={(value) =>
                   onChange({
-                    resolution: { ...preferences.resolution, preset: value as any },
+                    resolution: { ...preferences.resolution, preset: value as typeof preferences.resolution.preset },
                   })
                 }
               />

@@ -1,4 +1,4 @@
-import type { GeneralProps, NodeProcessor } from "../props";
+import type { GeneralProps } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createGeneralParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
@@ -22,9 +22,6 @@ export const NOTE_COLORS = [
   "#FFE4E6",
   "#E9D5FF",
 ];
-export const processor: NodeProcessor<NoteNodeData, void> = (_data: NoteNodeData): void => {
-  return undefined;
-};
 export const noteNodeParams: NodeParams = {
   general: createGeneralParams("Note", "Visual annotation for documentation"),
   note: {
@@ -45,21 +42,4 @@ export const noteNodeParams: NodeParams = {
       max: 600,
     }),
   },
-};
-export const noteNodeCompute = (params: Record<string, unknown>) => {
-  const generalParams = (params.general as Record<string, unknown>) || {};
-  const noteParams = (params.note as Record<string, unknown>) || {};
-  const data: NoteNodeData = {
-    general: {
-      name: (generalParams.name as string) || "Note",
-      description: (generalParams.description as string) || undefined,
-    },
-    note: {
-      text: (noteParams.text as string) || "",
-      color: (noteParams.color as string) || NOTE_COLORS[0],
-      width: (noteParams.width as number) || 160,
-      height: (noteParams.height as number) || 80,
-    },
-  };
-  return processor(data);
 };

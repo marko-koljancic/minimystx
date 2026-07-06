@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useContextNodes, useContextEdges } from "./useContextNodes";
+import { emitAppEvent } from "../store/events";
 import { applyDagreLayout, applyELKLayout, getNodeDimensions, LayoutNode } from "../utils/layoutUtils";
 export const useAutoLayout = () => {
   const contextNodes = useContextNodes();
@@ -16,14 +17,10 @@ export const useAutoLayout = () => {
           measured: getNodeDimensions(node.id),
         }));
       const layoutedNodes = applyDagreLayout(layoutNodes, contextEdges);
-      const event = new CustomEvent("minimystx:applyLayout", {
-        detail: {
-          nodes: layoutedNodes,
-          algorithm: "dagre",
-        },
-      });
-      window.dispatchEvent(event);
-    } catch (error) {}
+      emitAppEvent("minimystx:applyLayout", { nodes: layoutedNodes, algorithm: "dagre" });
+    } catch (error) {
+      console.error("Auto-layout failed:", error);
+    }
   }, [contextNodes, contextEdges]);
   const applyELK = useCallback(async () => {
     if (contextNodes.length === 0) {
@@ -37,14 +34,10 @@ export const useAutoLayout = () => {
           measured: getNodeDimensions(node.id),
         }));
       const layoutedNodes = await applyELKLayout(layoutNodes, contextEdges);
-      const event = new CustomEvent("minimystx:applyLayout", {
-        detail: {
-          nodes: layoutedNodes,
-          algorithm: "elk",
-        },
-      });
-      window.dispatchEvent(event);
-    } catch (error) {}
+      emitAppEvent("minimystx:applyLayout", { nodes: layoutedNodes, algorithm: "elk" });
+    } catch (error) {
+      console.error("Auto-layout failed:", error);
+    }
   }, [contextNodes, contextEdges]);
   const applyDagreToSelection = useCallback(
     async (selectedNodeIds: string[]) => {
@@ -67,16 +60,15 @@ export const useAutoLayout = () => {
           measured: getNodeDimensions(node.id),
         }));
         const layoutedNodes = applyDagreLayout(layoutNodes, relevantEdges);
-        const event = new CustomEvent("minimystx:applyLayout", {
-          detail: {
-            nodes: layoutedNodes,
-            algorithm: "dagre",
-            selectedOnly: true,
-            selectedCount: selectedNodes.length,
-          },
+        emitAppEvent("minimystx:applyLayout", {
+          nodes: layoutedNodes,
+          algorithm: "dagre",
+          selectedOnly: true,
+          selectedCount: selectedNodes.length,
         });
-        window.dispatchEvent(event);
-      } catch (error) {}
+      } catch (error) {
+        console.error("Auto-layout failed:", error);
+      }
     },
     [contextNodes, contextEdges]
   );
@@ -101,16 +93,15 @@ export const useAutoLayout = () => {
           measured: getNodeDimensions(node.id),
         }));
         const layoutedNodes = await applyELKLayout(layoutNodes, relevantEdges);
-        const event = new CustomEvent("minimystx:applyLayout", {
-          detail: {
-            nodes: layoutedNodes,
-            algorithm: "elk",
-            selectedOnly: true,
-            selectedCount: selectedNodes.length,
-          },
+        emitAppEvent("minimystx:applyLayout", {
+          nodes: layoutedNodes,
+          algorithm: "elk",
+          selectedOnly: true,
+          selectedCount: selectedNodes.length,
         });
-        window.dispatchEvent(event);
-      } catch (error) {}
+      } catch (error) {
+        console.error("Auto-layout failed:", error);
+      }
     },
     [contextNodes, contextEdges]
   );

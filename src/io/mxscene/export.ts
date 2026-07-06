@@ -34,7 +34,10 @@ export async function exportToMxScene(sceneData: SceneJson, options: ExportOptio
     });
     const { valid: validAssets, invalid: invalidAssets } = await validateAssets(discoveredAssets);
     if (invalidAssets.length > 0) {
-      // To Do fix this
+      console.warn(
+        `Export: skipping ${invalidAssets.length} invalid asset(s):`,
+        invalidAssets.map(({ asset, error }) => `${asset.originalName}: ${error}`)
+      );
     }
     onProgress?.({
       phase: "collecting",
@@ -147,44 +150,41 @@ export function downloadMxSceneFile(result: ExportResult): void {
 export async function getCurrentSceneData(): Promise<SceneJson> {
   const { exportGraphWithMeta } = await import("../../engine/graphStore");
   const rawGraphData = await exportGraphWithMeta();
-  let rootPositions: Record<string, { x: number; y: number }> = {};
+  const { useDocumentStore } = await import("../../store/documentStore");
+  const { useUIStore } = await import("../../store/uiStore");
+  const { useCameraStore } = await import("../../store/cameraStore");
+  const { usePreferencesStore } = await import("../../store/preferencesStore");
+  const { getSceneManager } = await import("../../rendering/sceneManagerRegistry");
+
+  const documentState = useDocumentStore.getState();
+  const rootPositions = documentState.getNodePositions("root") || {};
   const subFlowPositions: Record<string, Record<string, { x: number; y: number }>> = {};
-  try {
-    const { useUIStore } = await import("../../store/uiStore");
-    const { getNodePositions } = useUIStore.getState();
-    rootPositions = getNodePositions("root") || {};
-    Object.keys(rawGraphData.subFlows || {}).forEach((geoNodeId) => {
-      const contextKey = `subflow-${geoNodeId}`;
-      subFlowPositions[geoNodeId] = getNodePositions(contextKey) || {};
-    });
-  } catch (error) {
-    try {
-      const event = new CustomEvent("minimystx:getNodePositions");
-      window.dispatchEvent(event);
-      const eventData = event as unknown as { nodePositions?: typeof rootPositions };
-      if (eventData.nodePositions) {
-        rootPositions = eventData.nodePositions;
-      }
-    } catch (e) {}
-  }
-  const { exportGraphWithMeta: exportGraph } = await import("../../engine/graphStore");
-  const existingData = await exportGraph();
+  Object.keys(rawGraphData.subFlows || {}).forEach((geoNodeId) => {
+    subFlowPositions[geoNodeId] = documentState.getNodePositions(`subflow-${geoNodeId}`) || {};
+  });
+
   const originalGraph = {
-    nodes: existingData.nodes,
-    subFlows: existingData.subFlows || {},
+    nodes: rawGraphData.nodes,
+    subFlows: rawGraphData.subFlows || {},
   };
   const processedGraph = await replaceAssetsWithReferences(originalGraph);
   const subFlowsWithPositions = { ...processedGraph.subFlows };
   Object.entries(subFlowsWithPositions).forEach(([geoNodeId, subFlow]) => {
-    if (subFlowPositions[geoNodeId]) {
-      subFlowsWithPositions[geoNodeId] = {
-        ...subFlow,
-        positions: subFlowPositions[geoNodeId],
-      };
-    }
+    subFlowsWithPositions[geoNodeId] = {
+      ...subFlow,
+      positions: subFlowPositions[geoNodeId] || {},
+    };
   });
+
+  // Live state instead of hardcoded defaults: camera from the registered
+  // SceneManager, renderer from preferences, ui from the ui/document stores.
+  const cameraPose = getSceneManager()?.getCameraPose();
+  const { isOrthographicCamera } = useCameraStore.getState();
+  const preferences = usePreferencesStore.getState();
+  const ui = useUIStore.getState();
+
   const sceneData: SceneJson = {
-    schemaVersion: "1.0",
+    schemaVersion: "2.0",
     engineVersion: "0.1.0",
     units: "meters",
     graph: {
@@ -200,27 +200,25 @@ export async function getCurrentSceneData(): Promise<SceneJson> {
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle,
       })),
-      nodeRuntime: rawGraphData.nodeRuntime,
       positions: rootPositions,
       subFlows: subFlowsWithPositions,
     },
     camera: {
-      position: [0, 5, 10] as [number, number, number],
-      target: [0, 0, 0] as [number, number, number],
-      fov: 50,
+      position: cameraPose?.position ?? [0, 5, 10],
+      target: cameraPose?.target ?? [0, 0, 0],
+      fov: cameraPose?.fov ?? 50,
+      isOrthographic: isOrthographicCamera,
     },
     renderer: {
-      background: "#101014",
-      exposure: 1.0,
+      background: preferences.renderer.background.color,
+      exposure: preferences.materials.exposure,
     },
     ui: {
-      gridVisible: true,
-      minimapVisible: false,
-      showFlowControls: true,
-      connectionLineStyle: "bezier",
-      viewportStates: {
-        root: { zoom: 1, x: 0, y: 0 },
-      },
+      gridVisible: ui.showGridInRenderView,
+      minimapVisible: ui.showMinimap,
+      showFlowControls: ui.showFlowControls,
+      connectionLineStyle: ui.connectionLineStyle,
+      viewportStates: { ...documentState.viewportStates },
     },
     assets: [],
     meta: {
@@ -297,10 +295,9 @@ async function computeAssetHash(file: unknown): Promise<string | null> {
     let data: ArrayBuffer;
     if (file instanceof File) {
       data = await file.arrayBuffer();
-    } else if (isSerializableObjFile(file)) {
-      const content = atob(file.content);
-      data = new TextEncoder().encode(content).buffer;
-    } else if (isSerializableGltfFile(file)) {
+    } else if (isSerializableAssetFile(file)) {
+      // Decode the base64 content byte-for-byte (works for text OBJ and binary
+      // glTF alike; text re-encoding would corrupt non-ASCII bytes).
       const binaryString = atob(file.content);
       const uint8Array = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -311,27 +308,11 @@ async function computeAssetHash(file: unknown): Promise<string | null> {
       return null;
     }
     return await hashBytesSHA256(data);
-  } catch (error) {
+  } catch {
     return null;
   }
 }
-function isSerializableObjFile(
-  obj: unknown
-): obj is { name: string; size: number; lastModified: number; content: string } {
-  return (
-    obj !== null &&
-    typeof obj === "object" &&
-    "name" in obj &&
-    "size" in obj &&
-    "lastModified" in obj &&
-    "content" in obj &&
-    typeof (obj as any).name === "string" &&
-    typeof (obj as any).size === "number" &&
-    typeof (obj as any).lastModified === "number" &&
-    typeof (obj as any).content === "string"
-  );
-}
-function isSerializableGltfFile(
+function isSerializableAssetFile(
   obj: unknown
 ): obj is { name: string; size: number; lastModified: number; content: string } {
   return (

@@ -4,12 +4,12 @@ import type { WritableDraft } from "immer";
 import { nodeRegistry } from "../flow/nodes/nodeRegistry";
 import { validateAndNormalizeParams } from "./parameterUtils";
 import { GraphLibAdapter } from "./graph/GraphLibAdapter";
-import { RenderConeScheduler, type SchedulerEvent } from "./scheduler/RenderConeScheduler";
-import { ContentCache } from "./cache/ContentCache";
 import { SubflowManager } from "./subflow/SubflowManager";
 import { BaseContainer } from "./containers/BaseContainer";
 import { NodeInput, NodeOutput } from "./types/NodeIO";
 import { generateNodeName } from "./nameGenerator";
+import { cookNode, decideOutput } from "./compute/cook";
+import { CookScheduler } from "./compute/cookScheduler";
 export type Result<T = void> =
   | {
       ok: true;
@@ -43,11 +43,9 @@ export interface ComputeContext {
   isInRenderCone: boolean;
   abortSignal?: AbortSignal;
 }
-export enum InputCloneMode {
-  ALWAYS = "always",
-  NEVER = "never",
-  FROM_NODE = "from_node",
-}
+// Every node output is a record of containers keyed by port name ("default" is the
+// primary port). This is the single typed contract between the engine and renderer.
+export type NodeOutputs = Record<string, BaseContainer>;
 export type NodeDefinition = {
   type: string;
   category: string;
@@ -56,13 +54,13 @@ export type NodeDefinition = {
   params: NodeParams;
   inputs?: NodeInput[];
   outputs?: NodeOutput[];
-  compute?: (params: any, inputs?: any) => any;
+  // Compute functions must NOT mutate input containers; clone internally before
+  // mutating (inputs are shared by reference with the upstream node's output).
   computeTyped?: (
     params: Record<string, any>,
     inputs: Record<string, BaseContainer>,
     context: ComputeContext
-  ) => Promise<Record<string, BaseContainer>> | Record<string, BaseContainer>;
-  inputCloneMode?: InputCloneMode;
+  ) => Promise<NodeOutputs> | NodeOutputs;
   description?: string;
 };
 export type GraphContext = {
@@ -85,8 +83,7 @@ export type NodeState = {
   id: string;
   type: string;
   params: Record<string, any>;
-  inputs: Record<string, any>;
-  output: any;
+  output: NodeOutputs | null;
   error?: string;
   // Non-fatal signal (e.g. compute produced no geometry so the last good output is
   // being kept). Distinct from `error`, which means compute threw.
@@ -97,7 +94,6 @@ export type NodeState = {
 export type SubFlowGraph = {
   nodeState: Record<string, NodeState>;
   activeOutputNodeId: string | null;
-  nodeRuntime: Record<string, any>;
 };
 export type GraphState = {
   rootNodeState: Record<string, NodeState>;
@@ -106,17 +102,16 @@ export type GraphState = {
   isImporting: boolean;
   rootRenderTarget: string | null;
   graph: GraphLibAdapter;
-  scheduler: RenderConeScheduler;
-  cache: ContentCache;
   subflowManager: SubflowManager;
-  rootNodeRuntime: Record<string, any>;
-  connectionManager: any;
   // Monotonic counter bumped on every edge mutation so handle-aware edge selectors
   // (useContextEdges) recompute; subflow edges live in class-instance graphs that
   // are not otherwise part of the reactive Zustand state.
   edgeVersion: number;
+  // Recompute a node (root or subflow) and everything downstream of it.
   recomputeFrom: (nodeId: string) => void;
-  markDirty: (nodeId: string) => void;
+  // Synchronously cook everything queued for the next animation frame. Test and
+  // pre-export hook; normal operation flushes once per frame automatically.
+  flushCooks: () => void;
   addNode: (node: NodeInitData, context: GraphContext) => void;
   removeNode: (nodeId: string, context: GraphContext) => void;
   setParams: (nodeId: string, params: Partial<Record<string, any>>, context: GraphContext) => void;
@@ -142,10 +137,6 @@ export type GraphState = {
   importGraph: (serialized: SerializedGraph) => Promise<void>;
   exportGraph: (nodePositions?: Record<string, { x: number; y: number }>) => Promise<SerializedGraph>;
   setSubFlowActiveOutput: (geoNodeId: string, nodeId: string) => void;
-  preloadImportObjAssets: () => Promise<void>;
-  preloadAssetForNode: (nodeId: string, state: NodeState, context: GraphContext) => Promise<void>;
-  validatePostImportComputation: () => Promise<void>;
-  forceResetImportedNodeTracking: (nodeIds: string[], contexts: GraphContext[]) => void;
   computeAll: () => Promise<void>;
   computeNode: (nodeId: string, context: GraphContext) => Promise<void>;
   getNodes: (context: GraphContext) => NodeState[];
@@ -155,52 +146,29 @@ export type GraphState = {
 export type SerializedSubFlow = {
   nodes: NodeInitData[];
   edges: EdgeData[];
-  nodeRuntime: Record<string, Omit<NodeState, "output" | "error" | "isInRenderCone" | "isRenderTarget">>;
+  // Legacy duplication of node params; emitted empty and ignored on import.
+  nodeRuntime: Record<string, unknown>;
   positions: Record<string, { x: number; y: number }>;
   activeOutputNodeId: string | null;
 };
 export type SerializedGraph = {
   nodes: NodeInitData[];
   edges: EdgeData[];
-  nodeRuntime: Record<string, Omit<NodeState, "output" | "error" | "isInRenderCone" | "isRenderTarget">>;
+  // Legacy duplication of node params; emitted empty and ignored on import.
+  // Removed from the file format entirely with the schemaVersion 2.0 bump.
+  nodeRuntime: Record<string, unknown>;
   positions: Record<string, { x: number; y: number }>;
   subFlows: Record<string, SerializedSubFlow>;
   rootRenderTarget: string | null;
 };
 export { nodeRegistry } from "../flow/nodes/nodeRegistry";
 const graphLibAdapter = new GraphLibAdapter();
-const renderConeScheduler = new RenderConeScheduler(graphLibAdapter);
-const contentCache = new ContentCache();
-const subflowManager = new SubflowManager(graphLibAdapter);
+const subflowManager = new SubflowManager();
 // Monotonic per-node compute generation, keyed `${geoNodeId}:${nodeId}`. Used to
 // discard stale async computeTyped results when a newer recompute has superseded them.
 const nodeComputeGeneration = new Map<string, number>();
 export const useGraphStore = create<GraphState>()(
   immer((set, get) => {
-    // Named so it can be re-attached to the fresh scheduler created in clear();
-    // otherwise scheduler results would silently stop being written back after an
-    // import or a New Scene.
-    const handleSchedulerEvent = (event: SchedulerEvent) => {
-      set((state) => {
-        const nodeState = state.rootNodeState[event.nodeId];
-        if (nodeState) {
-          nodeState.output = event.output || null;
-          nodeState.error = event.error;
-        } else {
-          Object.values(state.subFlows).forEach((subflow) => {
-            if (subflow.nodeState[event.nodeId]) {
-              subflow.nodeState[event.nodeId].output = event.output || null;
-              subflow.nodeState[event.nodeId].error = event.error;
-              if (subflow.nodeRuntime[event.nodeId]) {
-                subflow.nodeRuntime[event.nodeId].output = event.output || null;
-                subflow.nodeRuntime[event.nodeId].error = event.error;
-              }
-            }
-          });
-        }
-      });
-    };
-    renderConeScheduler.addListener(handleSchedulerEvent);
     // Gather a subflow node's typed inputs by reading the current outputs of its
     // predecessor nodes from the subflow runtime.
     const gatherSubflowInputs = (
@@ -214,8 +182,7 @@ export const useGraphStore = create<GraphState>()(
       if (!subflow || !sfGraph) return inputs;
       const inputConnections = sfGraph.internalGraph.getNodeInputConnections(nodeId);
       inputConnections.forEach((source, inputName) => {
-        const sourceRuntime = subflow.nodeRuntime[source.sourceNodeId];
-        const out = sourceRuntime?.output;
+        const out = subflow.nodeState[source.sourceNodeId]?.output;
         if (out) {
           const container = out[source.sourceOutput] || out.default;
           if (container) inputs[inputName] = container;
@@ -223,49 +190,12 @@ export const useGraphStore = create<GraphState>()(
       });
       return inputs;
     };
-    // True when a compute output carries no renderable geometry: an Object3D with no
-    // descendant geometry (e.g. an empty Combine Group), or a geometry with no
-    // vertices. Used to keep the last good output instead of blanking the viewport.
-    const isRenderableEmpty = (output: unknown): boolean => {
-      if (!output || typeof output !== "object") return true;
-      const record = output as Record<string, unknown>;
-      const container = (record.default ?? output) as { value?: unknown };
-      const value = (container?.value ?? container) as
-        | { isObject3D?: boolean; geometry?: unknown; traverse?: (cb: (c: unknown) => void) => void; attributes?: { position?: { count?: number } } }
-        | undefined;
-      if (!value || typeof value !== "object") return true;
-      if (value.isObject3D) {
-        let hasGeometry = Boolean(value.geometry);
-        if (!hasGeometry && typeof value.traverse === "function") {
-          value.traverse((child) => {
-            if ((child as { geometry?: unknown })?.geometry) hasGeometry = true;
-          });
-        }
-        return !hasGeometry;
-      }
-      if (value.attributes) {
-        const pos = value.attributes.position;
-        return !pos || (pos.count ?? 0) === 0;
-      }
-      return false;
-    };
-    // Write a computed result to a node, but if the result is empty and the node
-    // already has a non-empty output, keep the previous output and raise a warning
-    // (so the viewport does not blank on a transient empty compute).
-    const applyComputedOutput = (
-      nodeState: WritableDraft<NodeState>,
-      runtime: { output?: unknown },
-      result: Record<string, BaseContainer>
-    ): void => {
-      if (isRenderableEmpty(result) && runtime.output && !isRenderableEmpty(runtime.output)) {
-        nodeState.warning = "No geometry produced; showing last valid result";
-        nodeState.error = undefined;
-        return;
-      }
-      runtime.output = result;
-      nodeState.output = result;
+    // Commit a cook result to a node, applying the keep-last-good-on-empty rule.
+    const applyComputedOutput = (nodeState: WritableDraft<NodeState>, result: NodeOutputs): void => {
+      const decision = decideOutput(nodeState.output as NodeOutputs | null, result);
+      nodeState.output = decision.output;
+      nodeState.warning = decision.warning;
       nodeState.error = undefined;
-      nodeState.warning = undefined;
     };
     // Recompute a single subflow node into the current immer draft, reading fresh
     // predecessor outputs. Synchronous results are written immediately so that
@@ -274,30 +204,32 @@ export const useGraphStore = create<GraphState>()(
     const computeSubflowNodeInDraft = (state: WritableDraft<GraphState>, geoNodeId: string, nodeId: string): void => {
       const subflow = state.subFlows[geoNodeId];
       const nodeState = subflow?.nodeState[nodeId];
-      const runtime = subflow?.nodeRuntime[nodeId];
-      if (!subflow || !nodeState || !runtime) return;
-      const nodeDefinition = nodeRegistry[nodeState.type];
-      if (!nodeDefinition?.computeTyped) return;
+      if (!subflow || !nodeState) return;
       const inputs = gatherSubflowInputs(state, geoNodeId, nodeId);
       const genKey = `${geoNodeId}:${nodeId}`;
       const generation = (nodeComputeGeneration.get(genKey) || 0) + 1;
       nodeComputeGeneration.set(genKey, generation);
-      try {
-        const result = nodeDefinition.computeTyped(nodeState.params, inputs, {
-          nodeId,
-          renderTarget: null,
-          isInRenderCone: true,
-        });
-        if (result && typeof (result as { then?: unknown }).then === "function") {
-          (result as Promise<Record<string, BaseContainer>>)
+      const cooked = cookNode(nodeRegistry[nodeState.type], nodeState.params, inputs, nodeId);
+      switch (cooked.status) {
+        case "skipped":
+          return;
+        case "ok":
+          applyComputedOutput(nodeState, cooked.outputs);
+          return;
+        case "error":
+          nodeState.error = cooked.error;
+          nodeState.warning = undefined;
+          nodeState.output = null;
+          return;
+        case "pending":
+          cooked.promise
             .then((resolved) => {
               if (nodeComputeGeneration.get(genKey) !== generation) return;
               set((draft) => {
                 const sf = draft.subFlows[geoNodeId];
-                const runtime = sf?.nodeRuntime[nodeId];
                 const nodeState = sf?.nodeState[nodeId];
-                if (!runtime || !nodeState) return;
-                applyComputedOutput(nodeState, runtime, resolved);
+                if (!nodeState) return;
+                applyComputedOutput(nodeState, resolved);
                 propagateSubflowDownstream(draft, geoNodeId, nodeId);
               });
             })
@@ -310,17 +242,9 @@ export const useGraphStore = create<GraphState>()(
                   sf.nodeState[nodeId].warning = undefined;
                   sf.nodeState[nodeId].output = null;
                 }
-                if (sf?.nodeRuntime[nodeId]) sf.nodeRuntime[nodeId].output = null;
               });
             });
-        } else {
-          applyComputedOutput(nodeState, runtime, result as Record<string, BaseContainer>);
-        }
-      } catch (err) {
-        nodeState.error = err instanceof Error ? err.message : String(err);
-        nodeState.warning = undefined;
-        nodeState.output = null;
-        runtime.output = null;
+          return;
       }
     };
     // Recompute every node downstream of `nodeId` (excluding it), in topological order.
@@ -350,6 +274,48 @@ export const useGraphStore = create<GraphState>()(
         computeSubflowNodeInDraft(state, geoNodeId, id);
       }
     };
+    // Eagerly compute a root node that defines computeTyped (the lights). Root nodes
+    // take no inputs; a Promise result is ignored since no async root node exists.
+    const computeRootNodeInDraft = (nodeState: WritableDraft<NodeState>): void => {
+      const cooked = cookNode(nodeRegistry[nodeState.type], nodeState.params, {}, nodeState.id);
+      if (cooked.status === "ok") {
+        nodeState.output = cooked.outputs;
+        nodeState.error = undefined;
+      } else if (cooked.status === "error") {
+        nodeState.error = cooked.error;
+        nodeState.output = null;
+      }
+    };
+    // One rAF-coalesced cook pass over the dirty union: root nodes cook directly,
+    // subflow nodes cook together with their transitive downstream in topological
+    // order, all committed in a single set().
+    const cookScheduler = new CookScheduler((batch) => {
+      set((state) => {
+        batch.forEach((nodeIds, contextKey) => {
+          if (contextKey === "root") {
+            nodeIds.forEach((nodeId) => {
+              const nodeState = state.rootNodeState[nodeId];
+              if (nodeState) computeRootNodeInDraft(nodeState);
+            });
+            return;
+          }
+          const subflow = state.subFlows[contextKey];
+          const sfGraph = state.subflowManager.getSubflow(contextKey);
+          if (!subflow || !sfGraph) return;
+          const affected = new Set<string>();
+          nodeIds.forEach((nodeId) => {
+            if (!subflow.nodeState[nodeId]) return;
+            affected.add(nodeId);
+            sfGraph.internalGraph.getDownstreamNodes(nodeId).forEach((id) => {
+              if (subflow.nodeState[id]) affected.add(id);
+            });
+          });
+          if (affected.size === 0) return;
+          const ordered = sfGraph.internalGraph.topologicalSort([...affected]);
+          ordered.forEach((id) => computeSubflowNodeInDraft(state, contextKey, id));
+        });
+      });
+    });
     return {
       rootNodeState: {},
       subFlows: {},
@@ -357,17 +323,24 @@ export const useGraphStore = create<GraphState>()(
       isImporting: false,
       rootRenderTarget: null,
       graph: graphLibAdapter,
-      scheduler: renderConeScheduler,
-      cache: contentCache,
       subflowManager,
-      rootNodeRuntime: {},
-      connectionManager: {},
       edgeVersion: 0,
       recomputeFrom: (nodeId: string) => {
-        renderConeScheduler.onParameterChange(nodeId, {});
+        set((state) => {
+          if (state.rootNodeState[nodeId]) {
+            computeRootNodeInDraft(state.rootNodeState[nodeId]);
+            return;
+          }
+          for (const [geoNodeId, subflow] of Object.entries(state.subFlows)) {
+            if (subflow.nodeState[nodeId]) {
+              recomputeSubflowFrom(state, geoNodeId, nodeId);
+              return;
+            }
+          }
+        });
       },
-      markDirty: (nodeId: string) => {
-        renderConeScheduler.onParameterChange(nodeId, {});
+      flushCooks: () => {
+        cookScheduler.flushNow();
       },
       addNode: (node: NodeInitData, context: GraphContext) => {
         const nodeDefinition = nodeRegistry[node.type];
@@ -398,30 +371,14 @@ export const useGraphStore = create<GraphState>()(
             id: node.id,
             type: node.type,
             params: validatedParams,
-            inputs: {},
             output: null,
             isInRenderCone: false,
             isRenderTarget: false,
           };
           if (context.type === "root") {
             state.rootNodeState[node.id] = nodeState;
-            state.rootNodeRuntime[node.id] = {
-              id: node.id,
-              type: node.type,
-              params: validatedParams,
-            };
-            state.scheduler.addNode(node.id, node.type, validatedParams);
-            if (node.type.includes("Light") && validatedParams.rendering?.visible !== false) {
-              try {
-                const nodeDefinition = nodeRegistry[node.type];
-                if (nodeDefinition?.compute) {
-                  const result = nodeDefinition.compute(validatedParams, undefined);
-                  state.rootNodeRuntime[node.id].output = result;
-                  nodeState.output = result;
-                }
-              } catch {
-                void 0;
-              }
+            if (validatedParams.rendering?.visible !== false) {
+              cookScheduler.enqueue("root", node.id);
             }
             const renderTarget = state.rootRenderTarget;
             if (renderTarget) {
@@ -433,17 +390,11 @@ export const useGraphStore = create<GraphState>()(
               state.subFlows[context.geoNodeId] = {
                 nodeState: {},
                 activeOutputNodeId: null,
-                nodeRuntime: {},
               };
               state.subflowManager.createSubflow(context.geoNodeId);
             }
             state.subFlows[context.geoNodeId].nodeState[node.id] = nodeState;
-            state.subFlows[context.geoNodeId].nodeRuntime[node.id] = {
-              id: node.id,
-              type: node.type,
-              params: validatedParams,
-            };
-            state.subflowManager.addNodeToSubflow(context.geoNodeId, node.id, node.type, validatedParams);
+            state.subflowManager.addNodeToSubflow(context.geoNodeId, node.id, node.type);
             const subflow = state.subFlows[context.geoNodeId];
             const existingNodes = Object.keys(subflow.nodeState);
             if (existingNodes.length === 1) {
@@ -463,10 +414,9 @@ export const useGraphStore = create<GraphState>()(
               nodeState.params = validatedParams;
               nodeState.isRenderTarget = false;
             }
-            state.cache.invalidateNode(node.id);
-            // Compute the freshly added node so its output is available the moment a
-            // downstream node connects to it.
-            recomputeSubflowFrom(state, context.geoNodeId, node.id);
+            // Cook the freshly added node (next frame) so its output is available
+            // when a downstream node connects to it.
+            cookScheduler.enqueue(context.geoNodeId, node.id);
           }
         });
       },
@@ -474,12 +424,10 @@ export const useGraphStore = create<GraphState>()(
         set((state) => {
           state.graph.removeNode(nodeId);
           if (context.type === "root") {
-            state.scheduler.removeNode(nodeId);
             if (state.rootRenderTarget === nodeId) {
               state.rootRenderTarget = null;
             }
             delete state.rootNodeState[nodeId];
-            delete state.rootNodeRuntime[nodeId];
           } else if (context.type === "subflow" && context.geoNodeId) {
             const subflow = state.subFlows[context.geoNodeId];
             if (subflow) {
@@ -490,17 +438,15 @@ export const useGraphStore = create<GraphState>()(
                 ? sfGraph.internalGraph.getDirectSuccessors(nodeId).map((n) => n.id)
                 : [];
               delete subflow.nodeState[nodeId];
-              delete subflow.nodeRuntime[nodeId];
               state.subflowManager.removeNodeFromSubflow(context.geoNodeId, nodeId);
               nodeComputeGeneration.delete(`${context.geoNodeId}:${nodeId}`);
               for (const successorId of directSuccessors) {
                 if (subflow.nodeState[successorId]) {
-                  recomputeSubflowFrom(state, context.geoNodeId, successorId);
+                  cookScheduler.enqueue(context.geoNodeId, successorId);
                 }
               }
             }
           }
-          state.cache.invalidateNode(nodeId);
         });
       },
       setParams: (nodeId: string, params: Partial<Record<string, any>>, context: GraphContext) => {
@@ -510,10 +456,6 @@ export const useGraphStore = create<GraphState>()(
             nodeState = state.rootNodeState[nodeId];
             if (nodeState) {
               Object.assign(nodeState.params, params);
-              if (state.rootNodeRuntime[nodeId]) {
-                Object.assign(state.rootNodeRuntime[nodeId].params, params);
-              }
-              state.scheduler.onParameterChange(nodeId, params);
             }
           } else if (context.type === "subflow" && context.geoNodeId) {
             nodeState = state.subFlows[context.geoNodeId]?.nodeState[nodeId];
@@ -523,12 +465,8 @@ export const useGraphStore = create<GraphState>()(
                 Object.keys(subflow.nodeState).forEach((otherNodeId) => {
                   if (otherNodeId !== nodeId) {
                     const otherNodeState = subflow.nodeState[otherNodeId];
-                    const otherNodeRuntime = subflow.nodeRuntime[otherNodeId];
                     if (otherNodeState?.params?.rendering) {
                       otherNodeState.params.rendering.visible = false;
-                    }
-                    if (otherNodeRuntime?.params?.rendering) {
-                      otherNodeRuntime.params.rendering.visible = false;
                     }
                     if (otherNodeState) {
                       otherNodeState.isRenderTarget = false;
@@ -545,15 +483,9 @@ export const useGraphStore = create<GraphState>()(
                 }
               }
               Object.assign(nodeState.params, params);
-              const subflowRuntime = state.subFlows[context.geoNodeId]?.nodeRuntime[nodeId];
-              if (subflowRuntime) {
-                Object.assign(subflowRuntime.params, params);
-              }
-              state.subflowManager.onSubflowParameterChange(context.geoNodeId, nodeId, params);
             }
           }
           if (nodeState) {
-            state.cache.invalidateNode(nodeId);
             if (context.type === "subflow" && context.geoNodeId) {
               const subflow = state.subFlows[context.geoNodeId];
               const wasVisible = nodeState?.params?.rendering?.visible === true;
@@ -562,12 +494,8 @@ export const useGraphStore = create<GraphState>()(
                 Object.keys(subflow.nodeState).forEach((otherNodeId) => {
                   if (otherNodeId !== nodeId) {
                     const otherNodeState = subflow.nodeState[otherNodeId];
-                    const otherNodeRuntime = subflow.nodeRuntime[otherNodeId];
                     if (otherNodeState?.params?.rendering) {
                       otherNodeState.params.rendering.visible = false;
-                    }
-                    if (otherNodeRuntime?.params?.rendering) {
-                      otherNodeRuntime.params.rendering.visible = false;
                     }
                     if (otherNodeState) {
                       otherNodeState.isRenderTarget = false;
@@ -578,21 +506,11 @@ export const useGraphStore = create<GraphState>()(
                 nodeState.isRenderTarget = true;
                 state.subflowManager.setActiveOutput(context.geoNodeId, nodeId);
               }
-              // Recompute the edited node and everything downstream of it so the
-              // active output reflects upstream parameter changes.
-              recomputeSubflowFrom(state, context.geoNodeId, nodeId);
-              state.subflowManager.onSubflowParameterChange(context.geoNodeId, nodeId, nodeState.params);
-            } else if (context.type === "root" && nodeState.type.includes("Light")) {
-              try {
-                const nodeDefinition = nodeRegistry[nodeState.type];
-                if (nodeDefinition?.compute) {
-                  const result = nodeDefinition.compute(nodeState.params, undefined);
-                  state.rootNodeRuntime[nodeId].output = result;
-                  nodeState.output = result;
-                }
-              } catch {
-                void 0;
-              }
+              // Cook the edited node and everything downstream of it (coalesced to
+              // one pass per frame) so the active output reflects the change.
+              cookScheduler.enqueue(context.geoNodeId, nodeId);
+            } else if (context.type === "root") {
+              cookScheduler.enqueue("root", nodeId);
             }
           }
         });
@@ -613,7 +531,6 @@ export const useGraphStore = create<GraphState>()(
           if (!get().graph.connect(source, target)) {
             return { ok: false, error: "Failed to create connection" };
           }
-          get().scheduler.onConnectionChange(source, target, true);
           const state = get();
           if (state.rootRenderTarget) {
             const cone = state.graph.getRenderCone(state.rootRenderTarget);
@@ -636,10 +553,8 @@ export const useGraphStore = create<GraphState>()(
           if (!connected) {
             return { ok: false, error: "Failed to create connection" };
           }
-          set((state) => {
-            // Recompute the connection target and everything downstream of it.
-            recomputeSubflowFrom(state, context.geoNodeId!, target);
-          });
+          // Cook the connection target and everything downstream of it.
+          cookScheduler.enqueue(context.geoNodeId, target);
         } else {
           return { ok: false, error: "Invalid context" };
         }
@@ -657,7 +572,6 @@ export const useGraphStore = create<GraphState>()(
       ) => {
         if (context.type === "root") {
           get().graph.disconnect(source, target);
-          get().scheduler.onConnectionChange(source, target, false);
           const state = get();
           if (state.rootRenderTarget) {
             const cone = state.graph.getRenderCone(state.rootRenderTarget);
@@ -667,10 +581,8 @@ export const useGraphStore = create<GraphState>()(
           }
         } else if (context.type === "subflow" && context.geoNodeId) {
           get().subflowManager.removeSubflowConnection(context.geoNodeId, source, target, sourceHandle, targetHandle);
-          set((state) => {
-            // Recompute the now-disconnected target and everything downstream of it.
-            recomputeSubflowFrom(state, context.geoNodeId!, target);
-          });
+          // Cook the now-disconnected target and everything downstream of it.
+          cookScheduler.enqueue(context.geoNodeId, target);
         }
         set((state) => {
           state.edgeVersion += 1;
@@ -694,7 +606,6 @@ export const useGraphStore = create<GraphState>()(
               }
             }
             state.rootRenderTarget = nodeId;
-            state.scheduler.setRenderTarget(nodeId);
             if (nodeId) {
               const targetNode = state.rootNodeState[nodeId];
               if (targetNode) {
@@ -748,19 +659,11 @@ export const useGraphStore = create<GraphState>()(
       },
       clear: () => {
         nodeComputeGeneration.clear();
+        cookScheduler.clear();
         set((state) => {
-          state.scheduler.clear();
-          state.cache.clear();
           state.subflowManager.clear();
-          const newGraph = new GraphLibAdapter();
-          const newScheduler = new RenderConeScheduler(newGraph);
-          newScheduler.addListener(handleSchedulerEvent);
-          const newSubflowManager = new SubflowManager(newGraph);
-          const newCache = new ContentCache();
-          state.graph = newGraph;
-          state.scheduler = newScheduler;
-          state.subflowManager = newSubflowManager;
-          state.cache = newCache;
+          state.graph = new GraphLibAdapter();
+          state.subflowManager = new SubflowManager();
           state.rootNodeState = {};
           state.subFlows = {};
           state.rootRenderTarget = null;
@@ -805,8 +708,9 @@ export const useGraphStore = create<GraphState>()(
               state.setSubFlowActiveOutput(geoNodeId, subflow.activeOutputNodeId);
             }
           });
-        } catch {
-          void 0;
+        } catch (error) {
+          console.error("Failed to import graph:", error);
+          throw error;
         } finally {
           set((state) => {
             state.isImporting = false;
@@ -830,14 +734,6 @@ export const useGraphStore = create<GraphState>()(
           subFlows: {},
           rootRenderTarget: state.rootRenderTarget,
         };
-        Object.entries(state.rootNodeState).forEach(([nodeId, nodeState]) => {
-          serialized.nodeRuntime[nodeId] = {
-            id: nodeState.id,
-            type: nodeState.type,
-            params: nodeState.params,
-            inputs: nodeState.inputs,
-          };
-        });
         Object.entries(state.subFlows).forEach(([geoNodeId, subflow]) => {
           serialized.subFlows[geoNodeId] = {
             nodes: Object.keys(subflow.nodeState).map((nodeId) => ({
@@ -861,66 +757,30 @@ export const useGraphStore = create<GraphState>()(
             positions: {},
             activeOutputNodeId: subflow.activeOutputNodeId,
           };
-          Object.entries(subflow.nodeState).forEach(([nodeId, nodeState]) => {
-            serialized.subFlows[geoNodeId].nodeRuntime[nodeId] = {
-              id: nodeState.id,
-              type: nodeState.type,
-              params: nodeState.params,
-              inputs: nodeState.inputs,
-            };
-          });
         });
         return serialized;
       },
       setSubFlowActiveOutput: (geoNodeId: string, nodeId: string) => {
         get().setRenderTarget(nodeId, { type: "subflow", geoNodeId });
       },
-      preloadImportObjAssets: async () => {},
-      preloadAssetForNode: async (_nodeId: string, _nodeState: NodeState, _context: GraphContext) => {},
-      validatePostImportComputation: async () => {},
-      forceResetImportedNodeTracking: (nodeIds: string[], _contexts: GraphContext[]) => {
-        nodeIds.forEach((nodeId) => {
-          get().cache.invalidateNode(nodeId);
+      // Recompute every node in the scene: eager root nodes plus every subflow in
+      // topological order. Used after import and by the debounced scene recompute.
+      computeAll: async () => {
+        set((state) => {
+          Object.values(state.rootNodeState).forEach((nodeState) => {
+            computeRootNodeInDraft(nodeState);
+          });
+          Object.keys(state.subFlows).forEach((geoNodeId) => {
+            const sfGraph = state.subflowManager.getSubflow(geoNodeId);
+            const subflow = state.subFlows[geoNodeId];
+            if (!sfGraph || !subflow) return;
+            const ordered = sfGraph.internalGraph.topologicalSort(Object.keys(subflow.nodeState));
+            ordered.forEach((id) => computeSubflowNodeInDraft(state, geoNodeId, id));
+          });
         });
       },
-      computeAll: async () => {
-        const store = useGraphStore.getState();
-        try {
-          store.cache.clear();
-          const allNodeIds = [
-            ...Object.keys(store.rootNodeState),
-            ...Object.values(store.subFlows).flatMap((subFlow) => Object.keys(subFlow.nodeState)),
-          ];
-          allNodeIds.forEach((nodeId) => {
-            store.markDirty(nodeId);
-          });
-          const rootNodes = Object.values(store.rootNodeState);
-          for (const node of rootNodes) {
-            if (node.isRenderTarget || node.type === "geoNode") {
-              store.recomputeFrom(node.id);
-            }
-          }
-          for (const subFlow of Object.values(store.subFlows)) {
-            const subFlowNodes = Object.values(subFlow.nodeState);
-            for (const node of subFlowNodes) {
-              if (node.isRenderTarget) {
-                store.recomputeFrom(node.id);
-              }
-            }
-          }
-        } catch {
-          void 0;
-        }
-      },
       computeNode: async (nodeId: string, _context: GraphContext) => {
-        const store = useGraphStore.getState();
-        try {
-          store.cache.invalidateNode(nodeId);
-          store.markDirty(nodeId);
-          store.recomputeFrom(nodeId);
-        } catch {
-          void 0;
-        }
+        get().recomputeFrom(nodeId);
       },
       getNodes: (context: GraphContext): NodeState[] => {
         const state = get();
@@ -960,7 +820,6 @@ export const useGraphStore = create<GraphState>()(
     };
   })
 );
-export { graphLibAdapter, renderConeScheduler, contentCache, subflowManager };
 export const exportGraphWithMeta = async (): Promise<any> => {
   return useGraphStore.getState().exportGraph();
 };

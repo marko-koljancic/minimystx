@@ -1,7 +1,7 @@
 import MenuItem from "./MenuItem";
 import styles from "./Header.module.css";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { useUIStore, useCurrentContext } from "../store";
+import { useUIStore, useCameraStore, useCurrentContext, emitAppEvent } from "../store";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { PromptModal } from "../components/PromptModal";
 import { PreferencesModal } from "../components/Preferences";
@@ -14,36 +14,27 @@ import {
   initializeMxScene,
   applyImportedScene,
 } from "../io/mxscene";
-import { initializeNewScene, setupSceneEventListeners } from "../io/sceneManager";
+import { initializeNewScene } from "../io/sceneManager";
 import { getNodesByCategoryForContext, getAvailableCategoriesForContext } from "../flow/nodes/nodeRegistry";
 export default function Header() {
   const {
     displayMode,
     focusedCanvas,
-    isOrthographicCamera,
-    showAxisGizmo,
     toggleGridInFlowCanvas,
     toggleGridInRenderView,
     setDisplayMode,
-    toggleAxisGizmo,
-    setOrthographicCamera,
-    setCameraView,
     fitView,
     fitNodes,
     resetToDefaults,
   } = useUIStore();
+  const { isOrthographicCamera, showAxisGizmo, toggleAxisGizmo, setOrthographicCamera, setCameraView } =
+    useCameraStore();
   const currentContext = useCurrentContext();
   const handleApplyDagre = useCallback(() => {
-    const event = new CustomEvent("minimystx:applyAutoLayout", {
-      detail: { algorithm: "dagre" },
-    });
-    window.dispatchEvent(event);
+    emitAppEvent("minimystx:applyAutoLayout", { algorithm: "dagre" });
   }, []);
   const handleApplyELK = useCallback(() => {
-    const event = new CustomEvent("minimystx:applyAutoLayout", {
-      detail: { algorithm: "elk" },
-    });
-    window.dispatchEvent(event);
+    emitAppEvent("minimystx:applyAutoLayout", { algorithm: "elk" });
   }, []);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -155,17 +146,13 @@ export default function Header() {
     }
   }, []);
   const handleCreateNodeAtCenter = useCallback((nodeType: string) => {
-    const event = new CustomEvent("minimystx:createNode", {
-      detail: {
-        nodeType: nodeType,
-        position: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
-      },
+    emitAppEvent("minimystx:createNode", {
+      nodeType,
+      position: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
     });
-    window.dispatchEvent(event);
   }, []);
   useEffect(() => {
     initializeMxScene().catch(() => {});
-    setupSceneEventListeners();
   }, []);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

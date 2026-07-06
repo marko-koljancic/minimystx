@@ -1,4 +1,4 @@
-import type { CameraData, UIData } from "./mxscene/types";
+import type { CameraData, RendererData, UIData } from "./mxscene/types";
 export interface StateSyncOptions {
   delayMs?: number;
   retries?: number;
@@ -17,92 +17,68 @@ const DEFAULT_SYNC_OPTIONS: Required<StateSyncOptions> = {
   retries: 3,
   timeout: 5000,
 };
-export async function syncCameraState(
-  cameraData: CameraData,
-  options: StateSyncOptions = {}
-): Promise<CameraSyncResult> {
-  const opts = { ...DEFAULT_SYNC_OPTIONS, ...options };
-  return new Promise((resolve) => {
-    let attempts = 0;
-    const attemptSync = () => {
-      attempts++;
-      try {
-        window.dispatchEvent(
-          new CustomEvent("minimystx:setCameraData", {
-            detail: cameraData,
-          })
-        );
-        setTimeout(() => {
-          resolve({ success: true });
-        }, opts.delayMs);
-      } catch (error) {
-        if (attempts < opts.retries) {
-          setTimeout(attemptSync, opts.delayMs * attempts);
-        } else {
-          resolve({
-            success: false,
-            error: `Failed to sync camera after ${opts.retries} attempts: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`,
-          });
-        }
-      }
+export async function syncCameraState(cameraData: CameraData): Promise<CameraSyncResult> {
+  const { getSceneManager } = await import("../rendering/sceneManagerRegistry");
+  const sceneManager = getSceneManager();
+  if (!sceneManager) {
+    return { success: false, error: "Scene manager not ready for camera restore" };
+  }
+  try {
+    sceneManager.setCameraPose({
+      position: cameraData.position,
+      target: cameraData.target,
+      fov: cameraData.fov,
+    });
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to restore camera: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
-    setTimeout(() => {
-      resolve({
-        success: false,
-        error: `Camera sync timed out after ${opts.timeout}ms`,
-      });
-    }, opts.timeout);
-    attemptSync();
-  });
+  }
 }
 export async function syncUIState(uiData: UIData, options: StateSyncOptions = {}): Promise<UISyncResult> {
   const opts = { ...DEFAULT_SYNC_OPTIONS, ...options };
-  return new Promise(async (resolve) => {
-    try {
-      if (uiData.gridVisible !== undefined) {
-        window.dispatchEvent(
-          new CustomEvent("minimystx:setGridVisibility", {
-            detail: { visible: uiData.gridVisible },
-          })
-        );
-      }
-      if (uiData.viewportStates?.root) {
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent("minimystx:setViewport", {
-              detail: uiData.viewportStates.root,
-            })
-          );
-        }, opts.delayMs);
-      }
-      setTimeout(() => {
-        resolve({ success: true });
-      }, opts.delayMs * 2);
-    } catch (error) {
-      resolve({
-        success: false,
-        error: `Failed to sync UI state: ${error instanceof Error ? error.message : "Unknown error"}`,
-      });
-    }
-  });
-}
-export async function syncRendererState(rendererData: any): Promise<{ success: boolean; error?: string }> {
   try {
+    const { useUIStore } = await import("../store/uiStore");
+    const ui = useUIStore.getState();
+    if (uiData.gridVisible !== undefined) {
+      ui.setShowGridInRenderView(uiData.gridVisible);
+    }
+    if (uiData.minimapVisible !== undefined) {
+      ui.setShowMinimap(uiData.minimapVisible);
+    }
+    if (uiData.showFlowControls !== undefined) {
+      ui.setShowFlowControls(uiData.showFlowControls);
+    }
+    if (uiData.connectionLineStyle) {
+      ui.setConnectionLineStyle(uiData.connectionLineStyle as Parameters<typeof ui.setConnectionLineStyle>[0]);
+    }
+    // The flow canvas viewport is a command, not state: the canvas applies it via
+    // the setViewport event after it has mounted for the restored context.
+    if (uiData.viewportStates?.root) {
+      const { emitAppEvent } = await import("../store/events");
+      setTimeout(() => {
+        emitAppEvent("minimystx:setViewport", uiData.viewportStates.root);
+      }, opts.delayMs);
+    }
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to sync UI state: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
+}
+export async function syncRendererState(rendererData: RendererData): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { usePreferencesStore } = await import("../store/preferencesStore");
+    const preferences = usePreferencesStore.getState();
     if (rendererData.background) {
-      window.dispatchEvent(
-        new CustomEvent("minimystx:setBackground", {
-          detail: { color: rendererData.background },
-        })
-      );
+      preferences.updateRendererBackground({ color: rendererData.background });
     }
     if (rendererData.exposure !== undefined) {
-      window.dispatchEvent(
-        new CustomEvent("minimystx:setExposure", {
-          detail: { exposure: rendererData.exposure },
-        })
-      );
+      preferences.updateMaterials({ exposure: rendererData.exposure });
     }
     return { success: true };
   } catch (error) {
@@ -112,104 +88,31 @@ export async function syncRendererState(rendererData: any): Promise<{ success: b
     };
   }
 }
+// Ready means the SceneManager has registered itself (camera restore needs it).
 export async function waitForSceneReady(timeoutMs: number = 5000): Promise<boolean> {
-  return new Promise((resolve) => {
-    let isResolved = false;
-    const timeout = setTimeout(() => {
-      if (!isResolved) {
-        isResolved = true;
-        resolve(false);
-      }
-    }, timeoutMs);
-    const checkReady = () => {
-      try {
-        if ((window as any).minimystx || document.querySelector('[data-testid="rendering-canvas"]')) {
-          if (!isResolved) {
-            isResolved = true;
-            clearTimeout(timeout);
-            resolve(true);
-          }
-        } else {
-          setTimeout(checkReady, 100);
-        }
-      } catch (error) {
-        setTimeout(checkReady, 100);
-      }
-    };
-    checkReady();
-  });
+  const { getSceneManager } = await import("../rendering/sceneManagerRegistry");
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (getSceneManager()) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return getSceneManager() !== null;
 }
-export function createStateSyncQueue() {
-  const queue: Array<() => Promise<any>> = [];
-  let isProcessing = false;
-  const processQueue = async () => {
-    if (isProcessing || queue.length === 0) return;
-    isProcessing = true;
-    while (queue.length > 0) {
-      const task = queue.shift();
-      if (task) {
-        try {
-          await task();
-        } catch (error) {}
-      }
-    }
-    isProcessing = false;
-  };
-  return {
-    add: (task: () => Promise<any>) => {
-      queue.push(task);
-      processQueue();
-    },
-    clear: () => {
-      queue.length = 0;
-    },
-    size: () => queue.length,
-  };
-}
-const globalSyncQueue = createStateSyncQueue();
 export async function syncAllSceneState(
   cameraData: CameraData,
   uiData: UIData,
-  rendererData: any,
+  rendererData: RendererData,
   options: StateSyncOptions = {}
 ): Promise<{
   camera: CameraSyncResult;
   ui: UISyncResult;
   renderer: { success: boolean; error?: string };
 }> {
-  const sceneReady = await waitForSceneReady();
-  if (!sceneReady) {
-    const error = "Scene not ready for state synchronization";
-    return {
-      camera: { success: false, error },
-      ui: { success: false, error },
-      renderer: { success: false, error },
-    };
-  }
-  const results = {
-    camera: await syncCameraState(cameraData, options),
+  // Each sync is independent: ui and renderer restores are plain store writes and
+  // must not be blocked when the camera's SceneManager is not (yet) registered.
+  return {
+    camera: await syncCameraState(cameraData),
     ui: await syncUIState(uiData, options),
     renderer: await syncRendererState(rendererData),
   };
-  return results;
 }
-export function createDelayedSync<T>(
-  syncFn: (data: T, options?: StateSyncOptions) => Promise<any>,
-  delay: number = 100
-) {
-  return (data: T, options?: StateSyncOptions) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          const result = await syncFn(data, options);
-          resolve(result);
-        } catch (error) {
-          reject(error);
-        }
-      }, delay);
-    });
-  };
-}
-export const syncCameraStateDelayed = createDelayedSync(syncCameraState, 200);
-export const syncUIStateDelayed = createDelayedSync(syncUIState, 100);
-export { globalSyncQueue };

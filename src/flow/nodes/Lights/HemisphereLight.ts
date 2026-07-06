@@ -3,6 +3,7 @@ import type { GeneralProps, HemisphereLightProps, HemisphereLightRenderingProps,
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import { createLightTransformParams } from "../../../engine/nodeParameterFactories";
 import type { NodeParams } from "../../../engine/graphStore";
+import { BaseContainer, Object3DContainer } from "../../../engine/containers/BaseContainer";
 export interface HemisphereLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
   transform: {
@@ -59,7 +60,7 @@ export const hemisphereLightNodeParams: NodeParams = {
     }),
   },
 };
-export const hemisphereLightNodeCompute = (params: Record<string, unknown>) => {
+export const hemisphereLightNodeComputeTyped = (params: Record<string, any>): Record<string, BaseContainer> => {
   const lightParams = params.light as HemisphereLightProps;
   if (lightParams && lightParams.intensity < 0) {
     lightParams.intensity = 0;
@@ -81,5 +82,6 @@ export const hemisphereLightNodeCompute = (params: Record<string, unknown>) => {
     },
     rendering: renderingParams,
   };
-  return processor(data);
+  const { object } = processor(data);
+  return { default: new Object3DContainer(object) };
 };

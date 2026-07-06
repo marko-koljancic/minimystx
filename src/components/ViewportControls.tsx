@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useUIStore } from "../store";
+import { useUIStore, useCameraStore } from "../store";
 import styles from "./ViewportControls.module.css";
 interface DropdownItem {
   label: string;
@@ -10,7 +10,7 @@ interface DropdownProps {
   items: DropdownItem[];
   isOpen: boolean;
   onClose: () => void;
-  triggerRef: React.RefObject<HTMLButtonElement>;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
 }
 function Dropdown({ items, isOpen, onClose, triggerRef }: DropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -48,18 +48,9 @@ function Dropdown({ items, isOpen, onClose, triggerRef }: DropdownProps) {
   );
 }
 export default function ViewportControls() {
-  const {
-    displayMode,
-    isOrthographicCamera,
-    showAxisGizmo,
-    showGridInRenderView,
-    currentCameraView,
-    toggleGridInRenderView,
-    setDisplayMode,
-    setOrthographicCamera,
-    setCameraView,
-    toggleAxisGizmo,
-  } = useUIStore();
+  const { displayMode, showGridInRenderView, toggleGridInRenderView, setDisplayMode } = useUIStore();
+  const { isOrthographicCamera, showAxisGizmo, currentCameraView, setOrthographicCamera, setCameraView, toggleAxisGizmo } =
+    useCameraStore();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const perspectiveRef = useRef<HTMLButtonElement>(null);
   const viewsRef = useRef<HTMLButtonElement>(null);

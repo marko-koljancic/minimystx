@@ -92,7 +92,7 @@ export class MaterialManager implements IMaterialManager {
             this.addPolygonOffset(object.material);
             break;
 
-          case "depth":
+          case "depth": {
             const depthMat = this.getDepthMaterial();
             if (depthMat) {
               if ("wireframe" in depthMat) {
@@ -102,8 +102,9 @@ export class MaterialManager implements IMaterialManager {
             }
             this.removePolygonOffset(object.material);
             break;
+          }
 
-          case "depthWireframe":
+          case "depthWireframe": {
             const depthWireMat = this.getDepthMaterial();
             if (depthWireMat) {
               if ("wireframe" in depthWireMat) {
@@ -113,6 +114,7 @@ export class MaterialManager implements IMaterialManager {
             }
             this.addPolygonOffset(object.material);
             break;
+          }
         }
       }
     });

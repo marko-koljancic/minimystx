@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useRef, useEffect } from "react";
 import styles from "./DesignLayout.module.css";
 import Header from "../pages/Header";
-import { useUIStore, useIsRendererMaximized } from "../store";
+import { useLayoutStore, useIsRendererMaximized } from "../store";
 import PropertiesDrawer from "../components/PropertiesDrawer";
 import { NodePalette } from "../components/NodePalette";
 interface DesignLayoutProps {
@@ -10,7 +10,7 @@ interface DesignLayoutProps {
   children?: ReactNode;
 }
 const DesignLayout = ({ leftTop, right, children }: DesignLayoutProps) => {
-  const { leftPaneWidth, updateLayout } = useUIStore();
+  const { leftPaneWidth, updateLayout } = useLayoutStore();
   const isRendererMaximized = useIsRendererMaximized();
   const isDraggingVertical = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);

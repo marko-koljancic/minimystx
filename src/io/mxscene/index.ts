@@ -22,7 +22,6 @@ export {
   isValidSHA256Hash,
   hashString,
   verifyHash,
-  hashBytesWithProgress,
 } from "./crypto";
 export { createZipWriter, createZipReader, validateMxSceneZip, generateAssetFilename, parseAssetFilename } from "./zip";
 export type {
@@ -33,7 +32,6 @@ export type {
   SubFlowData,
   NodeData,
   EdgeData,
-  NodeRuntimeData,
   CameraData,
   RendererData,
   UIData,

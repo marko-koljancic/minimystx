@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { useUIStore } from "../store/uiStore";
+import { useCameraStore } from "../store/cameraStore";
 import { usePreferencesStore, PreferencesState } from "../store/preferencesStore";
+import { registerSceneManager, unregisterSceneManager, CameraPose } from "./sceneManagerRegistry";
 import { CameraController } from "./camera/CameraController";
 import { GridSystem } from "./grid/GridSystem";
 import { MaterialManager } from "./materials/MaterialManager";
@@ -31,7 +33,14 @@ export class SceneManager {
   private orthographicCamera!: THREE.OrthographicCamera;
   private animationId: number | null = null;
   private uiStoreUnsubscribe: (() => void) | null = null;
+  private cameraStoreUnsubscribe: (() => void) | null = null;
   private preferencesStoreUnsubscribe: (() => void) | null = null;
+  // Registered in the sceneManagerRegistry so scene IO can call camera state
+  // directly instead of round-tripping through window events.
+  private registryHandle = {
+    getCameraPose: (): CameraPose | null => this.getCameraPose(),
+    setCameraPose: (pose: CameraPose): void => this.setCameraPose(pose),
+  };
   private initialized: boolean = false;
   private cameraController!: CameraController;
   private gridSystem!: GridSystem;
@@ -49,10 +58,12 @@ export class SceneManager {
       this.initializeThreeJS(canvas);
       this.initializeSubsystems();
       this.subscribeToUIStore();
+      this.subscribeToCameraStore();
       this.subscribeToPreferencesStore();
       this.setupEventListeners();
       this.completeInitialization();
       this.startRenderLoop();
+      registerSceneManager(this.registryHandle);
     } catch (error) {
       this.handleInitializationError(error);
     }
@@ -136,6 +147,8 @@ export class SceneManager {
   public dispose(): void {
     if (!this.initialized) return;
 
+    unregisterSceneManager(this.registryHandle);
+
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
     }
@@ -150,10 +163,18 @@ export class SceneManager {
       this.uiStoreUnsubscribe = null;
     }
 
+    if (this.cameraStoreUnsubscribe) {
+      this.cameraStoreUnsubscribe();
+      this.cameraStoreUnsubscribe = null;
+    }
+
     if (this.preferencesStoreUnsubscribe) {
       this.preferencesStoreUnsubscribe();
       this.preferencesStoreUnsubscribe = null;
     }
+
+    this._renderer.domElement.removeEventListener("webglcontextlost", this.handleContextLost);
+    this._renderer.domElement.removeEventListener("webglcontextrestored", this.handleContextRestored);
 
     this.cameraController.dispose();
     this.gridSystem.dispose();
@@ -271,16 +292,12 @@ export class SceneManager {
       getCurrentCamera: () => this.cameraController.getCurrentCamera(),
       setGridVisibility: (visible: boolean) => this.gridSystem.updateGridVisibility(visible),
       setAxisGizmoVisibility: (visible: boolean) => this.axisGizmo.updateVisibility(visible),
-      getAxisGizmoVisibility: () => useUIStore.getState().showAxisGizmo,
+      getAxisGizmoVisibility: () => useCameraStore.getState().showAxisGizmo,
     });
 
     this.eventManager = new EventManager({
       onFitView: () => this.fitView(),
-      onGetCameraData: (event: CustomEvent) => this.handleGetCameraData(event),
-      onSetCameraData: (event: CustomEvent) => this.handleSetCameraData(event),
-      onSetCameraMode: (event: CustomEvent) => this.handleSetCameraMode(event),
       onSetCameraView: (event: CustomEvent) => this.handleSetCameraView(event),
-      onToggleAxisGizmo: () => this.handleToggleAxisGizmo(),
       onSceneUpdate: () => this.handleSceneUpdate(),
     });
 
@@ -309,6 +326,23 @@ export class SceneManager {
     });
   }
 
+  // Camera mode and gizmo visibility are plain store state; subscribe directly
+  // instead of routing them through window events.
+  private subscribeToCameraStore(): void {
+    this.cameraStoreUnsubscribe = useCameraStore.subscribe((state, prevState) => {
+      if (!prevState) return;
+
+      if (state.isOrthographicCamera !== prevState.isOrthographicCamera) {
+        this.cameraController.setCameraMode(state.isOrthographicCamera);
+        this.postProcessManager.updateCameraReference();
+      }
+
+      if (state.showAxisGizmo !== prevState.showAxisGizmo) {
+        this.axisGizmo.updateVisibility(state.showAxisGizmo);
+      }
+    });
+  }
+
   private subscribeToPreferencesStore(): void {
     this.preferencesStoreUnsubscribe = usePreferencesStore.subscribe((state, prevState) => {
       if (!prevState) return;
@@ -325,6 +359,10 @@ export class SceneManager {
         this.axisGizmo.updateFromPreferences(state.guides.axisGizmo, prevState.guides.axisGizmo);
       }
 
+      if (state.guides && prevState.guides && state.guides.groundPlane && prevState.guides.groundPlane) {
+        this.groundPlane.updateFromPreferences(state.guides.groundPlane, prevState.guides.groundPlane);
+      }
+
       if (state.renderer && prevState.renderer) {
         this.updateRendererFromPreferences(state.renderer, prevState.renderer);
       }
@@ -336,6 +374,7 @@ export class SceneManager {
   }
 
   private startRenderLoop(): void {
+    this.setupContextLossRecovery();
     let isRendering = false;
 
     const render = () => {
@@ -348,7 +387,6 @@ export class SceneManager {
       isRendering = true;
 
       try {
-        this.handleWebGLContextLoss();
         this.cameraController.controls.update();
         this.axisGizmo.updateAxisGizmo();
 
@@ -367,45 +405,24 @@ export class SceneManager {
     render();
   }
 
-  private handleGetCameraData(event: CustomEvent): void {
-    if (!this.isValidGetCameraDataEvent(event)) return;
-
-    if (this.cameraController.getCurrentCamera() && this.cameraController.controls) {
-      const cameraData = {
-        position: [
-          this.cameraController.getCurrentCamera().position.x,
-          this.cameraController.getCurrentCamera().position.y,
-          this.cameraController.getCurrentCamera().position.z,
-        ],
-        target: [
-          this.cameraController.controls.target.x,
-          this.cameraController.controls.target.y,
-          this.cameraController.controls.target.z,
-        ],
-      };
-      this.setCameraDataOnEvent(event, cameraData);
-    }
+  private getCameraPose(): CameraPose | null {
+    const camera = this.cameraController.getCurrentCamera();
+    if (!camera || !this.cameraController.controls) return null;
+    const target = this.cameraController.controls.target;
+    return {
+      position: [camera.position.x, camera.position.y, camera.position.z],
+      target: [target.x, target.y, target.z],
+      fov: this.isPerspectiveCamera(camera) ? camera.fov : undefined,
+      isOrthographic: useCameraStore.getState().isOrthographicCamera,
+    };
   }
 
-  private handleSetCameraData(event: CustomEvent): void {
-    if (!this.isValidSetCameraDataEvent(event)) return;
-
-    const cameraData = event.detail;
-    if (this.cameraController.getCurrentCamera() && this.cameraController.controls) {
-      this.cameraController
-        .getCurrentCamera()
-        .position.set(cameraData.position[0], cameraData.position[1], cameraData.position[2]);
-      this.cameraController.controls.target.set(cameraData.target[0], cameraData.target[1], cameraData.target[2]);
-      this.cameraController.controls.update();
-    }
-  }
-
-  private handleSetCameraMode(event: CustomEvent): void {
-    if (!this.isValidSetCameraModeEvent(event)) return;
-
-    const { isOrthographic } = event.detail;
-    this.cameraController.setCameraMode(isOrthographic);
-    this.postProcessManager.updateCameraReference();
+  private setCameraPose(pose: CameraPose): void {
+    const camera = this.cameraController.getCurrentCamera();
+    if (!camera || !this.cameraController.controls) return;
+    camera.position.set(pose.position[0], pose.position[1], pose.position[2]);
+    this.cameraController.controls.target.set(pose.target[0], pose.target[1], pose.target[2]);
+    this.cameraController.controls.update();
   }
 
   private handleSetCameraView(event: CustomEvent): void {
@@ -415,13 +432,6 @@ export class SceneManager {
     this.cameraController.setCameraView(view);
     const gridPlane = this.cameraController.getGridPlaneForView(view);
     this.gridSystem.showGridPlane(gridPlane);
-  }
-
-  private handleToggleAxisGizmo(): void {
-    // showAxisGizmo is flipped in the store before this event fires, so apply the
-    // current value directly (inverting it here is what desynced the gizmo before).
-    const { showAxisGizmo } = useUIStore.getState();
-    this.axisGizmo.updateVisibility(showAxisGizmo);
   }
 
   private sceneUpdateTimeout: number | null = null;
@@ -492,6 +502,7 @@ export class SceneManager {
   private updateSceneBackground(): void {
     if (!this.scene) return;
 
+    const previousBackground = this.scene.background;
     const { isDarkTheme } = useUIStore.getState();
     const { renderer: rendererPrefs } = usePreferencesStore.getState();
 
@@ -534,6 +545,11 @@ export class SceneManager {
 
       this.scene.background = new THREE.Color(backgroundColorHex);
     }
+
+    // Replaced gradient textures hold GPU memory until disposed.
+    if (previousBackground instanceof THREE.Texture && previousBackground !== this.scene.background) {
+      previousBackground.dispose();
+    }
   }
 
   private applyToneMappingDirectly(toneMapping: PreferencesState["materials"]["toneMapping"]): void {
@@ -566,33 +582,8 @@ export class SceneManager {
     return camera instanceof THREE.OrthographicCamera;
   }
 
-  private isValidGetCameraDataEvent(event: CustomEvent): boolean {
-    return event && typeof event === "object";
-  }
-
-  private isValidSetCameraDataEvent(event: CustomEvent): boolean {
-    return (
-      event &&
-      event.detail &&
-      event.detail.position &&
-      Array.isArray(event.detail.position) &&
-      event.detail.position.length === 3 &&
-      event.detail.target &&
-      Array.isArray(event.detail.target) &&
-      event.detail.target.length === 3
-    );
-  }
-
-  private isValidSetCameraModeEvent(event: CustomEvent): boolean {
-    return event && event.detail && typeof event.detail.isOrthographic === "boolean";
-  }
-
   private isValidSetCameraViewEvent(event: CustomEvent): boolean {
     return event && event.detail && typeof event.detail.view === "string";
-  }
-
-  private setCameraDataOnEvent(event: CustomEvent, cameraData: any): void {
-    (event as any).cameraData = cameraData;
   }
 
   private completeInitialization(): void {
@@ -615,20 +606,21 @@ export class SceneManager {
     throw new Error(`SceneManager initialization failed: ${errorMessage}`);
   }
 
-  private handleWebGLContextLoss(): void {
-    const gl = this._renderer.getContext();
-    if (gl.isContextLost()) {
-      this.logError("WebGL context lost", "Attempting recovery");
-
-      this._renderer.forceContextRestore();
-
-      setTimeout(() => {
-        if (!gl.isContextLost()) {
-          this.logError("WebGL context restored", "Recovery successful");
-          this.reinitializeAfterContextRestore();
-        }
-      }, 100);
-    }
+  // Event-driven context-loss recovery (replaces per-frame isContextLost polling):
+  // preventDefault on loss tells the browser we handle restoration, which makes
+  // webglcontextrestored fire; reinitialization runs there.
+  private handleContextLost = (event: Event): void => {
+    event.preventDefault();
+    this.logError("WebGL context lost", "Waiting for restore");
+  };
+  private handleContextRestored = (): void => {
+    this.logError("WebGL context restored", "Recovery successful");
+    this.reinitializeAfterContextRestore();
+  };
+  private setupContextLossRecovery(): void {
+    const canvas = this._renderer.domElement;
+    canvas.addEventListener("webglcontextlost", this.handleContextLost);
+    canvas.addEventListener("webglcontextrestored", this.handleContextRestored);
   }
 
   private reinitializeAfterContextRestore(): void {

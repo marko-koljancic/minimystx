@@ -1,2 +1,2 @@
 export { EventManager } from "./EventManager";
-export type { IEventManager, EventManagerDependencies, CustomEventData } from "./EventTypes";
+export type { IEventManager, EventManagerDependencies } from "./EventTypes";

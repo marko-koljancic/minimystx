@@ -77,89 +77,6 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
   }, []);
 
   const handleConfirmReset = useCallback(() => {
-    const defaultPrefs: PreferencesState = {
-      units: {
-        displayUnit: "m",
-      },
-      renderer: {
-        antialiasing: "fxaa",
-        pixelRatioCap: 2.0,
-        postProcessing: {
-          enabled: false,
-          passes: [],
-          bloomStrength: 0.5,
-          ssaoKernelRadius: 16,
-          ssaoMinDistance: 0.005,
-          ssaoMaxDistance: 0.1,
-          ssaoIntensity: 1.0,
-        },
-        background: {
-          type: "single",
-          color: "#191919",
-        },
-      },
-      materials: {
-        defaultMaterial: "meshStandard",
-        toneMapping: "None",
-        exposure: 1.0,
-        sRGBEncoding: true,
-      },
-      camera: {
-        defaultType: "perspective",
-        perspectiveFOV: 75,
-        orthoScale: 10,
-        clippingNear: 0.1,
-        clippingFar: 1000,
-        orbitControls: {
-          rotateSpeed: 1.0,
-          panSpeed: 1.0,
-          dollySpeed: 1.0,
-          dampingEnabled: true,
-        },
-      },
-      guides: {
-        grid: {
-          enabled: true,
-          majorSpacing: 10.0,
-          minorSubdivisions: 5,
-          majorGridLines: 10,
-        },
-        axisGizmo: {
-          enabled: true,
-          size: "Small",
-        },
-        groundPlane: {
-          enabled: false,
-          shadowsEnabled: false,
-          elevation: -0.001,
-        },
-      },
-      screenshot: {
-        captureArea: "viewport",
-        cameraSource: "active",
-        resolution: {
-          preset: "2x",
-        },
-        overlays: {
-          transparentBackground: false,
-          grid: true,
-          gizmos: true,
-          stats: false,
-        },
-        colorManagement: {
-          embedSRGB: true,
-          bakeToneMapping: true,
-        },
-        fileNaming: {
-          template: "minimystx-screenshot-{date}-{time}-{width}x{height}.png",
-        },
-        captureFlow: {
-          countdown: "off",
-          restoreViewport: true,
-        },
-      },
-    };
-
     const store = usePreferencesStore.getState();
     store.resetToDefaults();
     setLocalPreferences(usePreferencesStore.getState());
@@ -189,15 +106,21 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
 
   const availableTabs: PreferencesTabType[] = ["units", "renderer", "materials", "camera", "guides", "screenshot"];
 
-  const updateTabPreferences = useCallback((tabKey: keyof PreferencesState, updates: any) => {
-    setLocalPreferences((prev) => ({
-      ...prev,
-      [tabKey]: {
-        ...prev[tabKey],
-        ...updates,
-      },
-    }));
-  }, []);
+  const updateTabPreferences = useCallback(
+    <K extends keyof PreferencesState>(tabKey: K, updates: Partial<PreferencesState[K]>) => {
+      setLocalPreferences(
+        (prev) =>
+          ({
+            ...prev,
+            [tabKey]: {
+              ...prev[tabKey],
+              ...updates,
+            },
+          }) as PreferencesState
+      );
+    },
+    []
+  );
 
   const renderTabContent = () => {
     return (
@@ -208,42 +131,42 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
               return (
                 <UnitsTab
                   preferences={localPreferences[activeTab]}
-                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                  onChange={(updates) => updateTabPreferences(activeTab, updates)}
                 />
               );
             case "renderer":
               return (
                 <RendererTab
                   preferences={localPreferences[activeTab]}
-                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                  onChange={(updates) => updateTabPreferences(activeTab, updates)}
                 />
               );
             case "materials":
               return (
                 <MaterialsTab
                   preferences={localPreferences[activeTab]}
-                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                  onChange={(updates) => updateTabPreferences(activeTab, updates)}
                 />
               );
             case "camera":
               return (
                 <CameraTab
                   preferences={localPreferences[activeTab]}
-                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                  onChange={(updates) => updateTabPreferences(activeTab, updates)}
                 />
               );
             case "guides":
               return (
                 <GuidesTab
                   preferences={localPreferences.guides}
-                  onChange={(updates: any) => updateTabPreferences("guides", updates)}
+                  onChange={(updates) => updateTabPreferences("guides", updates)}
                 />
               );
             case "screenshot":
               return (
                 <ScreenshotTab
                   preferences={localPreferences[activeTab]}
-                  onChange={(updates: any) => updateTabPreferences(activeTab, updates)}
+                  onChange={(updates) => updateTabPreferences(activeTab, updates)}
                 />
               );
           }

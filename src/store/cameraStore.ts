@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { emitAppEvent } from "./events";
 
 type CameraView = "3d" | "top" | "front" | "left" | "right" | "bottom";
 
@@ -15,6 +16,7 @@ interface CameraActions {
   setCameraView: (view: "top" | "front" | "left" | "right" | "bottom") => void;
   setCurrentCameraView: (view: CameraView) => void;
   toggleAxisGizmo: () => void;
+  resetToDefaults: () => void;
 }
 
 type CameraStore = CameraState & CameraActions;
@@ -51,6 +53,9 @@ export const useCameraStore = create<CameraStore>()(
           throw new Error(`Invalid camera view: ${view}`);
         }
         set({ currentCameraView: view });
+        // Snapping stays an event (not derived state): re-selecting the same view
+        // must re-snap the camera even though the stored value did not change.
+        emitAppEvent("minimystx:setCameraView", { view });
       },
 
       setCurrentCameraView: (view: CameraView) => {
@@ -62,6 +67,10 @@ export const useCameraStore = create<CameraStore>()(
 
       toggleAxisGizmo: () => {
         set((state) => ({ showAxisGizmo: !state.showAxisGizmo }));
+      },
+
+      resetToDefaults: () => {
+        set({ isOrthographicCamera: false, currentCameraView: "3d", showAxisGizmo: true });
       },
     }),
     {

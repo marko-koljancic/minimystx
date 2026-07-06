@@ -168,7 +168,7 @@ export function GuidesTab({ preferences, onChange }: GuidesTabProps) {
                   }}
                   onChange={(value) =>
                     onChange({
-                      axisGizmo: { ...preferences.axisGizmo, size: value as any },
+                      axisGizmo: { ...preferences.axisGizmo, size: value as typeof preferences.axisGizmo.size },
                     })
                   }
                   disabled={!preferences.axisGizmo.enabled}

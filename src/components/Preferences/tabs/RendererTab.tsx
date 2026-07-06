@@ -264,7 +264,7 @@ export function RendererTab({ preferences, onChange }: RendererTabProps) {
                   onChange({
                     background: {
                       ...preferences.background,
-                      type: value as any,
+                      type: value as typeof preferences.background.type,
                     },
                   })
                 }

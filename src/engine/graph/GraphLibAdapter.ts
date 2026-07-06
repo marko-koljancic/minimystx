@@ -2,17 +2,25 @@ import { Graph, alg } from "@dagrejs/graphlib";
 export interface GraphNode {
   id: string;
   [key: string]: unknown;
-  isDirty?(): boolean;
-  cook?(): Promise<void> | void;
 }
 export class GraphLibAdapter {
   private graph = new Graph({ directed: true });
   private nodeObjects: Map<string, GraphNode> = new Map();
   private inputConnections: Map<string, Map<string, { sourceNodeId: string; sourceOutput: string }>> = new Map();
   private outputConnections: Map<string, Map<string, Array<{ targetNodeId: string; targetInput: string }>>> = new Map();
+  // Single-generation memo for traversal results, invalidated by any topology
+  // mutation. A param edit re-reads the same cone several times per frame; this
+  // makes those repeats free without any multi-version bookkeeping.
+  private predecessorsCache: Map<string, string[]> = new Map();
+  private fullTopoOrder: string[] | null = null;
+  private bumpTopology(): void {
+    this.predecessorsCache.clear();
+    this.fullTopoOrder = null;
+  }
   addNode(node: GraphNode): void {
     this.nodeObjects.set(node.id, node);
     this.graph.setNode(node.id);
+    this.bumpTopology();
   }
   removeNode(nodeId: string): void {
     const nodeData = this.graph.node(nodeId);
@@ -25,6 +33,7 @@ export class GraphLibAdapter {
     });
     this.graph.removeNode(nodeId);
     this.nodeObjects.delete(nodeId);
+    this.bumpTopology();
   }
   connect(sourceId: string, targetId: string): boolean {
     if (sourceId === targetId) {
@@ -37,6 +46,7 @@ export class GraphLibAdapter {
       return false;
     }
     this.graph.setEdge(sourceId, targetId);
+    this.bumpTopology();
     return true;
   }
   connectTyped(sourceNodeId: string, sourceOutput: string, targetNodeId: string, targetInput: string): boolean {
@@ -64,6 +74,7 @@ export class GraphLibAdapter {
   }
   disconnect(sourceId: string, targetId: string): void {
     this.graph.removeEdge(sourceId, targetId);
+    this.bumpTopology();
   }
   disconnectTyped(targetNodeId: string, targetInput: string): boolean {
     const inputConnection = this.inputConnections.get(targetNodeId)?.get(targetInput);
@@ -108,36 +119,31 @@ export class GraphLibAdapter {
     }
     return false;
   }
-  getInputSource(nodeId: string, inputName: string): { sourceNodeId: string; sourceOutput: string } | null {
-    return this.inputConnections.get(nodeId)?.get(inputName) || null;
-  }
-  getOutputTargets(nodeId: string, outputName: string): Array<{ targetNodeId: string; targetInput: string }> {
-    return this.outputConnections.get(nodeId)?.get(outputName) || [];
-  }
   getNodeInputConnections(nodeId: string): Map<string, { sourceNodeId: string; sourceOutput: string }> {
     return this.inputConnections.get(nodeId) || new Map();
   }
-  getNodeOutputConnections(nodeId: string): Map<string, Array<{ targetNodeId: string; targetInput: string }>> {
-    return this.outputConnections.get(nodeId) || new Map();
-  }
+  // Adding source -> target closes a cycle exactly when target can already reach
+  // source. A DFS over live successors replaces the previous full-graph copy plus
+  // findCycles, which made scene import O(E * (V + E)).
   wouldCreateCycle(sourceId: string, targetId: string): boolean {
-    const testGraph = new Graph({ directed: true });
-    this.graph.nodes().forEach((nodeId) => {
-      testGraph.setNode(nodeId);
-    });
-    this.graph.edges().forEach((edge) => {
-      testGraph.setEdge(edge.v, edge.w);
-    });
-    testGraph.setEdge(sourceId, targetId);
-    try {
-      const cycles = alg.findCycles(testGraph);
-      return cycles.length > 0;
-    } catch (error) {
-      return true;
+    if (sourceId === targetId) return true;
+    const visited = new Set<string>();
+    const stack = [targetId];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      if (current === sourceId) return true;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      const successors = this.graph.successors(current) || [];
+      for (const next of successors) {
+        if (!visited.has(next)) stack.push(next);
+      }
     }
+    return false;
   }
   getAllPredecessors(nodeId: string): GraphNode[] {
-    try {
+    let ids = this.predecessorsCache.get(nodeId);
+    if (!ids) {
       const visited = new Set<string>();
       const result: string[] = [];
       const traverse = (currentId: string) => {
@@ -151,19 +157,10 @@ export class GraphLibAdapter {
         }
       };
       traverse(nodeId);
-      return result.map((id: string) => this.nodeObjects.get(id)).filter(Boolean) as GraphNode[];
-    } catch (error) {
-      return this.getDirectPredecessors(nodeId);
+      ids = result;
+      this.predecessorsCache.set(nodeId, ids);
     }
-  }
-  getAllSuccessors(nodeId: string): GraphNode[] {
-    try {
-      const successorIds = alg.postorder(this.graph, [nodeId]);
-      const filteredIds = successorIds.filter((id: string) => id !== nodeId);
-      return filteredIds.map((id: string) => this.nodeObjects.get(id)).filter(Boolean) as GraphNode[];
-    } catch (error) {
-      return this.getDirectSuccessors(nodeId);
-    }
+    return ids.map((id: string) => this.nodeObjects.get(id)).filter(Boolean) as GraphNode[];
   }
   getDirectPredecessors(nodeId: string): GraphNode[] {
     const predecessorIds = this.graph.predecessors(nodeId) || [];
@@ -172,15 +169,6 @@ export class GraphLibAdapter {
   getDirectSuccessors(nodeId: string): GraphNode[] {
     const successorIds = this.graph.successors(nodeId) || [];
     return successorIds.map((id) => this.nodeObjects.get(id)).filter(Boolean) as GraphNode[];
-  }
-  hasConnection(sourceId: string, targetId: string): boolean {
-    return this.graph.hasEdge(sourceId, targetId);
-  }
-  getNode(nodeId: string): GraphNode | undefined {
-    return this.nodeObjects.get(nodeId);
-  }
-  getAllNodes(): GraphNode[] {
-    return Array.from(this.nodeObjects.values());
   }
   getAllEdges(): { source: string; target: string }[] {
     return this.graph.edges().map((edge) => ({
@@ -202,24 +190,19 @@ export class GraphLibAdapter {
     }
     return edges;
   }
+  // Subset sorts filter one memoized full-graph topsort by membership instead of
+  // building an O(k^2) subgraph per call.
   topologicalSort(nodeIds?: string[]): string[] {
     try {
-      if (nodeIds) {
-        const subGraph = new Graph({ directed: true });
-        const validNodeIds = nodeIds.filter((id) => this.graph.hasNode(id));
-        validNodeIds.forEach((id) => subGraph.setNode(id));
-        validNodeIds.forEach((sourceId) => {
-          validNodeIds.forEach((targetId) => {
-            if (this.graph.hasEdge(sourceId, targetId)) {
-              subGraph.setEdge(sourceId, targetId);
-            }
-          });
-        });
-        return alg.topsort(subGraph);
-      } else {
-        return alg.topsort(this.graph);
+      if (!this.fullTopoOrder) {
+        this.fullTopoOrder = alg.topsort(this.graph);
       }
-    } catch (error) {
+      if (!nodeIds) {
+        return [...this.fullTopoOrder];
+      }
+      const wanted = new Set(nodeIds.filter((id) => this.graph.hasNode(id)));
+      return this.fullTopoOrder.filter((id) => wanted.has(id));
+    } catch {
       return nodeIds || Array.from(this.nodeObjects.keys());
     }
   }
@@ -230,122 +213,18 @@ export class GraphLibAdapter {
     try {
       // The render cone is the render target plus every node upstream that feeds
       // it (its transitive predecessors), since data flows source -> target.
-      // alg.preorder walks successors (downstream), which is the wrong direction.
       const predecessorIds = this.getAllPredecessors(renderTargetId).map((node) => node.id);
       return [renderTargetId, ...predecessorIds];
-    } catch (error) {
+    } catch {
       return [renderTargetId];
     }
-  }
-  getSubflowDependencies(_geoNodeId: string, activeOutputId: string): string[] {
-    return this.getRenderCone(activeOutputId);
   }
   getDownstreamNodes(nodeId: string): string[] {
     try {
       const successorIds = alg.postorder(this.graph, [nodeId]);
       return successorIds.filter((id) => id !== nodeId); // Exclude the node itself
-    } catch (error) {
+    } catch {
       return [];
     }
-  }
-  canReachNode(fromNodeId: string, toNodeId: string): boolean {
-    try {
-      const cone = this.getRenderCone(toNodeId);
-      return cone.includes(fromNodeId);
-    } catch (error) {
-      return false;
-    }
-  }
-  getAffectedByConnection(_sourceId: string, targetId: string, added: boolean): string[] {
-    if (added) {
-      return this.getDownstreamNodes(targetId);
-    } else {
-      return [targetId, ...this.getDownstreamNodes(targetId)];
-    }
-  }
-  validateGraph(): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    try {
-      const cycles = alg.findCycles(this.graph);
-      cycles.forEach((cycle, index) => {
-        errors.push(`Cycle ${index + 1} detected: ${cycle.join(" -> ")}`);
-      });
-    } catch (error) {
-      errors.push(`Graph validation failed: ${error}`);
-    }
-    for (const nodeId of this.graph.nodes()) {
-      if (!this.nodeObjects.has(nodeId)) {
-        errors.push(`Graph node ${nodeId} missing from node objects map`);
-      }
-    }
-    for (const [nodeId] of this.nodeObjects) {
-      if (!this.graph.hasNode(nodeId)) {
-        errors.push(`Node object ${nodeId} missing from graph structure`);
-      }
-    }
-    return {
-      valid: errors.length === 0,
-      errors,
-    };
-  }
-  getStats(): {
-    nodeCount: number;
-    connectionCount: number;
-    cycleCount: number;
-    maxDepth: number;
-  } {
-    const nodeCount = this.graph.nodeCount();
-    const edgeCount = this.graph.edgeCount();
-    let cycleCount = 0;
-    let maxDepth = 0;
-    try {
-      const cycles = alg.findCycles(this.graph);
-      cycleCount = cycles.length;
-    } catch (error) {
-      cycleCount = -1;
-    }
-    try {
-      const roots = this.graph.nodes().filter((nodeId) => {
-        const predecessors = this.graph.predecessors(nodeId);
-        return !predecessors || predecessors.length === 0;
-      });
-      for (const root of roots) {
-        const depth = this.calculateMaxDepthFromNode(root);
-        maxDepth = Math.max(maxDepth, depth);
-      }
-    } catch (error) {
-      maxDepth = -1;
-    }
-    return {
-      nodeCount,
-      connectionCount: edgeCount,
-      cycleCount,
-      maxDepth,
-    };
-  }
-  private calculateMaxDepthFromNode(rootNodeId: string): number {
-    const visited = new Set<string>();
-    const dfs = (currentId: string): number => {
-      if (visited.has(currentId)) return 0;
-      visited.add(currentId);
-      const successors = this.graph.successors(currentId) || [];
-      let maxChildDepth = 0;
-      for (const successorId of successors) {
-        const childDepth = dfs(successorId);
-        maxChildDepth = Math.max(maxChildDepth, childDepth);
-      }
-      return maxChildDepth + 1;
-    };
-    return dfs(rootNodeId);
-  }
-  copy(): GraphLibAdapter {
-    const newAdapter = new GraphLibAdapter();
-    for (const [_nodeId, nodeObject] of this.nodeObjects) {
-      newAdapter.addNode(nodeObject);
-    }
-    for (const edge of this.graph.edges()) {
-      newAdapter.connect(edge.v, edge.w);
-    }
-    return newAdapter;
   }
 }

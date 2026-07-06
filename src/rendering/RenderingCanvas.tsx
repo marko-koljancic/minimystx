@@ -79,7 +79,9 @@ export default function RenderingCanvas() {
         imageUrl,
         filename,
       });
-    } catch (error) {}
+    } catch (error) {
+      console.error("Screenshot capture failed:", error);
+    }
   }, [generateFilename, calculateScreenshotDimensions, screenshotPreferences.overlays]);
   const handleCloseModal = useCallback(() => {
     setScreenshotModal({

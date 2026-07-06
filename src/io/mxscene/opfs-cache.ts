@@ -84,7 +84,9 @@ export class OpfsAssetCache implements AssetCache {
         for await (const [name] of this.assetsDir as any) {
           try {
             await this.assetsDir.removeEntry(name);
-          } catch (error) {}
+          } catch {
+            // Keep clearing the remaining entries even if one removal fails.
+          }
         }
       } catch (error) {
         throw new OpfsError(`Failed to clear asset cache: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -132,8 +134,8 @@ export class OpfsAssetCache implements AssetCache {
       if (this.assetsDir) {
         try {
           await this.assetsDir.removeEntry(testHash);
-        } catch {
-          console.error("Error removing test entry:", error);
+        } catch (removeError) {
+          console.error("Error removing test entry:", removeError);
         }
       }
       return retrieved !== null && new Uint8Array(retrieved).every((val, i) => val === testData[i]);

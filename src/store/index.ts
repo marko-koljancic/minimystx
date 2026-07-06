@@ -6,10 +6,6 @@ export {
   useSetFocusedCanvas,
   useFitView,
   useFitNodes,
-  useSetOrthographicCamera,
-  useToggleCameraMode,
-  useToggleAxisGizmo,
-  useSetCameraView,
   useSelectedCategoryIndex,
   useSelectedNodeIndex,
   usePaletteSearchQuery,
@@ -23,11 +19,6 @@ export {
   useSetCurrentContext,
   useNavigateToRoot,
   useNavigateToSubFlow,
-  useSaveViewportState,
-  useGetViewportState,
-  useSaveNodePositions,
-  useGetNodePositions,
-  useToggleRendererMaximized,
   useSetFlowViewMode,
   useGetFlowViewMode,
   getContextKey,
@@ -35,7 +26,17 @@ export {
 export type { PreferencesState } from "./preferencesStore";
 
 export { usePreferencesStore } from "./preferencesStore";
-export { useCameraStore, useIsOrthographicCamera, useCurrentCameraView, useShowAxisGizmo } from "./cameraStore";
+export {
+  useCameraStore,
+  useIsOrthographicCamera,
+  useCurrentCameraView,
+  useShowAxisGizmo,
+  useSetOrthographicCamera,
+  useToggleCameraMode,
+  useSetCameraView,
+  useSetCurrentCameraView,
+  useToggleAxisGizmo,
+} from "./cameraStore";
 export {
   useLayoutStore,
   useDrawerCollapsed,
@@ -51,5 +52,14 @@ export {
   useTogglePalettePinned,
   useSetPalettePosition,
   useIsRendererMaximized,
+  useToggleRendererMaximized,
 } from "./layoutStore";
-export { eventBus } from "./eventBus";
+export {
+  useDocumentStore,
+  useSaveViewportState,
+  useGetViewportState,
+  useSaveNodePositions,
+  useGetNodePositions,
+} from "./documentStore";
+export { emitAppEvent, onAppEvent } from "./events";
+export type { AppEvents } from "./events";

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { emitAppEvent } from "./events";
 
 interface LayoutState {
   leftPaneWidth: number;
@@ -99,7 +100,13 @@ export const useLayoutStore = create<LayoutStore>()(
       },
 
       toggleRendererMaximized: () => {
+        // The flow canvas unmounts/remounts around the maximize toggle; save its
+        // viewport first and restore it once the layout has settled.
+        emitAppEvent("minimystx:saveCurrentViewport");
         set((state) => ({ isRendererMaximized: !state.isRendererMaximized }));
+        setTimeout(() => {
+          emitAppEvent("minimystx:restoreViewportAfterMaximize");
+        }, 100);
       },
 
       resetToDefaults: () => {

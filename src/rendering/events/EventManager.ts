@@ -9,11 +9,7 @@ export class EventManager implements IEventManager {
     if (this.isSetup) return;
 
     window.addEventListener("minimystx:fitView", this.dependencies.onFitView);
-    window.addEventListener("minimystx:getCameraData", this.dependencies.onGetCameraData as EventListener);
-    window.addEventListener("minimystx:setCameraData", this.dependencies.onSetCameraData as EventListener);
-    window.addEventListener("minimystx:setCameraMode", this.dependencies.onSetCameraMode as EventListener);
     window.addEventListener("minimystx:setCameraView", this.dependencies.onSetCameraView as EventListener);
-    window.addEventListener("minimystx:toggleAxisGizmo", this.dependencies.onToggleAxisGizmo);
     window.addEventListener("minimystx:sceneUpdated", this.dependencies.onSceneUpdate);
 
     this.isSetup = true;
@@ -23,11 +19,7 @@ export class EventManager implements IEventManager {
     if (!this.isSetup) return;
 
     window.removeEventListener("minimystx:fitView", this.dependencies.onFitView);
-    window.removeEventListener("minimystx:getCameraData", this.dependencies.onGetCameraData as EventListener);
-    window.removeEventListener("minimystx:setCameraData", this.dependencies.onSetCameraData as EventListener);
-    window.removeEventListener("minimystx:setCameraMode", this.dependencies.onSetCameraMode as EventListener);
     window.removeEventListener("minimystx:setCameraView", this.dependencies.onSetCameraView as EventListener);
-    window.removeEventListener("minimystx:toggleAxisGizmo", this.dependencies.onToggleAxisGizmo);
     window.removeEventListener("minimystx:sceneUpdated", this.dependencies.onSceneUpdate);
 
     this.isSetup = false;

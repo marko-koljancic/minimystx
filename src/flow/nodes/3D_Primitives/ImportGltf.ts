@@ -3,7 +3,7 @@ import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import type { GeneralProps, TransformProps, RenderingProps } from "../props";
 import { createParameterMetadata, extractDefaultValues } from "../../../engine/parameterUtils";
-import type { NodeParams, ComputeContext } from "../../../engine/graphStore";
+import type { NodeParams } from "../../../engine/graphStore";
 import { createGeneralParams, createRenderingParams } from "../../../engine/nodeParameterFactories";
 import { getAssetCache } from "../../../io/mxscene/opfs-cache";
 import { hashBytesSHA256 } from "../../../io/mxscene/crypto";
@@ -145,7 +145,9 @@ async function loadGltfFile(file: File | SerializableGltfFile): Promise<Object3D
     if (!(await assetCache.has(assetHash))) {
       await assetCache.put(assetHash, arrayBuffer);
     }
-  } catch (cacheError) {}
+  } catch {
+    // OPFS caching is best-effort; the loaded object is still returned.
+  }
   return object.clone();
 }
 async function loadGltfFromCache(hash: string): Promise<Object3D | null> {
@@ -276,7 +278,9 @@ export const processor = async (
         if (input.object.matrixWorld) {
           loadedObject.applyMatrix4(input.object.matrixWorld);
         }
-      } catch (error) {}
+      } catch {
+        // Applying the input transform is best-effort; the object renders untransformed.
+      }
     }
   }
   return { object: loadedObject, geometry };
@@ -302,42 +306,9 @@ export const importGltfNodeParams: NodeParams = {
   },
   rendering: createRenderingParams(),
 };
-export const importGltfNodeCompute = async (
-  params: Record<string, any>,
-  inputs?: unknown,
-  context?: { nodeId?: string }
-) => {
-  const defaultParams = extractDefaultValues(importGltfNodeParams);
-  const data: ImportGltfNodeData = {
-    general: (params.general as ImportGltfNodeData["general"]) || defaultParams.general,
-    object: (params.object as ImportGltfNodeData["object"]) || defaultParams.object,
-    transform: {
-      position: { x: 0, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1, factor: 1 },
-    },
-    rendering: (params.rendering as ImportGltfNodeData["rendering"]) || defaultParams.rendering,
-  };
-  const inputObject =
-    inputs && Object.keys(inputs).length > 0
-      ? (Object.values(inputs)[0] as { object: Object3D; geometry?: BufferGeometry })
-      : undefined;
-  const result = await processor(data, inputObject);
-  if (result?.object && context?.nodeId) {
-    const finalResult = { ...result, shouldSetAsActiveOutput: true };
-    return finalResult;
-  } else {
-    if (!result?.object) {
-    }
-    if (!context?.nodeId) {
-    }
-  }
-  return result;
-};
 export const importGltfNodeComputeTyped = async (
   params: Record<string, any>,
-  inputs: Record<string, BaseContainer>,
-  context: ComputeContext
+  inputs: Record<string, BaseContainer>
 ): Promise<Record<string, BaseContainer>> => {
   const defaultParams = extractDefaultValues(importGltfNodeParams);
   const data: ImportGltfNodeData = {

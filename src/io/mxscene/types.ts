@@ -27,14 +27,12 @@ export interface SceneJson {
 export interface GraphData {
   nodes: NodeData[];
   edges: EdgeData[];
-  nodeRuntime: Record<string, NodeRuntimeData>;
   positions: Record<string, { x: number; y: number }>;
   subFlows: Record<string, SubFlowData>;
 }
 export interface SubFlowData {
   nodes: NodeData[];
   edges: EdgeData[];
-  nodeRuntime: Record<string, NodeRuntimeData>;
   positions: Record<string, { x: number; y: number }>;
   activeOutputNodeId: string | null;
 }
@@ -49,11 +47,6 @@ export interface EdgeData {
   target: string;
   sourceHandle?: string;
   targetHandle?: string;
-}
-export interface NodeRuntimeData {
-  type: string;
-  params: Record<string, unknown>;
-  inputs: Record<string, unknown>;
 }
 export interface CameraData {
   position: [number, number, number];

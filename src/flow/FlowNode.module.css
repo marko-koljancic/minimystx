@@ -1,0 +1,92 @@
+.nodeContainer {
+  position: relative;
+}
+
+/* Pill variant: primitives, modifiers, imports, lights. */
+.pill {
+  position: relative;
+  width: 9rem;
+  height: 3rem;
+  background-color: var(--geometry-node-background);
+  border-radius: 0.6rem;
+  box-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.2), 0 0.1rem 0.2rem rgba(0, 0, 0, 0.1);
+  transition: border-color 0.2s ease;
+}
+
+.pill:hover {
+  border-color: var(--geometry-node-border-hover);
+}
+
+.pillLabel {
+  position: absolute;
+  left: 9.4rem;
+  top: 0;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-weight: 400;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: ellipsis;
+  max-width: 10rem;
+  z-index: 15;
+}
+
+/* Container variant: the GeoNode square. */
+.square {
+  position: relative;
+  width: 4.8rem;
+  height: 4.8rem;
+  background-color: var(--node-background);
+  border-radius: 0.8rem;
+  box-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.2), 0 0.1rem 0.2rem rgba(0, 0, 0, 0.1);
+}
+
+.squareLabel {
+  color: var(--text-primary);
+  position: absolute;
+  left: 5.4rem;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-weight: 400;
+  font-size: 1.2rem;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.nodeSelected {
+  box-shadow: 0 0 0 0.2rem var(--accent-primary);
+}
+
+.disabled {
+  opacity: 0.65;
+}
+
+.sourceHandle {
+  position: absolute;
+}
+
+.targetHandle {
+  position: absolute;
+}
+
+.handleBlue {
+  background-color: var(--accent-blue);
+  border: 0.1rem solid var(--accent-blue);
+}
+
+.handleGreen {
+  background-color: var(--accent-green);
+  border: 0.1rem solid var(--accent-green);
+}
+
+.handleYellow {
+  background-color: var(--accent-yellow);
+  border: 0.1rem solid var(--accent-yellow);
+}

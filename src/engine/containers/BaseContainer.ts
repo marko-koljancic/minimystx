@@ -8,8 +8,7 @@ export abstract class BaseContainer<T = any> {
   }
   abstract isValid(): boolean;
   abstract clone(): BaseContainer<T>;
-  abstract serialize(): any;
-  abstract getContentHash(): string;
+  abstract serialize(): Record<string, unknown>;
   isType<U extends BaseContainer>(type: new (...args: any[]) => U): this is U {
     return this instanceof type;
   }
@@ -31,7 +30,7 @@ export class GeometryContainer extends BaseContainer<BufferGeometry> {
   clone(): GeometryContainer {
     return new GeometryContainer(this.value.clone());
   }
-  serialize(): any {
+  serialize(): Record<string, unknown> {
     return {
       type: this.type,
       vertexCount: this.value.attributes.position?.count || 0,
@@ -39,14 +38,6 @@ export class GeometryContainer extends BaseContainer<BufferGeometry> {
       hasUVs: !!this.value.attributes.uv,
       boundingBox: this.value.boundingBox,
     };
-  }
-  getContentHash(): string {
-    const positions = this.value.attributes.position;
-    const indices = this.value.index;
-    const vertexCount = positions ? positions.count : 0;
-    const bbox = this.value.boundingBox;
-    const bboxStr = bbox ? `${bbox.min.x},${bbox.min.y},${bbox.min.z},${bbox.max.x},${bbox.max.y},${bbox.max.z}` : "";
-    return `geometry-${vertexCount}-${indices?.count || 0}-${bboxStr}`;
   }
   getVertexCount(): number {
     return this.value.attributes.position?.count || 0;
@@ -73,7 +64,7 @@ export class Object3DContainer extends BaseContainer<Object3D> {
   clone(): Object3DContainer {
     return new Object3DContainer(this.value.clone());
   }
-  serialize(): any {
+  serialize(): Record<string, unknown> {
     return {
       type: this.type,
       childCount: this.value.children.length,
@@ -83,12 +74,6 @@ export class Object3DContainer extends BaseContainer<Object3D> {
       rotation: this.value.rotation.toArray(),
       scale: this.value.scale.toArray(),
     };
-  }
-  getContentHash(): string {
-    const pos = this.value.position;
-    const rot = this.value.rotation;
-    const scale = this.value.scale;
-    return `object3d-${this.value.children.length}-${pos.x},${pos.y},${pos.z}-${rot.x},${rot.y},${rot.z}-${scale.x},${scale.y},${scale.z}`;
   }
 }
 export class NumberContainer extends BaseContainer<number> {
@@ -102,14 +87,11 @@ export class NumberContainer extends BaseContainer<number> {
   clone(): NumberContainer {
     return new NumberContainer(this.value);
   }
-  serialize(): any {
+  serialize(): Record<string, unknown> {
     return {
       type: this.type,
       value: this.value,
     };
-  }
-  getContentHash(): string {
-    return `number-${this.value}`;
   }
 }
 export class Vector3Container extends BaseContainer<Vector3> {
@@ -123,16 +105,13 @@ export class Vector3Container extends BaseContainer<Vector3> {
   clone(): Vector3Container {
     return new Vector3Container(this.value);
   }
-  serialize(): any {
+  serialize(): Record<string, unknown> {
     return {
       type: this.type,
       x: this.value.x,
       y: this.value.y,
       z: this.value.z,
     };
-  }
-  getContentHash(): string {
-    return `vector3-${this.value.x},${this.value.y},${this.value.z}`;
   }
 }
 export class Vector2Container extends BaseContainer<Vector2> {
@@ -146,15 +125,12 @@ export class Vector2Container extends BaseContainer<Vector2> {
   clone(): Vector2Container {
     return new Vector2Container(this.value);
   }
-  serialize(): any {
+  serialize(): Record<string, unknown> {
     return {
       type: this.type,
       x: this.value.x,
       y: this.value.y,
     };
-  }
-  getContentHash(): string {
-    return `vector2-${this.value.x},${this.value.y}`;
   }
 }
 export class ColorContainer extends BaseContainer<Color> {
@@ -168,16 +144,13 @@ export class ColorContainer extends BaseContainer<Color> {
   clone(): ColorContainer {
     return new ColorContainer(this.value);
   }
-  serialize(): any {
+  serialize(): Record<string, unknown> {
     return {
       type: this.type,
       r: this.value.r,
       g: this.value.g,
       b: this.value.b,
     };
-  }
-  getContentHash(): string {
-    return `color-${this.value.r},${this.value.g},${this.value.b}`;
   }
 }
 export class StringContainer extends BaseContainer<string> {
@@ -191,14 +164,11 @@ export class StringContainer extends BaseContainer<string> {
   clone(): StringContainer {
     return new StringContainer(this.value);
   }
-  serialize(): any {
+  serialize(): Record<string, unknown> {
     return {
       type: this.type,
       value: this.value,
     };
-  }
-  getContentHash(): string {
-    return `string-${this.value.length}-${this.value.slice(0, 50)}`;
   }
 }
 export class BooleanContainer extends BaseContainer<boolean> {
@@ -212,15 +182,19 @@ export class BooleanContainer extends BaseContainer<boolean> {
   clone(): BooleanContainer {
     return new BooleanContainer(this.value);
   }
-  serialize(): any {
+  serialize(): Record<string, unknown> {
     return {
       type: this.type,
       value: this.value,
     };
   }
-  getContentHash(): string {
-    return `boolean-${this.value}`;
-  }
+}
+// Resolve a node's primary displayable object from its typed outputs. This is the
+// single unwrapping point for the engine-to-renderer contract: outputs are always
+// container records, and the primary port is "default".
+export function getDefaultObject3D(output: Record<string, BaseContainer> | null | undefined): Object3D | null {
+  const container = output?.default;
+  return container instanceof Object3DContainer ? container.value : null;
 }
 export const ContainerFactory = {
   geometry: (value: BufferGeometry) => new GeometryContainer(value),
@@ -231,7 +205,7 @@ export const ContainerFactory = {
   color: (value: Color) => new ColorContainer(value),
   string: (value: string) => new StringContainer(value),
   boolean: (value: boolean) => new BooleanContainer(value),
-  auto: (value: any): BaseContainer => {
+  auto: (value: unknown): BaseContainer => {
     if (value instanceof BufferGeometry) return new GeometryContainer(value);
     if (value instanceof Object3D) return new Object3DContainer(value);
     if (value instanceof Vector3) return new Vector3Container(value);
@@ -249,20 +223,3 @@ export const ContainerFactory = {
     );
   },
 };
-export class TypeCoercion {
-  static coerce(source: BaseContainer, targetType: ConnectionType): BaseContainer | null {
-    if (source.type === ConnectionType.VECTOR3 && targetType === ConnectionType.COLOR) {
-      const vec = source as Vector3Container;
-      return new ColorContainer(new Color(vec.value.x, vec.value.y, vec.value.z));
-    }
-    if (source.type === ConnectionType.NUMBER && targetType === ConnectionType.STRING) {
-      const num = source as NumberContainer;
-      return new StringContainer(num.value.toString());
-    }
-    if (source.type === ConnectionType.COLOR && targetType === ConnectionType.VECTOR3) {
-      const color = source as ColorContainer;
-      return new Vector3Container(new Vector3(color.value.r, color.value.g, color.value.b));
-    }
-    return null;
-  }
-}

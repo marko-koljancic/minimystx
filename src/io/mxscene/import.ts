@@ -126,11 +126,12 @@ async function storeAssetsInCache(
           continue;
         }
         const assetData = await zipReader.readFile(matchingFile);
-        const computedHash = await hashBytesSHA256(assetData.buffer);
+        // fflate allocates standalone ArrayBuffers; TS 5.7+ types .buffer as ArrayBufferLike
+        const computedHash = await hashBytesSHA256(assetData.buffer as ArrayBuffer);
         if (computedHash !== assetEntry.id) {
           continue;
         }
-        await assetCache.put(assetEntry.id, assetData.buffer);
+        await assetCache.put(assetEntry.id, assetData.buffer as ArrayBuffer);
       } catch (error) {
         console.error("Error storing asset in cache:", error);
       }
@@ -151,21 +152,28 @@ export async function applyImportedScene(result: ImportResult): Promise<void> {
       },
       result
     );
-    const restoredNodeRuntime = updateNodeRuntimeWithRestoredAssets(
-      scene.graph.nodeRuntime,
-      restoredGraph.nodes,
-      restoredGraph.subFlows
-    );
     const { useGraphStore } = await import("../../engine/graphStore");
     const graphStore = useGraphStore.getState();
-    window.dispatchEvent(new CustomEvent("minimystx:sceneLoadingStart"));
     await graphStore.importGraph({
       nodes: restoredGraph.nodes,
       edges: scene.graph.edges,
-      nodeRuntime: restoredNodeRuntime,
+      // Legacy field, ignored by importGraph (node params live on the nodes themselves).
+      nodeRuntime: {},
       positions: scene.graph.positions,
       subFlows: restoredGraph.subFlows,
       rootRenderTarget: null,
+    });
+    // Load the document view data (canvas positions, per-context viewports) so the
+    // flow canvas and the exporter see the saved layout.
+    const { useDocumentStore } = await import("../../store/documentStore");
+    const documentStore = useDocumentStore.getState();
+    documentStore.clearDocument();
+    documentStore.saveNodePositions("root", scene.graph.positions || {});
+    Object.entries(scene.graph.subFlows || {}).forEach(([geoNodeId, subFlow]) => {
+      documentStore.saveNodePositions(`subflow-${geoNodeId}`, subFlow.positions || {});
+    });
+    Object.entries(scene.ui?.viewportStates || {}).forEach(([contextKey, viewport]) => {
+      documentStore.saveViewportState(contextKey, viewport);
     });
     await waitForSceneReady(3000);
     const syncResults = await syncAllSceneState(scene.camera, scene.ui, scene.renderer, {
@@ -173,31 +181,18 @@ export async function applyImportedScene(result: ImportResult): Promise<void> {
       retries: 2,
     });
     const failedSyncs = [];
-    if (!syncResults.camera.success) failedSyncs.push("camera");
-    if (!syncResults.ui.success) failedSyncs.push("ui");
-    if (!syncResults.renderer.success) failedSyncs.push("renderer");
+    if (!syncResults.camera.success) failedSyncs.push(`camera (${syncResults.camera.error})`);
+    if (!syncResults.ui.success) failedSyncs.push(`ui (${syncResults.ui.error})`);
+    if (!syncResults.renderer.success) failedSyncs.push(`renderer (${syncResults.renderer.error})`);
     if (failedSyncs.length > 0) {
-      // To Do fix this
+      console.warn("Import: some scene state could not be restored:", failedSyncs.join(", "));
     }
     if (scene.meta.name && scene.meta.name !== "Untitled Project") {
       document.title = `${scene.meta.name} - Minimystx`;
     } else {
       document.title = "Minimystx";
     }
-    window.dispatchEvent(
-      new CustomEvent("minimystx:sceneLoadingComplete", {
-        detail: {
-          nodesTotalCount: scene.graph.nodes.length,
-          assetsCount: result.manifest.assets.length,
-        },
-      })
-    );
   } catch (error) {
-    window.dispatchEvent(
-      new CustomEvent("minimystx:sceneLoadingError", {
-        detail: { error: error instanceof Error ? error.message : "Unknown error" },
-      })
-    );
     throw new Error(`Failed to restore scene: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -207,8 +202,16 @@ export function selectAndImportMxSceneFile(options: ImportOptions = {}): Promise
     input.type = "file";
     input.accept = ".mxscene";
     input.style.display = "none";
+    // The input stays in the DOM until the picker resolves; removing it while the
+    // native dialog is open detaches the element the change event needs.
+    const cleanup = () => {
+      if (input.parentNode) {
+        document.body.removeChild(input);
+      }
+    };
     input.addEventListener("change", async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
+      cleanup();
       if (!file) {
         resolve(null);
         return;
@@ -226,11 +229,11 @@ export function selectAndImportMxSceneFile(options: ImportOptions = {}): Promise
       }
     });
     input.addEventListener("cancel", () => {
+      cleanup();
       resolve(null);
     });
     document.body.appendChild(input);
     input.click();
-    document.body.removeChild(input);
   });
 }
 export async function createAssetReferencesFromImport(result: ImportResult): Promise<AssetReference[]> {
@@ -276,6 +279,8 @@ async function restoreAssetsFromReferences(
       if ((node.type === "importObjNode" || node.type === "importGltfNode") && node.params?.object) {
         const updatedParams = { ...node.params };
         const objectParams = updatedParams.object as any;
+        // The only case needing work: an exported asset reference without file
+        // content. Nodes that already carry a file (or have neither) pass through.
         if (objectParams?.assetHash && !objectParams?.file) {
           try {
             const restoredFile = await restoreAssetFromHash(objectParams.assetHash, importResult, assetCache);
@@ -285,23 +290,19 @@ async function restoreAssetsFromReferences(
                 file: restoredFile,
               };
             } else {
+              console.warn(`Import: asset ${objectParams.assetHash} for node ${node.id} could not be restored`);
               updatedParams.object = {
                 ...objectParams,
                 assetHash: null,
               };
             }
           } catch (error) {
+            console.warn(`Import: restoring asset for node ${node.id} failed:`, error);
             updatedParams.object = {
               ...objectParams,
               assetHash: null,
             };
           }
-        } else if (objectParams?.file) {
-          // To Do fix this
-        } else if (objectParams?.assetHash) {
-          // To Do fix this
-        } else {
-          // To Do fix this
         }
         return { ...node, params: updatedParams };
       }
@@ -324,23 +325,19 @@ async function restoreAssetsFromReferences(
                   file: restoredFile,
                 };
               } else {
+                console.warn(`Import: asset ${objectParams.assetHash} for node ${node.id} could not be restored`);
                 updatedParams.object = {
                   ...objectParams,
                   assetHash: null,
                 };
               }
             } catch (error) {
+              console.warn(`Import: restoring asset for node ${node.id} failed:`, error);
               updatedParams.object = {
                 ...objectParams,
                 assetHash: null,
               };
             }
-          } else if (objectParams?.file) {
-            // To Do fix this
-          } else if (objectParams?.assetHash) {
-            // To Do fix this
-          } else {
-            // To Do fix this
           }
           return { ...node, params: updatedParams };
         }
@@ -356,32 +353,6 @@ async function restoreAssetsFromReferences(
     nodes: restoredNodes,
     subFlows: restoredSubFlows,
   };
-}
-function updateNodeRuntimeWithRestoredAssets(
-  originalNodeRuntime: Record<string, any>,
-  restoredNodes: Array<{ id: string; type: string; params?: Record<string, unknown> }>,
-  restoredSubFlows: Record<string, any>
-): Record<string, any> {
-  const updatedNodeRuntime = { ...originalNodeRuntime };
-  restoredNodes.forEach((node) => {
-    if (node.type === "importObjNode" && updatedNodeRuntime[node.id]) {
-      updatedNodeRuntime[node.id] = {
-        ...updatedNodeRuntime[node.id],
-        params: node.params,
-      };
-    }
-  });
-  Object.entries(restoredSubFlows).forEach(([, subFlow]) => {
-    subFlow.nodes.forEach((node: any) => {
-      if (node.type === "importObjNode" && subFlow.nodeRuntime[node.id]) {
-        subFlow.nodeRuntime[node.id] = {
-          ...subFlow.nodeRuntime[node.id],
-          params: node.params,
-        };
-      }
-    });
-  });
-  return updatedNodeRuntime;
 }
 async function restoreAssetFromHash(
   assetHash: string,
@@ -442,12 +413,14 @@ async function ensureAssetsReady(result: ImportResult): Promise<void> {
     }
   }
   if (missingAssets.length > 0) {
-    // To Do fix this
+    // Proceed anyway: the affected import nodes surface their own compute errors,
+    // and restoreAssetsFromReferences can still pull the bytes from the ZIP itself.
+    console.warn("Import: assets missing from the local cache:", missingAssets);
   }
   try {
     const isHealthy = await assetCache.isHealthy();
     if (!isHealthy) {
-      // To Do fix this
+      console.warn("Import: asset cache health check failed; falling back to in-ZIP assets");
     }
   } catch (error) {
     console.error("Error checking asset cache health:", error);

@@ -43,12 +43,6 @@ export class PostProcessManager implements IPostProcessManager {
         const width = canvas.clientWidth;
         const height = canvas.clientHeight;
 
-        console.log("Initializing SSAO pass:", {
-          width,
-          height,
-          camera: this.dependencies.getCurrentCamera().type,
-        });
-
         this.ssaoPass = new SSAOPass(this.dependencies.scene, this.dependencies.getCurrentCamera(), width, height);
         this.ssaoPass.kernelRadius = Math.min(Math.max(ssaoKernelRadius, 1), 32);
         this.ssaoPass.minDistance = Math.min(Math.max(ssaoMinDistance, 0.001), 0.02);
@@ -63,7 +57,6 @@ export class PostProcessManager implements IPostProcessManager {
         }
 
         this._composer.addPass(this.ssaoPass);
-        console.log("SSAO pass initialized successfully");
       } catch (error) {
         console.error("Failed to initialize SSAO pass:", error);
         this.ssaoPass = null;

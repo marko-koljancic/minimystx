@@ -9,7 +9,7 @@ export enum ConnectionType {
   BOOLEAN = "boolean",
   ANY = "any",
 }
-export interface NodeInput<T = any> {
+export interface NodeInput<T = unknown> {
   name: string;
   type: ConnectionType;
   required: boolean;

@@ -2,6 +2,7 @@ import { PointLight, PointLightHelper, Object3D, Group } from "three";
 import type { GeneralProps, LightProps, ShadowProps, BaseLightRenderingProps, NodeProcessor } from "../props";
 import { createParameterMetadata } from "../../../engine/parameterUtils";
 import type { NodeParams } from "../../../engine/graphStore";
+import { BaseContainer, Object3DContainer } from "../../../engine/containers/BaseContainer";
 import { validateAndFixShadowCamera } from "../../../utils/shadowValidation";
 export interface PointLightNodeData extends Record<string, unknown> {
   general: GeneralProps;
@@ -116,7 +117,7 @@ export const pointLightNodeParams: NodeParams = {
     }),
   },
 };
-export const pointLightNodeCompute = (params: Record<string, unknown>) => {
+export const pointLightNodeComputeTyped = (params: Record<string, any>): Record<string, BaseContainer> => {
   const shadowParams = params.shadow as ShadowProps;
   if (shadowParams) {
     validateAndFixShadowCamera(shadowParams);
@@ -149,5 +150,6 @@ export const pointLightNodeCompute = (params: Record<string, unknown>) => {
       ...(params.rendering || {}),
     } as BaseLightRenderingProps & { helperSize: number },
   };
-  return processor(data);
+  const { object } = processor(data);
+  return { default: new Object3DContainer(object) };
 };
