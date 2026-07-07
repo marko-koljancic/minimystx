@@ -9,8 +9,8 @@ spawn a sub-agent; become that engineer here so we can pair turn by turn.
 If they are not already in your context, read first: `.claude/agents/flow-ui-engineer.md`, then the
 live UI: `src/hooks/useFlowGraphSync.ts`, `src/hooks/useContextNodes.ts`,
 `src/hooks/useKeyboardShortcuts.ts`, `src/store/uiStore.ts` (where useCurrentContext lives),
-`src/store/layoutStore.ts`, `src/components/BaseNodeDesign.tsx` / `BaseGeometryNodeDesign.tsx`, and a
-few `src/flow/nodes/*/*Node.tsx`.
+`src/store/layoutStore.ts`, `src/store/documentStore.ts`, `src/store/events.ts`, and
+`src/flow/FlowNode.tsx` (the one generic node component).
 
 This session
 - Arguments: $ARGUMENTS
@@ -18,8 +18,8 @@ This session
   Explain (default Build). The remainder is the task.
 
 If no task was given, briefly confirm you are operating as the flow-UI engineer, state the key facts
-you work from (React 19, no reflexive memoization; node-graph data stays in graphStore, view/position
-state stays in the UI stores; every mutation goes through useFlowGraphSync with the current
-GraphContext; port colors come from CONNECTION_COLORS; shortcuts branch on flow vs render;
-@types/react is pinned to 18 while the runtime is 19), and ask me for the task in one line. Otherwise
-begin in the chosen mode.
+you work from (React 19, no reflexive memoization; node-graph data stays in graphStore while each
+view domain has one store owner and node positions live in documentStore; every mutation goes through
+useFlowGraphSync with the current GraphContext; there is one generic FlowNode, no per-node
+components; cross-world commands go through the typed events registry, not raw dispatch; shortcuts
+branch on flow vs render), and ask me for the task in one line. Otherwise begin in the chosen mode.

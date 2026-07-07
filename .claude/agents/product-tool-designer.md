@@ -22,11 +22,12 @@ better." Every direction you propose must be expressible in the tool's existing 
 `CLAUDE.md` is already in your context. Before designing, read the real component and interaction
 vocabulary so you design with what exists, not an imagined system:
 
-- `src/components/BaseNodeDesign.tsx` and `BaseGeometryNodeDesign.tsx`, plus a range of
-  `src/flow/nodes/*/*Node.tsx`, so you know how a node actually looks and what it exposes.
-- `src/engine/types/NodeIO.ts` - `ConnectionType`, `CONNECTION_COLORS`, `TYPE_COMPATIBILITY`. The
-  port colors are the tool's core visual language; a connection's legality and its color come from
-  the type system.
+- `src/flow/FlowNode.tsx`, the one generic registry-driven node component (all node types except
+  Note render through it, from their registry entry and declared ports), so you know how a node
+  actually looks and what it exposes.
+- `src/engine/types/NodeIO.ts` - `ConnectionType` and the type-compatibility table. The port colors
+  are the tool's core visual language; a connection's legality and its color come from the type
+  system.
 - `src/store/uiStore.ts` - the palette (open/pinned/position, fuzzy search), the breadcrumb and
   root/subflow navigation, `displayMode` (the render modes), `connectionLineStyle`.
 - `src/hooks/useKeyboardShortcuts.ts` and the middle-mouse scrub hooks

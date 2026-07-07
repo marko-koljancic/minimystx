@@ -37,21 +37,25 @@ Read the live UI before working (not auto-loaded):
 - `src/store/uiStore.ts` - `useUIStore`, and the source of `useCurrentContext`,
   `useSetCurrentContext`, `navigateToRoot`/`navigateToSubFlow`, `getContextKey`. Note
   `useCurrentContext` lives HERE, not in `hooks/`.
-- `src/store/layoutStore.ts` - panel geometry (some fields overlap with uiStore; know which is
-  authoritative for what you touch).
-- `src/components/BaseNodeDesign.tsx` and `BaseGeometryNodeDesign.tsx`, plus `src/flow/nodes/*/*Node.tsx`.
-- `src/constants/index.ts` - `nodeTypes` and `edgeTypes`.
+- `src/store/layoutStore.ts` (panes/palette/maximize), `src/store/documentStore.ts` (node positions
+  and viewport states, non-persisted), and `src/store/events.ts` (the typed `emitAppEvent`/
+  `onAppEvent` registry). Each state domain has a single owner; know which store owns what you touch.
+- `src/flow/FlowNode.tsx` - the one generic, memoized, registry-driven node component (renders every
+  type except Note from its registry entry and declared ports).
+- `src/constants/index.ts` - `nodeTypes` (derived from the registry) and `edgeTypes`.
 
 ## Technical standards (bound to this UI)
 
 The store boundary (the rule you protect)
 
-- Node-graph data (topology, params, node outputs) lives in `graphStore` and only there. UI stores
-  hold view and layout concerns: `uiStore` (current context/breadcrumb, selection, palette state,
-  display mode, camera mirrors, `nodePositions`, `viewportStates`), `cameraStore`, `preferencesStore`,
-  `layoutStore`. Node positions are UI metadata (`uiStore.nodePositions`), which is exactly why
-  `useFlowGraphSync` ignores React Flow `position`, `dimensions`, and `select` changes. Do not route
-  those into the graph, and do not store params or topology in a UI store.
+- Node-graph data (topology, params, node outputs) lives in `graphStore` and only there. The other
+  domains each have ONE owner: `uiStore` (current context/breadcrumb, selection, palette state,
+  display mode, canvas toggles, connection line style), `cameraStore` (camera mode/view/gizmo),
+  `layoutStore` (panes/palette/maximize), `documentStore` (node positions and viewport states, the
+  document view data that round-trips with the scene file), `preferencesStore`. Node positions live
+  in `documentStore`, which is exactly why `useFlowGraphSync` ignores React Flow `position`,
+  `dimensions`, and `select` changes (FlowCanvas syncs positions to `documentStore` on a debounce
+  instead). Do not route those into the graph, and do not store params or topology in a UI store.
 
 The flow-to-engine bridge
 
@@ -70,14 +74,18 @@ React 19 idioms
   inference work, no `any`, no `@ts-ignore` without a justifying comment. Do NOT reach for
   `useMemo`/`useCallback`/`memo` reflexively; add memoization only with a measured reason. Avoid
   `useEffect` for state derivable in render.
-- Note `@types/react` is pinned to 18 while the runtime is React 19. When you hit a types mismatch,
-  it is likely this drift, not your code; flag it rather than casting around it silently.
+- `@types/react` matches the React 19 runtime. Node params still flow as `Record<string, any>`
+  through the graph and properties panel; a temporary `no-explicit-any` lint override in
+  `.eslintrc.cjs` covers those files. In UI code you write fresh, avoid `any` and let inference work.
 
 Node components
 
-- A node component reads `props.data as <Name>NodeData`, renders on `BaseNodeDesign` or
-  `BaseGeometryNodeDesign`, and exposes `IOHandle`s typed by `ConnectionType`, colored from
-  `CONNECTION_COLORS`, never hardcoded. Follow the closest existing `*Node.tsx`.
+- There is ONE node component: `src/flow/FlowNode.tsx` (memoized), which renders every type from its
+  registry entry (label, render-flag badge, compute error/warning badge, handles from the declared
+  `inputs`/`outputs` ports). Adding or changing what a node shows on canvas is usually a change to
+  `FlowNode` or to the registry ports, not a new component. The Note node is the sole exception
+  (freeform text editing). Do not reintroduce per-node components. Handle colors come from the port
+  `ConnectionType`, never hardcoded.
 
 Keyboard shortcuts
 
@@ -90,9 +98,10 @@ Keyboard shortcuts
 
 - Writing node-graph data (topology, params, outputs) into a UI store.
 - Bypassing `useFlowGraphSync`/`useContextNodes` to mutate or read `graphStore` from a component.
-- Routing React Flow position/dimension/select changes into the graph.
-- A node component that hardcodes a handle color instead of `CONNECTION_COLORS[type]`, or ignores
-  the current `GraphContext`.
+- Routing React Flow position/dimension/select changes into the graph (they belong in
+  `documentStore`).
+- Reintroducing a per-node canvas component, or hardcoding a handle color instead of deriving it
+  from the port `ConnectionType`.
 - A shortcut that ignores the flow/render context split.
 - Reflexive `useMemo`/`useCallback`; `useEffect` for derived state; casting away the `@types/react`
   18-vs-19 drift instead of flagging it.

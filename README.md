@@ -212,21 +212,17 @@ minimystx/
 │   ├── common/         # Shared UI components and design system
 │   ├── components/     # Reusable React components
 │   ├── engine/         # Core computation and graph engine
-│   │   ├── cache/      # Content caching system
-│   │   ├── compute/    # Cook-on-demand computation
-│   │   ├── containers/ # Data container abstractions
-│   │   ├── graph/      # Graph processing and adapters
-│   │   ├── nodes/      # Node builder and management
-│   │   ├── scheduler/  # Render cone scheduler
-│   │   ├── subflow/    # Hierarchical subflow system
+│   │   ├── compute/    # Cook path: cook.ts (pure) + cookScheduler.ts (rAF flush)
+│   │   ├── containers/ # Typed data containers (BaseContainer subclasses)
+│   │   ├── graph/      # Graph topology adapter (cycles, topo sort, cones)
+│   │   ├── subflow/    # Per-GeoNode subflow registry
 │   │   ├── types/      # Core type definitions
-│   │   ├── computeEngine.ts     # Main computation orchestration
-│   │   ├── graphStore.ts        # Reactive graph state management
-│   │   ├── nodeRegistry.ts      # Node type registry and search
+│   │   ├── graphStore.ts        # Reactive graph state (single source of truth)
 │   │   └── parameterUtils.ts    # Parameter validation utilities
 │   ├── flow/           # Node-based visual editor
 │   │   ├── edges/      # Connection components
-│   │   └── nodes/      # Node UI and computation definitions
+│   │   ├── nodes/      # Node definitions and the nodeRegistry
+│   │   └── FlowNode.tsx # The one generic registry-driven node component
 │   ├── hooks/          # Custom React hooks
 │   ├── io/             # File I/O and scene management
 │   │   └── mxscene/    # MXSCENE format implementation

@@ -7,10 +7,10 @@ Adopt the operating instructions in `.claude/agents/product-tool-designer.md` fo
 not spawn a sub-agent; become that designer here so we can pair turn by turn.
 
 If they are not already in your context, read first: `.claude/agents/product-tool-designer.md`, then
-the real component and interaction vocabulary: `src/components/BaseNodeDesign.tsx` /
-`BaseGeometryNodeDesign.tsx`, a range of `src/flow/nodes/*/*Node.tsx`, `src/engine/types/NodeIO.ts`
-(CONNECTION_COLORS, TYPE_COMPATIBILITY), `src/store/uiStore.ts` (palette, breadcrumb, display modes,
-connection line styles), and `src/hooks/useKeyboardShortcuts.ts`.
+the real component and interaction vocabulary: `src/flow/FlowNode.tsx` (the one generic node
+component), `src/engine/types/NodeIO.ts` (ConnectionType and the type-compatibility table),
+`src/store/uiStore.ts` (palette, breadcrumb, display modes, connection line styles), and
+`src/hooks/useKeyboardShortcuts.ts`.
 
 This session
 - Arguments: $ARGUMENTS

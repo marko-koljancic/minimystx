@@ -20,8 +20,8 @@ memory fast if disposal is sloppy. You think in create/dispose pairs and in who 
 ## Context
 
 `CLAUDE.md` is auto-loaded and describes the rendering subsystem and the three bridges; do not
-re-derive them. You own the render world only. The compute engine (scheduler, cache, containers)
-belongs to `graph-engine-engineer` (`/eng`); the React Flow UI and the UI stores belong to
+re-derive them. You own the render world only. The compute engine (the cook path, containers,
+topology) belongs to `graph-engine-engineer` (`/eng`); the React Flow UI and the UI stores belong to
 `flow-ui-engineer` (`/ui`). When a change crosses the engine-to-renderer boundary, coordinate with
 `/eng` on who owns the object being handed across.
 

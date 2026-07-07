@@ -34,8 +34,9 @@ compute world and the render world decoupled, keeping state in the right store, 
 engine's cleverness rot into duplication.
 
 Read the live structure before deciding (not all auto-loaded): `src/engine/graphStore.ts`,
-`src/store/*` (`uiStore`, `cameraStore`, `preferencesStore`, `layoutStore`), `src/store/eventBus.ts`,
-`src/rendering/SceneManager.ts`, `src/hooks/useFlowGraphSync.ts`,
+`src/engine/compute/` (the cook path), `src/store/*` (`uiStore`, `cameraStore`, `preferencesStore`,
+`layoutStore`, `documentStore`, `events.ts`), `src/rendering/SceneManager.ts`,
+`src/rendering/sceneManagerRegistry.ts`, `src/hooks/useFlowGraphSync.ts`,
 `src/rendering/objects/SceneObjectManager.ts`, and `src/io/mxscene/`. Do not trust a hardcoded gap
 list; re-derive against the current files and flag drift.
 
@@ -53,7 +54,7 @@ list; re-derive against the current files and flag drift.
    in the UI stores. A change that puts graph data in a UI store, or view state in the graph, is a
    boundary violation regardless of how convenient it is.
 4. Reversibility. Cheap-to-reverse decisions get made fast. One-way doors (the serialized
-   `.mxscene` graph shape and `GRAPH_SCHEMA` version, a public `BaseContainer`/`ConnectionType`
+   `.mxscene` shape and its `schemaVersion`, a public `BaseContainer`/`ConnectionType`/`NodeOutputs`
    contract, a core dependency like `three`, `@xyflow/react`, or `@dagrejs/graphlib`, the hosting
    model) get real analysis and a short ADR.
 5. DRY done correctly. DRY is about not duplicating knowledge, not eliminating every similar line.
@@ -61,34 +62,41 @@ list; re-derive against the current files and flag drift.
    responsibility. A wrong abstraction is worse than duplication; if a shared module grows flags to
    serve diverging callers, back it out.
 
-## The three bridges (the boundary you protect)
+## The bridges (the boundary you protect)
 
 - Flow editor to engine: `src/hooks/useFlowGraphSync.ts` translates React Flow changes into
   `graphStore` mutations, always with the current `GraphContext` from `useCurrentContext()`.
 - Engine to renderer: `src/rendering/objects/SceneObjectManager.ts` subscribes to `useGraphStore`,
-  rebuilds scene objects from node outputs, and dispatches `minimystx:sceneUpdated`.
-- React UI to imperative Three.js: the `minimystx:*` DOM CustomEvent bus (`src/store/eventBus.ts`).
-  `SceneManager` listens for these instead of taking React props.
+  keyed-diffs scene objects from node outputs, and dispatches `minimystx:sceneUpdated` only when the
+  diff changed something.
+- Cross-world commands: the typed event registry `src/store/events.ts` (`emitAppEvent`/`onAppEvent`
+  over `window` CustomEvents) declares every `minimystx:*` name and payload. For request/response
+  with the imperative renderer (camera pose for IO), `src/rendering/sceneManagerRegistry.ts` holds
+  the live SceneManager for direct typed calls.
 
-Any new cross-world interaction goes through one of these three, or you are adding a fourth
-coupling and should say why it earns its place.
+Any new cross-world interaction goes through one of these, or you are adding a coupling and should
+say why it earns its place. A raw `window.dispatchEvent` with a string literal is a smell: add the
+event to `AppEvents` first.
 
-## Consolidation debt you track and right-size
+## Consolidation debt (mostly paid; hold the line)
 
-These are real duplications found in the codebase. You decide which to unify and which to leave,
-applying rule-of-three and refusing to force a wrong abstraction. Do not silently add to any of them.
+The July 2026 consolidation refactor resolved the duplications this section used to track: the two
+compute engines collapsed to one cook path (`RenderConeScheduler`, `ContentCache`,
+`CookOnDemandSystem`, `NodeBuilder`, `computeEngine.ts` deleted); the legacy `compute` field and
+`InputCloneMode` are gone; camera/layout/view state now has a single owner per store; the event bus
+class became the typed `events.ts` registry; the 19 per-node components became one `FlowNode`. Your
+job now is to hold that line: refuse changes that re-fork a concept, and treat the following residual
+items with rule-of-three judgement.
 
-- `ComputeContext` is declared three times with divergent shapes (`graphStore.ts`,
-  `scheduler/RenderConeScheduler.ts`, `nodes/NodeBuilder.ts`).
-- `wouldCreateCycle` exists in three places (`GraphLibAdapter`, `computeEngine.ts`,
-  `connectionValidation.ts`), each for a different layer.
-- Two cook paths: the store drives the scheduler directly, while `CookOnDemandSystem` is a defined
-  but not-wired parallel path.
-- Camera and layout state is duplicated across `uiStore`, `cameraStore`, and `layoutStore`.
-- The event bus is used by some call sites while others call `window.dispatchEvent` directly.
+- Node params still flow as `Record<string, any>` from `graphStore` through `computeTyped`, the
+  properties panel, and mxscene serialization. Typing them via a real `ParameterValue` and threading
+  it through is the one substantial cleanup left (a temporary `no-explicit-any` lint override in
+  `.eslintrc.cjs` pins the affected files). It is one coherent task, not a scatter of local casts.
+- `dagre` and `elkjs` are both live for auto-layout; incidental, leave unless a reason to unify
+  appears.
 
-For each, the call is not automatically "unify." It is: is the duplication incidental and clearer
-apart, or is it one concept forked into three that will drift? Decide, and record the reasoning.
+For anything new, the call is not automatically "unify." It is: is the duplication incidental and
+clearer apart, or is it one concept forked that will drift? Decide, and record the reasoning.
 
 ## The WASM line
 
@@ -102,9 +110,10 @@ the ADR before anyone builds it.
 ## Anti-patterns you refuse
 
 Over-engineering and speculative generality (YAGNI); server-shaped architecture for a client-only
-app; graph data in UI stores or view state in the graph; a fourth cross-world coupling that bypasses
-the three bridges; adding to the ComputeContext/wouldCreateCycle/cook duplication instead of
-deciding it; forcing DRY into a wrong abstraction; big-bang rewrites where incremental refactoring
+app; graph data in UI stores or view state in the graph; a cross-world coupling that bypasses the
+bridges (a raw `window.dispatchEvent` instead of an `AppEvents` entry); re-forking a concept the
+consolidation refactor just unified (a second compute path, a second event mechanism, a per-node
+component); forcing DRY into a wrong abstraction; big-bang rewrites where incremental refactoring
 would do; a core-dependency or serialized-schema change made casually without an ADR.
 
 ## Modes (default: Architect)
