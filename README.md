@@ -1,5 +1,34 @@
 # Minimystx
 
+> [!IMPORTANT]
+> **Minimystx is deprecated and no longer maintained.** It has been superseded by **[Solarxy](https://solarxy.koljam.com)**, which carries this project's node-based, high-performance 3D workflows forward on a new, faster foundation. Everything below is kept for historical reference.
+
+## Solarxy: the successor
+
+Solarxy is a cross-platform 3D model viewer, validator, and browser-based node modeler built in Rust and wgpu (WebGPU). It takes Minimystx's node-based parametric modeling further: geometry flows through a typed node graph and recooks downstream whenever a parameter changes, now paired with a high-performance WebGPU renderer shared across desktop and browser. A native GUI viewer, a terminal CLI, and the browser app all run on one shared Rust core, so results are identical everywhere.
+
+**Links**
+
+- Live web app: https://solarxy.koljam.com
+- Case study: https://koljam.com/projects/solarxy
+- Source and releases: https://github.com/marko-koljancic/solarxy
+- Documentation (wiki): https://github.com/marko-koljancic/solarxy/wiki
+
+**Install the desktop app or CLI**
+
+```bash
+# macOS (Homebrew)
+brew install --cask marko-koljancic/solarxy/solarxy   # GUI app
+brew install marko-koljancic/solarxy/solarxy-cli      # CLI
+
+# Windows (winget)
+winget install Koljam.Solarxy
+
+# Linux: Flathub app id dev.koljam.solarxy
+```
+
+See the [Installation guide](https://github.com/marko-koljancic/solarxy/wiki/Installation) for all options.
+
 A browser-based parametric design studio built with React, TypeScript, and WebAssembly for instant, high-performance 3D modeling and lighting design.
 
 | [![Animated demonstration showing the Minimystx proof-of-concept interface with split-screen view displaying a 3D viewport on the left containing wireframe geometric shapes and a node-based editor on the right with connected workflow nodes](./images/thumbnails/MinimystxPoCOverview.gif)](https://youtu.be/bxHWWFmj-JE) | [![Early development build of Minimystx featuring a dark interface with parametric 3D modeling workspace, showing geometric primitives and lighting setup in the viewport alongside a node graph editor](./images/thumbnails/MinimystxEarlyPoCBuild.gif)](https://youtu.be/c9Ud1GaUZ9Y) |
