@@ -29,6 +29,7 @@ winget install Koljam.Solarxy
 
 See the [Installation guide](https://github.com/marko-koljancic/solarxy/wiki/Installation) for all options.
 
+---
 A browser-based parametric design studio built with React, TypeScript, and WebAssembly for instant, high-performance 3D modeling and lighting design.
 
 | [![Animated demonstration showing the Minimystx proof-of-concept interface with split-screen view displaying a 3D viewport on the left containing wireframe geometric shapes and a node-based editor on the right with connected workflow nodes](./images/thumbnails/MinimystxPoCOverview.gif)](https://youtu.be/bxHWWFmj-JE) | [![Early development build of Minimystx featuring a dark interface with parametric 3D modeling workspace, showing geometric primitives and lighting setup in the viewport alongside a node graph editor](./images/thumbnails/MinimystxEarlyPoCBuild.gif)](https://youtu.be/c9Ud1GaUZ9Y) |
